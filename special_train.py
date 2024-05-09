@@ -1,0 +1,90 @@
+import ast
+import json
+from transformers import AutoTokenizer,AutoModelForCausalLM,Seq2SeqTrainer,DataCollatorForSeq2Seq,BartTokenizerFast,TrainingArguments,Seq2SeqTrainingArguments,BartTokenizer
+from torch.utils.data import Dataset,DataLoader
+import datasets
+from dataset import SpecialDataset,SpecialDataCollator
+from special_trainer import KLTrainer
+import pickle
+from config import model_dir,dataset_dir
+import torch
+from argparse import ArgumentParser
+from loguru import logger
+
+def parse_args():
+    parser = ArgumentParser()
+    parser.add_argument("--model", default="gemma_2b")
+    parser.add_argument("--dataset", default="alpaca_cleaned")
+    parser.add_argument("--output_dir")
+    return parser.parse_args()
+
+args=parse_args()
+
+
+
+model_dir=model_dir[args.model]
+tokenizer=AutoTokenizer.from_pretrained(model_dir)
+tokenizer.padding_side='left'
+model=AutoModelForCausalLM.from_pretrained(model_dir,torch_dtype=torch.bfloat16)
+
+embedding_size=model.lm_head.weight.size()[0] # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
+
+collator= SpecialDataCollator(tokenizer)
+
+
+@logger.catch
+def load_dataset():
+    with open(f'{dataset_dir[args.dataset]}/synthesis.pkl','rb') as f:
+        synthesis=pickle.load(f)
+        
+    with open(f'{dataset_dir[args.dataset]}/index.pkl','rb') as f:
+        index=pickle.load(f)
+    
+    train_dataset=SpecialDataset(synthesis,index,embedding_size,tokenizer=tokenizer,zero_prob=0.1,div_mode=False)
+    return train_dataset
+
+train_dataset=load_dataset()
+# 检查数据的调试代码----------------------------------
+# dataloader=DataLoader(dataset=train_dataset,batch_size=2,collate_fn=collator,)
+# for d in dataloader:
+#     print(d)
+#     import pdb
+#     pdb.set_trace()
+#     exit()
+#     continue
+#------------------------------------------------------
+
+
+
+
+trainer = KLTrainer(
+        model=model,
+        train_dataset=train_dataset,
+        tokenizer=tokenizer,
+        args=TrainingArguments(
+            optim='adamw_apex_fused',
+            overwrite_output_dir =False,
+            output_dir=args.output_dir,
+            logging_steps=5,
+            remove_unused_columns =False,
+            gradient_accumulation_steps=8,
+            #-------------------------------
+            save_strategy ='epoch',
+            # save_steps = 100,
+            # save_total_limit =3,
+            # load_best_model_at_end=True,
+            #--------------------------------
+            dataloader_num_workers =0,
+            num_train_epochs=3,
+            per_device_train_batch_size=2,
+            bf16=True,
+            prediction_loss_only=True,
+            torch_compile=True,
+            torch_compile_backend='inductor',
+            torch_compile_mode='default',
+        ),
+        data_collator=collator,
+    )
+
+trainer.train()
+trainer.save_model(args.output_dir)
