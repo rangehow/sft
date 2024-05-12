@@ -130,7 +130,7 @@ def get_data(
     clm_cnt = list(map(frequency, [sum(xx.values()) for xx in clm]))
 
     if div_mode:
-        # print('div_mode')
+
         x = torch.stack(
             [
                 torch.bincount(torch.tensor(list(xx.elements())), minlength=32128)
@@ -138,10 +138,7 @@ def get_data(
             ]
         )
         all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
-        # if (torch.sum(x,dim=-1,keepdim=True)>1).any():
 
-        #     import pdb
-        #     pdb.set_trace()
         if clm is not None:
             x = torch.stack(
                 [
@@ -150,9 +147,7 @@ def get_data(
                 ]
             )
             all_prob_clm = x / torch.sum(x, dim=-1, keepdim=True)
-        # if clm!=supervised:
-        #     import pdb
-        #     pdb.set_trace()
+
 
     else:
         # TODO 记得要统计一下 sum(clm[i].values())
@@ -184,6 +179,8 @@ def get_data(
             print([list(xx.elements()) for xx in clm])
             print([torch.tensor(list(xx.elements())) for xx in clm])
 
+    import pdb
+    pdb.set_trace()
     temp_dict["input_ids"] = synthesis_dict[0]
     temp_dict["valid_label_index_list"] = valid_label_index_list
     temp_dict["all_prob_supervised"] = all_prob_supervised
@@ -247,8 +244,8 @@ class SpecialDataCollator:
         valid_label_index_list = [d["valid_label_index_list"] for d in batch]
         supervised_cnt = [d["supervised_cnt"] for d in batch]
         clm_cnt = [d["clm_cnt"] for d in batch]
-        # import pdb
-        # pdb.set_trace()
+
+
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,

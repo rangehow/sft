@@ -37,8 +37,7 @@ def alpaca_cleaned(instances, template):
         labels.append(label)
     return {'input_ids':input_ids,'labels':labels}
 
-
-
+dname2func['alpaca_gpt4']=alpaca_cleaned
 
 def capybara(x,template):
     def reformate(c):

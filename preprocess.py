@@ -44,11 +44,11 @@ def find_ranges(lst, target=-100):
         if num != target and start is None:
             start = i
         elif num == target and start is not None:
-            ranges.append((start, i ))
+            ranges.append((start-1, i-1)) # start-1是因为 -100 。。。 -100（start-1） start 。。。-100（i） 作为 [start-1:] 
             start = None
     
     if start is not None:
-        ranges.append((start, len(lst)-1))
+        ranges.append((start-1, len(lst)-1))
     
     return ranges
 
@@ -62,14 +62,14 @@ def main():
     model_type=config.model_type
     template=modelType2Template[model_type](tokenizer)
 
-    train_dataset = datasets.load_from_disk(
+    train_dataset = datasets.load_dataset(
         dataset_dir[args.dataset], keep_in_memory=True
     )["train"]
-
+    print(train_dataset)
     train_dataset = train_dataset.map(
         partial(dname2func[args.dataset], template=template),
         batched=True,
-        num_proc=1,
+        num_proc=30,
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
         cache_file_name=f"{dataset_dir[args.dataset]}/cache.arrow",
@@ -88,8 +88,7 @@ def main():
         for j in tqdm(range(len(train_dataset)), desc="statistic stage"):
             
             input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
-            import pdb
-            pdb.set_trace()
+
             # 如果是多轮对话,那么label将是穿插着多段连续-100的int list
             # supervised信号的key是第一段-100结束开始,以后开始递增
             # clm信号的key应该是非-100区域内独立统计
@@ -217,6 +216,7 @@ def test():
         
         
         logger.debug(f'{k},{v}')
+        print(cnt_list[0])
         logger.debug(train_dataset[cnt])
         pdb.set_trace()
         cnt+=1
