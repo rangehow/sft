@@ -75,14 +75,14 @@ def load_dataset():
 
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
-dataloader = DataLoader(
-    dataset=train_dataset, batch_size=4, collate_fn=collator, num_workers=0
-)
+# dataloader = DataLoader(
+#     dataset=train_dataset, batch_size=4, collate_fn=collator, num_workers=0
+# )
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
-for d in tqdm(dataloader):
-    continue
+# for d in tqdm(dataloader):
+#     continue
 # ------------------------------------------------------
 
 
@@ -105,7 +105,7 @@ trainer = KLTrainer(
         # --------------------------------
         dataloader_num_workers=16,
         num_train_epochs=3,
-        per_device_train_batch_size=4,
+        auto_find_batch_size=True,
         bf16=True,
     ),
     data_collator=collator,
