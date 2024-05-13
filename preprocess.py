@@ -39,15 +39,20 @@ def parse_args():
 def find_ranges(lst, target=-100):
     ranges = []
     start = None
-
+    multiTurnOnlyOnceInfoFlag=True
     for i, num in enumerate(lst):
         if num != target and start is None:
             start = i
         elif num == target and start is not None:
-            ranges.append((start-1, i-1)) # start-1是因为 -100 。。。 -100（start-1） start 。。。-100（i） 作为 [start-1:] 
+            if multiTurnOnlyOnceInfoFlag:
+                logger.info('这个分支理论上只有多轮对话的数据集才会进入,确保自己在使用多轮对话数据集')
+                multiTurnOnlyOnceInfoFlag=False
+            #  -100（start-1） start ，，，words4predictend(i-2) end(i-1) -100（i） 这个数据结构被用于从model_output里按切片取出logits来预测下一个词
+            ranges.append((start-1, i-2)) 
             start = None
     
     if start is not None:
+        # 这个地方结束位置一般不重要，除非最后有什么不需要预测的特殊标志。
         ranges.append((start-1, len(lst)-1))
     
     return ranges
@@ -197,14 +202,14 @@ def test():
     model_type=config.model_type
     template=modelType2Template[model_type](tokenizer)
 
-    train_dataset = datasets.load_from_disk(
+    train_dataset = datasets.load_dataset(
         dataset_dir[args.dataset], keep_in_memory=True
     )["train"]
 
     train_dataset = train_dataset.map(
         partial(dname2func[args.dataset], template=template),
         batched=True,
-        num_proc=1,
+        num_proc=30,
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
         cache_file_name=f"{dataset_dir[args.dataset]}/cache.arrow",
@@ -223,5 +228,5 @@ def test():
     logger.debug(len(synthesis_dict))
     
 if __name__ == "__main__":
-    # test()
-    main()
+    test()
+    # main()
