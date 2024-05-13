@@ -107,10 +107,6 @@ trainer = KLTrainer(
         num_train_epochs=3,
         per_device_train_batch_size=4,
         bf16=True,
-        prediction_loss_only=True,
-        torch_compile=True,
-        torch_compile_backend="inductor",
-        torch_compile_mode="default",
     ),
     data_collator=collator,
 )
