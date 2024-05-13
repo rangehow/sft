@@ -153,9 +153,9 @@ def main():
             key = (tuple(input_id[:-1]))
             length = len(input_id)
             
-            for i in range(length-1):
+            for i in range(length-1): # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
                 
-                if label[i+1] != -100:
+                if label[i+1] != -100:  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
                     supervised_key = tuple(input_id[:i+1])
                     supervised_value=supervised_dict[supervised_key]
 

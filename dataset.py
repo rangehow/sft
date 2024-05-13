@@ -179,8 +179,7 @@ def get_data(
             print([list(xx.elements()) for xx in clm])
             print([torch.tensor(list(xx.elements())) for xx in clm])
 
-    import pdb
-    pdb.set_trace()
+
     temp_dict["input_ids"] = synthesis_dict[0]
     temp_dict["valid_label_index_list"] = valid_label_index_list
     temp_dict["all_prob_supervised"] = all_prob_supervised
