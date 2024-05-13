@@ -133,20 +133,31 @@ def get_data(
 
         x = torch.stack(
             [
-                torch.bincount(torch.tensor(list(xx.elements())), minlength=32128)
-                for xx in supervised[1]
+                torch.bincount(
+                    torch.tensor(list(xx.elements())), minlength=embdding_size
+                )
+                for xx in supervised
             ]
         )
-        all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+        # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+        all_prob_supervised=(1-zero_prob)*x/torch.sum(x, dim=-1, keepdim=True)
+        zero_cnt = torch.sum(x != 0,keepdim=True,dim=-1)
+        temp_zero_prob=zero_prob / (embdding_size-zero_cnt)
+        all_prob_supervised=torch.where(all_prob_supervised==0, temp_zero_prob , all_prob_supervised)
 
-        if clm is not None:
-            x = torch.stack(
-                [
-                    torch.bincount(torch.tensor(list(xx.elements())), minlength=32128)
-                    for xx in clm[1]
-                ]
-            )
-            all_prob_clm = x / torch.sum(x, dim=-1, keepdim=True)
+        x = torch.stack(
+            [
+                torch.bincount(
+                    torch.tensor(list(xx.elements())), minlength=embdding_size
+                )
+                for xx in clm
+            ]
+        )
+        # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+        all_prob_clm=(1-zero_prob)*x/torch.sum(x, dim=-1, keepdim=True)
+        zero_cnt = torch.sum(x != 0,keepdim=True,dim=-1)
+        temp_zero_prob=zero_prob / (embdding_size-zero_cnt)
+        all_prob_clm=torch.where(all_prob_clm==0, temp_zero_prob , all_prob_clm)
 
 
     else:
