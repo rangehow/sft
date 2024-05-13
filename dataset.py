@@ -153,19 +153,19 @@ def get_data(
 
     if div_mode:
 
-        x = optimized_stack(supervised, embdding_size).to('cuda')
+        x = optimized_stack(supervised, embdding_size)
         # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
-        all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True,device='cuda')
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,device='cuda')
+        all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_supervised = torch.where(
             all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
         )
 
-        x = optimized_stack(clm, embdding_size).to('cuda')
+        x = optimized_stack(clm, embdding_size)
 
-        all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True,device='cuda')
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,device='cuda')
+        all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
