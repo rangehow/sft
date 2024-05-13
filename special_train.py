@@ -19,7 +19,8 @@ from config import model_dir, dataset_dir
 import torch
 from argparse import ArgumentParser
 from loguru import logger
-
+import warnings
+warnings.filterwarnings("ignore", " Please note that with a fast tokenizer,")
 
 def parse_args():
     parser = ArgumentParser()
@@ -86,7 +87,7 @@ trainer = KLTrainer(
         optim="adamw_apex_fused",
         overwrite_output_dir=False,
         output_dir=args.output_dir,
-        logging_steps=5,
+        logging_steps=1,
         remove_unused_columns=False,
         gradient_accumulation_steps=8,
         # -------------------------------
