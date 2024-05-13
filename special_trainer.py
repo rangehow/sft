@@ -26,9 +26,6 @@ class KLTrainer(Trainer):
         )
         model_logits=result.logits # bsz x seqlen x dim
 
-        
-        import pdb
-        pdb.set_trace()
 
         # NOTE 正确性检查见本文件底部test code 1
         last_logits=torch.cat([row[start:end] for row, turn in zip(model_logits, valid_label_index_list) for start, end in turn])
@@ -43,7 +40,7 @@ class KLTrainer(Trainer):
             model_logits.device
         )
 
-        loss = 0.8* supervised_cnt+0.2*clm_loss
+        loss = 0.8* supervised_loss+0.2*clm_loss
         if return_outputs:
             return loss, {"logits": model_logits}
         else:

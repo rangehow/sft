@@ -95,9 +95,9 @@ trainer = KLTrainer(
         # save_total_limit =3,
         # load_best_model_at_end=True,
         # --------------------------------
-        dataloader_num_workers=0,
+        dataloader_num_workers=16,
         num_train_epochs=3,
-        per_device_train_batch_size=2,
+        per_device_train_batch_size=4,
         bf16=True,
         prediction_loss_only=True,
         torch_compile=True,
