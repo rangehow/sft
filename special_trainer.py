@@ -31,7 +31,7 @@ class KLTrainer(Trainer):
         pdb.set_trace()
 
         # NOTE 正确性检查见本文件底部test code 1
-        last_logits=torch.cat([row[start:end+1] for row, turn in zip(model_logits, valid_label_index_list) for start, end in turn])
+        last_logits=torch.cat([row[start:end] for row, turn in zip(model_logits, valid_label_index_list) for start, end in turn])
         all_prob_supervised = all_prob_supervised.to(last_logits.device)
         all_prob_clm = all_prob_clm.to(last_logits.device)
 

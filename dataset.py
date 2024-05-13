@@ -234,13 +234,21 @@ class SpecialDataCollator:
 
 
         input_ids = [list(d["input_ids"]) for d in batch]
+        input_ids_len=list(len(input_id) for input_id in input_ids)
+        input_ids_max_len=max(input_ids_len)
         input_ids = self.tokenizer.pad(
             {"input_ids": input_ids}, return_tensors="pt", padding=True
         )
         
         all_prob_supervised = [d["all_prob_supervised"] for d in batch]
         all_prob_clm = [d["all_prob_clm"] for d in batch]
-        valid_label_index_list = [d["valid_label_index_list"] for d in batch]
+        valid_label_index_list = [] # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
+        for i,d in enumerate(batch):
+            length_diff=input_ids_max_len-input_ids_len[i]
+            for i in range(len(d['valid_label_index_list'])):
+                d['valid_label_index_list'][i]=(length_diff+d['valid_label_index_list'][i][0],length_diff+d['valid_label_index_list'][i][1])
+            valid_label_index_list.append(d['valid_label_index_list'])
+
         supervised_cnt = [d["supervised_cnt"] for d in batch]
         clm_cnt = [d["clm_cnt"] for d in batch]
 

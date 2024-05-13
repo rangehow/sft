@@ -48,7 +48,7 @@ def find_ranges(lst, target=-100):
                 logger.info('这个分支理论上只有多轮对话的数据集才会进入,确保自己在使用多轮对话数据集')
                 multiTurnOnlyOnceInfoFlag=False
             #  -100（start-1） start ，，，words4predictend(i-2) end(i-1) -100（i） 这个数据结构被用于从model_output里按切片取出logits来预测下一个词
-            ranges.append((start-1, i-2)) 
+            ranges.append((start-1, i-1))  # 因为是切片，i-1实际上会取到i-2范围
             start = None
     
     if start is not None:
