@@ -99,6 +99,7 @@ trainer = KLTrainer(
         gradient_accumulation_steps=8,
         # -------------------------------
         save_strategy="epoch",
+        dataloader_pin_memory =False,
         # save_steps = 100,
         # save_total_limit =3,
         # load_best_model_at_end=True,

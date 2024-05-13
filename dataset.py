@@ -141,8 +141,8 @@ def get_data(
     zero_prob,
     div_mode,
 ):
-    # import time
-    # a=time.time()
+    import time
+    a=time.time()
     temp_dict = {}
     supervised = [synthesis_dict[1][i][0] for i in range(len(synthesis_dict[1]))]
     clm = [synthesis_dict[1][i][1] for i in range(len(synthesis_dict[1]))]
@@ -153,33 +153,19 @@ def get_data(
 
     if div_mode:
 
-        x = torch.stack(
-            [
-                torch.bincount(
-                    torch.tensor(list(xx.elements())), minlength=embdding_size
-                )
-                for xx in supervised
-            ]
-        )
-        all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
-        all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+        x = optimized_stack(supervised, embdding_size).to('cuda')
+        # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+        all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True,device='cuda')
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,device='cuda')
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_supervised = torch.where(
             all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
         )
 
-        x = torch.stack(
-            [
-                torch.bincount(
-                    torch.tensor(list(xx.elements())), minlength=embdding_size
-                )
-                for xx in clm
-            ]
-        )
-        # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
-        all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+        x = optimized_stack(clm, embdding_size).to('cuda')
+
+        all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True,device='cuda')
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,device='cuda')
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
@@ -189,14 +175,14 @@ def get_data(
         x = optimized_stack(supervised, embdding_size)
         all_prob_supervised = transform_to_log_prob(x, zero_prob=zero_prob)
 
-        try:
-            x = optimized_stack(clm, embdding_size)
-            all_prob_clm = transform_to_log_prob(x, zero_prob=zero_prob)
-        except:
-            print(supervised)
-            print(clm)
-            print([list(xx.elements()) for xx in clm])
-            print([torch.tensor(list(xx.elements())) for xx in clm])
+        
+        x = optimized_stack(clm, embdding_size)
+        all_prob_clm = transform_to_log_prob(x, zero_prob=zero_prob)
+        # except:
+        #     print(supervised)
+        #     print(clm)
+        #     print([list(xx.elements()) for xx in clm])
+        #     print([torch.tensor(list(xx.elements())) for xx in clm])
 
     temp_dict["input_ids"] = synthesis_dict[0]
     temp_dict["valid_label_index_list"] = valid_label_index_list
@@ -204,6 +190,7 @@ def get_data(
     temp_dict["all_prob_clm"] = all_prob_clm
     temp_dict["supervised_cnt"] = supervised_cnt
     temp_dict["clm_cnt"] = clm_cnt
+    print(time.time()-a)
     return temp_dict
 
 
