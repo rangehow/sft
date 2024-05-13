@@ -1,51 +1,51 @@
-from transformers import Seq2SeqTrainer,Trainer
+from transformers import Seq2SeqTrainer, Trainer
 import torch
 import os
-from torch.nn import KLDivLoss,CrossEntropyLoss
+from torch.nn import KLDivLoss, CrossEntropyLoss
 import torch.nn.functional as F
 import time
+
 
 class KLTrainer(Trainer):
 
     def compute_loss(self, model, inputs, return_outputs=False):
-        
-        
-        a=time.time()
+
         input_ids = inputs.pop("input_ids")
         attention_mask = inputs.pop("attention_mask")
 
-        valid_label_index_list = inputs.pop("valid_label_index_list") # 3dim list -> (batch_size, turn , 2) 只有turn才会产生一个起止下标
+        valid_label_index_list = inputs.pop(
+            "valid_label_index_list"
+        )  # 3dim list -> (batch_size, turn , 2) 只有turn才会产生一个起止下标
 
         all_prob_supervised = inputs.pop("all_prob_supervised")
         all_prob_clm = inputs.pop("all_prob_clm")
         supervised_cnt = inputs.pop("supervised_cnt")
         clm_cnt = inputs.pop("clm_cnt")
 
-        b=time.time()
-        print('prepare data time',b-a)
         result = model(
             input_ids=input_ids,
             attention_mask=attention_mask,
         )
-        model_logits=result.logits # bsz x seqlen x dim
+        model_logits = result.logits  # bsz x seqlen x dim
 
-        c=time.time()
-        print('forward',c-b)
         # NOTE 正确性检查见本文件底部test code 1
-        last_logits=torch.cat([row[start:end] for row, turn in zip(model_logits, valid_label_index_list) for start, end in turn])
+        last_logits = torch.cat(
+            [
+                row[start:end]
+                for row, turn in zip(model_logits, valid_label_index_list)
+                for start, end in turn
+            ]
+        )
         all_prob_supervised = all_prob_supervised.to(last_logits.device)
         all_prob_clm = all_prob_clm.to(last_logits.device)
 
-        ce_loss=CrossEntropyLoss(ignore_index=-100)
-        supervised_loss = ce_loss(last_logits,all_prob_supervised).to(
+        ce_loss = CrossEntropyLoss(ignore_index=-100)
+        supervised_loss = ce_loss(last_logits, all_prob_supervised).to(
             model_logits.device
         )
-        clm_loss=ce_loss(last_logits,all_prob_clm).to(
-            model_logits.device
-        )
-        d=time.time()
-        print('loss',d-c)
-        loss = 0.8* supervised_loss+0.2*clm_loss
+        clm_loss = ce_loss(last_logits, all_prob_clm).to(model_logits.device)
+
+        loss = 0.8 * supervised_loss + 0.2 * clm_loss
         if return_outputs:
             return loss, {"logits": model_logits}
         else:
@@ -65,9 +65,6 @@ class KLTrainer(Trainer):
                 loss = loss.mean().detach()
 
         return (loss, None, None)
-
-
-
 
 
 # test code 1:

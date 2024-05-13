@@ -101,8 +101,7 @@ def transform_to_log_prob(
                         print("失败了，没找到温度")
                         break
         probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
-        # import pdb
-        # pdb.set_trace()
+
 
     return probs
 
@@ -119,8 +118,8 @@ def get_data(
     zero_prob,
     div_mode,
 ):
-    import time
-    a=time.time()
+    # import time
+    # a=time.time()
     temp_dict = {}
     supervised = [synthesis_dict[1][i][0] for i in range(len(synthesis_dict[1]))]
     clm = [synthesis_dict[1][i][1] for i in range(len(synthesis_dict[1]))]
@@ -200,7 +199,7 @@ def get_data(
     temp_dict["all_prob_clm"] = all_prob_clm
     temp_dict["supervised_cnt"] = supervised_cnt
     temp_dict["clm_cnt"] = clm_cnt
-    print('get_time',time.time()-a)
+    # print('get_time',time.time()-a)
     return temp_dict
 
 
@@ -245,8 +244,8 @@ class SpecialDataCollator:
 
     def __call__(self, batch) -> torch.Any:
 
-        import time
-        a=time.time()
+        # import time
+        # a=time.time()
 
         input_ids = [list(d["input_ids"]) for d in batch]
         input_ids_len=list(len(input_id) for input_id in input_ids)
@@ -268,7 +267,7 @@ class SpecialDataCollator:
         clm_cnt = [d["clm_cnt"] for d in batch]
 
 
-        print('collate time',time.time()-a)
+        # print('collate time',time.time()-a)
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,
