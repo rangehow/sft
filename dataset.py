@@ -100,7 +100,6 @@ def transform_to_log_prob(
                         # pdb.set_trace()
                         print("失败了，没找到温度")
                         break
-        print(knn_temperature)
         probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
         # import pdb
         # pdb.set_trace()
