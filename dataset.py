@@ -130,6 +130,7 @@ def get_data(
     clm_cnt = list(map(frequency, [sum(xx.values()) for xx in clm]))
 
     if div_mode:
+        
 
         x = torch.stack(
             [
@@ -139,7 +140,7 @@ def get_data(
                 for xx in supervised
             ]
         )
-        # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+        all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
         all_prob_supervised=(1-zero_prob)*x/torch.sum(x, dim=-1, keepdim=True)
         zero_cnt = torch.sum(x != 0,keepdim=True,dim=-1)
         temp_zero_prob=zero_prob / (embdding_size-zero_cnt)
