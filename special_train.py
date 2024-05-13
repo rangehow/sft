@@ -26,6 +26,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
+    parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
     return parser.parse_args()
@@ -36,6 +37,7 @@ args = parse_args()
 
 model_dir = model_dir[args.model]
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
+tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
@@ -62,19 +64,17 @@ def load_dataset():
         embedding_size,
         tokenizer=tokenizer,
         zero_prob=0.1,
-        div_mode=False,
+        div_mode=args.div_mode,
     )
     return train_dataset
 
 
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
-# dataloader=DataLoader(dataset=train_dataset,batch_size=2,collate_fn=collator,)
-# for d in dataloader:
-#     print(d)
-#     import pdb
-#     pdb.set_trace()
-#     exit()
+# dataloader=DataLoader(dataset=train_dataset,batch_size=4,collate_fn=collator,num_workers=0)
+
+# from tqdm import tqdm
+# for d in tqdm(dataloader):
 #     continue
 # ------------------------------------------------------
 

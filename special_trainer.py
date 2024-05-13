@@ -3,12 +3,14 @@ import torch
 import os
 from torch.nn import KLDivLoss,CrossEntropyLoss
 import torch.nn.functional as F
-
+import time
 
 class KLTrainer(Trainer):
 
     def compute_loss(self, model, inputs, return_outputs=False):
         
+        
+        a=time.time()
         input_ids = inputs.pop("input_ids")
         attention_mask = inputs.pop("attention_mask")
 
@@ -19,14 +21,16 @@ class KLTrainer(Trainer):
         supervised_cnt = inputs.pop("supervised_cnt")
         clm_cnt = inputs.pop("clm_cnt")
 
-        
+        b=time.time()
+        print('prepare data time',b-a)
         result = model(
             input_ids=input_ids,
             attention_mask=attention_mask,
         )
         model_logits=result.logits # bsz x seqlen x dim
 
-
+        c=time.time()
+        print('forward',c-b)
         # NOTE 正确性检查见本文件底部test code 1
         last_logits=torch.cat([row[start:end] for row, turn in zip(model_logits, valid_label_index_list) for start, end in turn])
         all_prob_supervised = all_prob_supervised.to(last_logits.device)
@@ -39,7 +43,8 @@ class KLTrainer(Trainer):
         clm_loss=ce_loss(last_logits,all_prob_clm).to(
             model_logits.device
         )
-
+        d=time.time()
+        print('loss',d-c)
         loss = 0.8* supervised_loss+0.2*clm_loss
         if return_outputs:
             return loss, {"logits": model_logits}

@@ -45,8 +45,7 @@ def transform_to_log_prob(
             def fun(x):
                 if x <= 0:
                     return -10000
-                # import pdb
-                # pdb.set_trace()
+                
                 tensor_with_temperature = knns / x
 
                 exp_tensor = torch.exp(tensor_with_temperature)
@@ -57,9 +56,10 @@ def transform_to_log_prob(
                 return result
 
             record = False
-
+            # import pdb
+            # pdb.set_trace()
             knn_temperature, info, status, message = fsolve(
-                fun, 0.07, full_output=True, col_deriv=True, factor=10
+                fun, 0.07, full_output=True, col_deriv=True
             )
             # x=symbols('x')
             # f=Function(fun)
@@ -100,7 +100,7 @@ def transform_to_log_prob(
                         # pdb.set_trace()
                         print("失败了，没找到温度")
                         break
-        # print(knn_temperature)
+        print(knn_temperature)
         probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
         # import pdb
         # pdb.set_trace()
@@ -120,7 +120,8 @@ def get_data(
     zero_prob,
     div_mode,
 ):
-
+    import time
+    a=time.time()
     temp_dict = {}
     supervised = [synthesis_dict[1][i][0] for i in range(len(synthesis_dict[1]))]
     clm = [synthesis_dict[1][i][1] for i in range(len(synthesis_dict[1]))]
@@ -151,6 +152,7 @@ def get_data(
 
     else:
         # TODO 记得要统计一下 sum(clm[i].values())
+
         x = torch.stack(
             [
                 torch.bincount(
@@ -179,6 +181,7 @@ def get_data(
             print([list(xx.elements()) for xx in clm])
             print([torch.tensor(list(xx.elements())) for xx in clm])
 
+    
 
     temp_dict["input_ids"] = synthesis_dict[0]
     temp_dict["valid_label_index_list"] = valid_label_index_list
@@ -186,7 +189,7 @@ def get_data(
     temp_dict["all_prob_clm"] = all_prob_clm
     temp_dict["supervised_cnt"] = supervised_cnt
     temp_dict["clm_cnt"] = clm_cnt
-
+    print('get_time',time.time()-a)
     return temp_dict
 
 
@@ -218,7 +221,6 @@ class SpecialDataset(Dataset):
             zero_prob=self.zero_prob,
             div_mode=self.div_mode,
         )
-
     def __len__(self):
         return len(self.synthesis_dict)
 
@@ -232,6 +234,8 @@ class SpecialDataCollator:
 
     def __call__(self, batch) -> torch.Any:
 
+        import time
+        a=time.time()
 
         input_ids = [list(d["input_ids"]) for d in batch]
         input_ids_len=list(len(input_id) for input_id in input_ids)
@@ -253,6 +257,7 @@ class SpecialDataCollator:
         clm_cnt = [d["clm_cnt"] for d in batch]
 
 
+        print('collate time',time.time()-a)
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,
