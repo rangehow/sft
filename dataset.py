@@ -1,9 +1,11 @@
 from collections import Counter
 from functools import partial
+import math
 from torch.utils.data import Dataset
 import torch
-
+from torch.optim import SGD
 from scipy.optimize import fsolve
+from scipy.optimize import minimize, root_scalar
 
 
 def transform_to_log_prob(
@@ -44,70 +46,91 @@ def transform_to_log_prob(
 
             def fun(x):
                 if x <= 0:
-                    return -10000
-                
+                    return 10000
+
                 tensor_with_temperature = knns / x
 
                 exp_tensor = torch.exp(tensor_with_temperature)
-                # nonzero_exp_tensor=exp_tensor[non_zero_index[:,0],non_zero_index[:,1]]
-                # sum_exp = torch.sum(nonzero_exp_tensor,dim=-1)
+
                 sum_exp = torch.sum(exp_tensor, dim=-1)
                 result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
-                return result
+                return result.item()
 
-            record = False
-            # import pdb
-            # pdb.set_trace()
-            knn_temperature, info, status, message = fsolve(
-                fun, 0.07, full_output=True, col_deriv=True
-            )
-            # x=symbols('x')
-            # f=Function(fun)
-            # knn_temperature = solve(Eq(fun(x), 0),x )
-            # 2\32\28\3\0.85\4.59\0.51\1.49\49\1.68
+            # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
 
-            if status in [2, 3, 4, 5]:
-                knn_temperature, info, status, message = fsolve(
-                    fun,
-                    500,
-                    full_output=True,
-                    col_deriv=True,
-                )
+            result = root_scalar(fun, bracket=[0.01, 100], method="Ridder")
+            knn_temperature = result.root
 
-            if status in [2, 3, 4, 5]:
-                knn_temperature, info, status, message = fsolve(
-                    fun, 0.03, full_output=True, col_deriv=True
-                )
+            # print(result1,result2,result3)
+            # if status in [2, 3, 4, 5]:
+            #     knn_temperature, info, status, message = fsolve(
+            #         fun,
+            #         500,
+            #         full_output=True,
+            #         col_deriv=True,
+            #     )
 
-            if status in [2, 3, 4, 5]:
-                initial_start_point = 1
-                start_point = initial_start_point
-                end_point = 50
-                interval = max((end_point - start_point) // 5, 1)
+            # if status in [2, 3, 4, 5]:
+            #     knn_temperature, info, status, message = fsolve(
+            #         fun, 0.03, full_output=True, col_deriv=True
+            #     )
 
-                while status in [2, 3, 4, 5]:
-                    knn_temperature, info, status, message = fsolve(
-                        fun, start_point, full_output=True, col_deriv=True
-                    )
-                    # print(start_point,interval,initial_start_point,end_point,knn_temperature)
+            # if status in [2, 3, 4, 5]:
+            #     initial_start_point = 1
+            #     start_point = initial_start_point
+            #     end_point = 50
+            #     interval = max((end_point - start_point) // 5, 1)
 
-                    start_point += interval
-                    if start_point > end_point:
-                        print(start_point, info, knn_temperature)
-                        if knn_temperature < 0:
-                            knn_temperature = 1
-                        # import pdb
-                        # pdb.set_trace()
-                        print("失败了，没找到温度")
-                        break
+            #     while status in [2, 3, 4, 5]:
+            #         knn_temperature, info, status, message = fsolve(
+            #             fun, start_point, full_output=True, col_deriv=True
+            #         )
+            #         # print(start_point,interval,initial_start_point,end_point,knn_temperature)
+
+            #         start_point += interval
+            #         if start_point > end_point:
+            #             print(start_point, info, knn_temperature)
+            #             if knn_temperature < 0:
+            #                 knn_temperature = 1
+            #             # import pdb
+            #             # pdb.set_trace()
+            #             print("失败了，没找到温度")
+            #             break
         probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
-
 
     return probs
 
 
 def frequency(x, xmax=50):
     return (x / xmax) ** 0.75 if x < xmax else 1
+
+
+import torch
+from collections import Counter
+
+
+def optimized_stack(supervised, embedding_size):
+    """
+    Optimizes the provided code for stacking Counters into a PyTorch tensor.
+
+    Args:
+        supervised: A list of Counter objects.
+        embedding_size: The desired size of the embedding dimension.
+
+    Returns:
+        A PyTorch tensor representing the stacked Counters.
+    """
+
+    # Pre-allocate the tensor for efficiency
+    x = torch.zeros(len(supervised), embedding_size, dtype=torch.long)
+
+    # Iterate through the Counters and directly update the tensor
+    for i, counter in enumerate(supervised):
+        for key, value in counter.items():
+            if key < embedding_size:  # Handle out-of-bounds indices
+                x[i, key] = value
+
+    return x
 
 
 def get_data(
@@ -129,7 +152,6 @@ def get_data(
     clm_cnt = list(map(frequency, [sum(xx.values()) for xx in clm]))
 
     if div_mode:
-        
 
         x = torch.stack(
             [
@@ -140,10 +162,12 @@ def get_data(
             ]
         )
         all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
-        all_prob_supervised=(1-zero_prob)*x/torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0,keepdim=True,dim=-1)
-        temp_zero_prob=zero_prob / (embdding_size-zero_cnt)
-        all_prob_supervised=torch.where(all_prob_supervised==0, temp_zero_prob , all_prob_supervised)
+        all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+        temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
+        all_prob_supervised = torch.where(
+            all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
+        )
 
         x = torch.stack(
             [
@@ -154,36 +178,19 @@ def get_data(
             ]
         )
         # all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
-        all_prob_clm=(1-zero_prob)*x/torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0,keepdim=True,dim=-1)
-        temp_zero_prob=zero_prob / (embdding_size-zero_cnt)
-        all_prob_clm=torch.where(all_prob_clm==0, temp_zero_prob , all_prob_clm)
-
+        all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+        temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
+        all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
     else:
         # TODO 记得要统计一下 sum(clm[i].values())
 
-        x = torch.stack(
-            [
-                torch.bincount(
-                    torch.tensor(list(xx.elements())), minlength=embdding_size
-                )
-                for xx in supervised
-            ]
-        )
-
+        x = optimized_stack(supervised, embdding_size)
         all_prob_supervised = transform_to_log_prob(x, zero_prob=zero_prob)
 
         try:
-            x = torch.stack(
-                [
-                    torch.bincount(
-                        torch.tensor(list(xx.elements())), minlength=embdding_size
-                    )
-                    for xx in clm
-                ]
-            )
-
+            x = optimized_stack(clm, embdding_size)
             all_prob_clm = transform_to_log_prob(x, zero_prob=zero_prob)
         except:
             print(supervised)
@@ -191,15 +198,12 @@ def get_data(
             print([list(xx.elements()) for xx in clm])
             print([torch.tensor(list(xx.elements())) for xx in clm])
 
-    
-
     temp_dict["input_ids"] = synthesis_dict[0]
     temp_dict["valid_label_index_list"] = valid_label_index_list
     temp_dict["all_prob_supervised"] = all_prob_supervised
     temp_dict["all_prob_clm"] = all_prob_clm
     temp_dict["supervised_cnt"] = supervised_cnt
     temp_dict["clm_cnt"] = clm_cnt
-    # print('get_time',time.time()-a)
     return temp_dict
 
 
@@ -231,6 +235,7 @@ class SpecialDataset(Dataset):
             zero_prob=self.zero_prob,
             div_mode=self.div_mode,
         )
+
     def __len__(self):
         return len(self.synthesis_dict)
 
@@ -248,24 +253,28 @@ class SpecialDataCollator:
         # a=time.time()
 
         input_ids = [list(d["input_ids"]) for d in batch]
-        input_ids_len=list(len(input_id) for input_id in input_ids)
-        input_ids_max_len=max(input_ids_len)
+        input_ids_len = list(len(input_id) for input_id in input_ids)
+        input_ids_max_len = max(input_ids_len)
         input_ids = self.tokenizer.pad(
             {"input_ids": input_ids}, return_tensors="pt", padding=True
         )
-        
+
         all_prob_supervised = [d["all_prob_supervised"] for d in batch]
         all_prob_clm = [d["all_prob_clm"] for d in batch]
-        valid_label_index_list = [] # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
-        for i,d in enumerate(batch):
-            length_diff=input_ids_max_len-input_ids_len[i]
-            for i in range(len(d['valid_label_index_list'])):
-                d['valid_label_index_list'][i]=(length_diff+d['valid_label_index_list'][i][0],length_diff+d['valid_label_index_list'][i][1])
-            valid_label_index_list.append(d['valid_label_index_list'])
+        valid_label_index_list = (
+            []
+        )  # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
+        for i, d in enumerate(batch):
+            length_diff = input_ids_max_len - input_ids_len[i]
+            for i in range(len(d["valid_label_index_list"])):
+                d["valid_label_index_list"][i] = (
+                    length_diff + d["valid_label_index_list"][i][0],
+                    length_diff + d["valid_label_index_list"][i][1],
+                )
+            valid_label_index_list.append(d["valid_label_index_list"])
 
         supervised_cnt = [d["supervised_cnt"] for d in batch]
         clm_cnt = [d["clm_cnt"] for d in batch]
-
 
         # print('collate time',time.time()-a)
         return {
