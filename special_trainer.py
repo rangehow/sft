@@ -40,8 +40,7 @@ class KLTrainer(Trainer):
         all_prob_supervised = all_prob_supervised.to(model_logits.device)
         all_prob_clm = all_prob_clm.to(model_logits.device)
 
-        import pdb
-        pdb.set_trace()
+
         ce_loss = CrossEntropyLoss(ignore_index=-100)
         supervised_loss = ce_loss(last_logits, all_prob_supervised)
         clm_loss = ce_loss(last_logits, all_prob_clm)
