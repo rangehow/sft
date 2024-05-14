@@ -269,6 +269,8 @@ class SpecialDataCollator:
         temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
         
+        supervised_cnt = [frequency(sum(xx.values()), xmax=10) for xx in supervised]
+        clm_cnt = [frequency(sum(xx.values())) for xx in clm]
         
         return {
             "input_ids": input_ids.input_ids,
@@ -276,8 +278,8 @@ class SpecialDataCollator:
             "all_prob_supervised": all_prob_supervised,
             "all_prob_clm": all_prob_clm,
             "valid_label_index_list": valid_label_index_list,
-            # "supervised_cnt": supervised_cnt,
-            # "clm_cnt": clm_cnt,
+            "supervised_cnt": supervised_cnt,
+            "clm_cnt": clm_cnt,
         }
 
 if __name__ == '__main__':
