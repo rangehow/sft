@@ -8,16 +8,17 @@ def register_template(cls):
     return 
 
 class Template:
-    def __init__(self,tokenizer,user_token=None,assistant_token=None,system_token=None,efficient_eos=False) -> None:
+    def __init__(self,tokenizer,user_token=None,assistant_token=None,start_token_id=None,system_token=None,efficient_eos=False) -> None:
         self.tokenizer=tokenizer
         self.user_token= user_token if user_token else []
         self.assistant_token= assistant_token if assistant_token else []
         self.system_token= system_token if system_token else []
         self.efficient_eos=efficient_eos
+        self.start_token_id=start_token_id if start_token_id else None
         
     def apply(self,messages:list[dict[str,str]]):
-        input_id=[]
-        label=[]
+        input_id=[self.start_token_id]
+        label=[-100 if self.start_token_id else None]
         start_idx=0
         first_user_flag_for_efficient_eos=True
         if messages[0]['role']=='system':
@@ -48,18 +49,21 @@ class Template:
 class GemmaTemplate(Template):
     model_type='gemma'
     def __init__(self,tokenizer) -> None:
-        super().__init__(tokenizer=tokenizer,user_token='<start_of_turn>user\n{content}<end_of_turn>\n<start_of_turn>model\n', assistant_token='{content}<end_of_turn>\n', system_token=GemmaTokenizer.bos_token,efficient_eos=True)
+        super().__init__(tokenizer=tokenizer,user_token='<start_of_turn>user\n{content}<end_of_turn>\n<start_of_turn>model\n', assistant_token='{content}<end_of_turn>\n', start_token_id=tokenizer.bos_token_id,efficient_eos=True)
         
 
- 
-# from transformers import AutoTokenizer
-# tokenizer = AutoTokenizer.from_pretrained('/data/ruanjh/best_training_method/gemma-2b')
-# g=GemmaTemplate(tokenizer)
-# a,b=g.apply([
-#     {'role':'user','content':'aaa'},
-#     {'role':'assistant','content':'ffff'},
-#     {'role':'user','content':'aaa'},
-#     {'role':'assistant','content':'ffff'},
-# ])
-# print(tokenizer.decode(a))
-# print(list(zip(a[:-1],b[1:])))
+if __name__=='__main__':
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained('/data/ruanjh/best_training_method/gemma-2b')
+    g=modelType2Template['gemma'](tokenizer)
+    message=[
+        {'role':'user','content':'aaa'},
+        {'role':'assistant','content':'ffff'},
+        {'role':'user','content':'aaa'},
+        {'role':'assistant','content':'ffff'},
+    ]
+    c=tokenizer.apply_chat_template(message,tokenize=False)
+    print(c)
+    a,b=g.apply(message)
+    # print(tokenizer.decode(a))
+    print(a,b)

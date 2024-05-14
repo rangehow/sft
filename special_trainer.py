@@ -8,6 +8,10 @@ import time
 
 class KLTrainer(Trainer):
 
+    def __init__(self,weight_mode=False,**kwargs):
+        self.weight_mode=weight_mode
+        super().__init__(**kwargs)
+    
     def compute_loss(self, model, inputs, return_outputs=False):
 
         input_ids = inputs.pop("input_ids")
@@ -40,10 +44,14 @@ class KLTrainer(Trainer):
         all_prob_supervised = all_prob_supervised.to(model_logits.device)
         all_prob_clm = all_prob_clm.to(model_logits.device)
 
-        
+
         ce_loss = CrossEntropyLoss(ignore_index=-100)
-        supervised_loss = ce_loss(last_logits, all_prob_supervised)
-        clm_loss = ce_loss(last_logits, all_prob_clm)
+        if not self.weight_mode:
+            supervised_loss = ce_loss(last_logits, all_prob_supervised)
+            clm_loss = ce_loss(last_logits, all_prob_clm)
+        else:
+            supervised_loss = ce_loss(last_logits, all_prob_supervised)
+            clm_loss = ce_loss(last_logits, all_prob_clm)
 
         loss = 0.8 * supervised_loss + 0.2 * clm_loss
         if return_outputs:
