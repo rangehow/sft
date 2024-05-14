@@ -20,8 +20,9 @@ import torch
 from argparse import ArgumentParser
 from loguru import logger
 import warnings
+# import torch.multiprocessing as mp
+# mp.set_start_method('spawn')
 
-warnings.filterwarnings("ignore", " Please note that with a fast tokenizer,")
 
 
 def parse_args():
@@ -51,7 +52,7 @@ embedding_size = model.lm_head.weight.size()[
     0
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
 
-collator = SpecialDataCollator(tokenizer)
+collator = SpecialDataCollator(tokenizer,zero_prob=0.1,embedding_size=embedding_size)
 
 
 @logger.catch
@@ -66,7 +67,6 @@ def load_dataset():
         synthesis,
         index,
         embedding_size,
-        tokenizer=tokenizer,
         zero_prob=0.1,
         div_mode=args.div_mode,
     )
@@ -76,13 +76,14 @@ def load_dataset():
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
 # dataloader = DataLoader(
-#     dataset=train_dataset, batch_size=4, collate_fn=collator, num_workers=0
+#     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=30,pin_memory=True
 # )
 
 # from tqdm import tqdm
 
+
 # for d in tqdm(dataloader):
-#     continue
+#     del d
 # ------------------------------------------------------
 
 
@@ -97,14 +98,9 @@ trainer = KLTrainer(
         logging_steps=1,
         remove_unused_columns=False,
         gradient_accumulation_steps=8,
-        # -------------------------------
         save_strategy="epoch",
         dataloader_pin_memory =False,
-        # save_steps = 100,
-        # save_total_limit =3,
-        # load_best_model_at_end=True,
-        # --------------------------------
-        dataloader_num_workers=16,
+        dataloader_num_workers=0,
         num_train_epochs=3,
         auto_find_batch_size=True,
         bf16=True,
