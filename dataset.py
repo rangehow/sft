@@ -75,7 +75,7 @@ def optimized_stack_batch(supervised, embedding_size):
                 for xx in supervised
             ]
         )
-    x = torch.zeros(len(supervised), embedding_size, dtype=torch.int16) # 因为每个位置很难超过int16
+    x = torch.zeros(len(supervised), embedding_size) # 因为每个位置很难超过int16
 
     # Iterate through the Counters and directly update the tensor
     for i, counter in enumerate(supervised):
@@ -98,7 +98,7 @@ def optimized_stack(supervised, embedding_size):
     """
 
     # Pre-allocate the tensor for efficiency
-    x = torch.zeros(len(supervised), embedding_size, dtype=torch.int16) # 因为每个位置很难超过int16
+    x = torch.zeros(len(supervised), embedding_size) # 因为每个位置很难超过int16
 
     # Iterate through the Counters and directly update the tensor
     for i, counter in enumerate(supervised):
@@ -131,7 +131,7 @@ def get_data(
         x = optimized_stack(supervised, embdding_size)
 
         all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,dtype=torch.int16)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_supervised = torch.where(
             all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
@@ -140,7 +140,7 @@ def get_data(
         x = optimized_stack(clm, embdding_size)
 
         all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,dtype=torch.int16)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
@@ -256,10 +256,9 @@ class SpecialDataCollator:
         clm=[item for d in batch for item in d['clm'] ]
         
         x = optimized_stack(supervised,self.embedding_size)
-        import pdb
-        pdb.set_trace()
+
         all_prob_supervised = (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        non_zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,dtype=torch.int32)
+        non_zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
         all_prob_supervised = torch.where(
             all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
@@ -267,7 +266,7 @@ class SpecialDataCollator:
         
         x = optimized_stack(clm, self.embedding_size)
         all_prob_clm = (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1,dtype=torch.int32)
+        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
         
