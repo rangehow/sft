@@ -28,6 +28,7 @@ class KLTrainer(Trainer):
         )
         model_logits = result.logits  # bsz x seqlen x dim
 
+        
         # NOTE 正确性检查见本文件底部test code 1
         last_logits = torch.cat(
             [
@@ -35,15 +36,15 @@ class KLTrainer(Trainer):
                 for row, turn in zip(model_logits, valid_label_index_list)
                 for start, end in turn
             ]
-        )
-        all_prob_supervised = all_prob_supervised.to(last_logits.device)
-        all_prob_clm = all_prob_clm.to(last_logits.device)
+        ).to(model_logits.device)
+        all_prob_supervised = all_prob_supervised.to(model_logits.device)
+        all_prob_clm = all_prob_clm.to(model_logits.device)
 
+        import pdb
+        pdb.set_trace()
         ce_loss = CrossEntropyLoss(ignore_index=-100)
-        supervised_loss = ce_loss(last_logits, all_prob_supervised).to(
-            model_logits.device
-        )
-        clm_loss = ce_loss(last_logits, all_prob_clm).to(model_logits.device)
+        supervised_loss = ce_loss(last_logits, all_prob_supervised)
+        clm_loss = ce_loss(last_logits, all_prob_clm)
 
         loss = 0.8 * supervised_loss + 0.2 * clm_loss
         if return_outputs:
