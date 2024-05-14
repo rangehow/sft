@@ -252,8 +252,8 @@ class SpecialDataCollator:
         # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
 
         
-        supervised= [item for item in d['supervised'] for d in batch]
-        clm=[item for item in d['clm'] for d in batch]
+        supervised= [item for d in batch for item in d['supervised'] ]
+        clm=[item for d in batch for item in d['clm'] ]
         
         x = optimized_stack(supervised,self.embedding_size)
         all_prob_supervised = (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
@@ -271,7 +271,8 @@ class SpecialDataCollator:
         
         supervised_cnt = [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         clm_cnt = [frequency(sum(xx.values())) for xx in clm]
-        
+        import pdb
+        pdb.set_trace()
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,

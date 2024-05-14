@@ -75,15 +75,15 @@ def load_dataset():
 
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
-# dataloader = DataLoader(
-#     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=30,pin_memory=True
-# )
+dataloader = DataLoader(
+    dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=0,pin_memory=True
+)
 
-# from tqdm import tqdm
+from tqdm import tqdm
 
 
-# for d in tqdm(dataloader):
-#     del d
+for d in tqdm(dataloader):
+    pass
 # ------------------------------------------------------
 
 
@@ -99,7 +99,7 @@ trainer = KLTrainer(
         remove_unused_columns=False,
         gradient_accumulation_steps=8,
         save_strategy="epoch",
-        dataloader_pin_memory =False,
+        dataloader_pin_memory =True,
         dataloader_num_workers=0,
         num_train_epochs=3,
         auto_find_batch_size=True,
