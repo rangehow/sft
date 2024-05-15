@@ -270,8 +270,8 @@ class SpecialDataCollator:
         temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
         
-        supervised_cnt = [frequency(sum(xx.values()), xmax=10) for xx in supervised]
-        clm_cnt = [frequency(sum(xx.values())) for xx in clm]
+        supervised_cnt = torch.tensor([frequency(sum(xx.values()), xmax=10) for xx in supervised])
+        clm_cnt =  torch.tensor([frequency(sum(xx.values())) for xx in clm])
         
         
         return {

@@ -32,6 +32,7 @@ def parse_args():
     parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
+    parser.add_argument("--weighted", action="store_true", help="decide to use token level freq weight")
     return parser.parse_args()
 
 
@@ -76,7 +77,7 @@ def load_dataset():
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
 # dataloader = DataLoader(
-#     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=0,pin_memory=True
+#     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=30,pin_memory=True
 # )
 
 # from tqdm import tqdm
@@ -88,6 +89,7 @@ train_dataset = load_dataset()
 
 
 trainer = KLTrainer(
+    weight_mode=args.weighted,
     model=model,
     train_dataset=train_dataset,
     tokenizer=tokenizer,

@@ -77,8 +77,9 @@ def main():
         num_proc=30,
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
-        cache_file_name=f"{dataset_dir[args.dataset]}/cache.arrow",
-        load_from_cache_file=True,
+        # 这个没必要cache，处理的很快一般，cache了一旦修改了分词流程很容易疏忽
+        # cache_file_name=f"{dataset_dir[args.dataset]}/cache.arrow",
+        # load_from_cache_file=True,
     )
 
     def statistic():

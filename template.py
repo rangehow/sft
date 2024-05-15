@@ -62,7 +62,7 @@ if __name__=='__main__':
         {'role':'user','content':'aaa'},
         {'role':'assistant','content':'ffff'},
     ]
-    c=tokenizer.apply_chat_template(message,tokenize=False)
+    c=tokenizer.apply_chat_template(message,tokenize=True)
     print(c)
     a,b=g.apply(message)
     # print(tokenizer.decode(a))
