@@ -68,18 +68,15 @@ def main():
     template=modelType2Template[model_type](tokenizer)
 
     train_dataset = datasets.load_dataset(
-        dataset_dir[args.dataset], keep_in_memory=True
+        dataset_dir[args.dataset]
     )["train"]
     print(train_dataset)
     train_dataset = train_dataset.map(
         partial(dname2func[args.dataset], template=template),
         batched=True,
-        num_proc=30,
+        num_proc=50,
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
-        # 这个没必要cache，处理的很快一般，cache了一旦修改了分词流程很容易疏忽
-        # cache_file_name=f"{dataset_dir[args.dataset]}/cache.arrow",
-        # load_from_cache_file=True,
     )
 
     def statistic():
@@ -142,7 +139,8 @@ def main():
             
             input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
             
-            cnt_list.append(find_ranges(label))
+            
+           
             if args.clm:
                 # 用于标志是否到达非-100区域的,这里有个假定就是开头一定是连续的-100区域[通常因为开头是特殊标记,所以总是的]
                 # 这个标记主要的作用就是为了辅助regionBeginIdx更新
@@ -153,34 +151,41 @@ def main():
             # 这个地方和encoder-decoder模型还不一样，不需要特地区分编解码的输入，所以只需要一个input_id即可，input_id最后的EOS不需要送给模型
             key = (tuple(input_id[:-1]))
             length = len(input_id)
-            
-            for i in range(length-1): # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
+            if synthesis_dict[key]==[] or  tokenizer.eos_token_id not in synthesis_dict[key][-1][0]: #防止重复示例:
+                # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
+                cnt_list.append(find_ranges(label))
                 
-                if label[i+1] != -100:  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
-                    supervised_key = tuple(input_id[:i+1])
-                    supervised_value=supervised_dict[supervised_key]
-
-                    if args.clm:
-                        if flag4LossArea is False:
-                            # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
-                            regionBeginIdx = i
-                            flag4LossArea = True
-
-                        clm_key = tuple(label[regionBeginIdx+1:i+1])
-                        if clm_key in clm_dict:
-                            clm_value=clm_dict[clm_key]
-                        else:
-                            clm_value=supervised_value
+                for i in range(length-1): # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
+                    
+                    if label[i+1] != -100:  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
+                        
                             
-                    synthesis_dict[key].append([supervised_value,clm_value])
-                elif args.clm and flag4LossArea:
-                    flag4LossArea = False
-        
+                            supervised_key = tuple(input_id[:i+1])
+                            supervised_value=supervised_dict[supervised_key]
+
+                            if args.clm:
+                                if flag4LossArea is False:
+                                    # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
+                                    regionBeginIdx = i
+                                    flag4LossArea = True
+
+                                clm_key = tuple(label[regionBeginIdx+1:i+1])
+                                if clm_key in clm_dict:
+                                    clm_value=clm_dict[clm_key]
+                                else:
+                                    clm_value=supervised_value
+                                    
+                            synthesis_dict[key].append([supervised_value,clm_value])
+
+                    elif args.clm and flag4LossArea:
+                        flag4LossArea = False
+            
         return synthesis_dict,cnt_list
             
         
     synthesis_dict,cnt_list=synthesis()
-
+    assert len(synthesis_dict)==len(cnt_list)
+    logger.debug(f'len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}')
     with open(f"{dataset_dir[args.dataset]}/synthesis.pkl",'wb',) as o:
         pickle.dump(synthesis_dict, o,protocol=5)
 
@@ -213,8 +218,6 @@ def test():
         num_proc=30,
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
-        cache_file_name=f"{dataset_dir[args.dataset]}/cache.arrow",
-        load_from_cache_file=True,
     )
     cnt=0
     for k,v in synthesis_dict.items():
@@ -229,5 +232,5 @@ def test():
     logger.debug(len(synthesis_dict))
     
 if __name__ == "__main__":
-    test()
-    # main()
+    # test()
+    main()

@@ -220,29 +220,43 @@ class SpecialDataCollator:
         
     def __call__(self, batch) -> torch.Any:
 
-        # import time
-        # a=time.time()
+
         
         input_ids = [list(d["input_ids"]) for d in batch]
         input_ids_len = list(len(input_id) for input_id in input_ids)
-        input_ids_max_len = max(input_ids_len)
+        # input_ids_max_len = max(input_ids_len)
         input_ids = self.tokenizer.pad(
             {"input_ids": input_ids}, return_tensors="pt", padding=True
-        )
-
+        ) 
+        input_ids_max_len=input_ids['input_ids'].shape[-1]
         
+        
+
         valid_label_index_list = (
             []
         )  # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
         for i, d in enumerate(batch):
             length_diff = input_ids_max_len - input_ids_len[i]
-            for i in range(len(d["valid_label_index_list"])):
-                d["valid_label_index_list"][i] = (
-                    length_diff + d["valid_label_index_list"][i][0],
-                    length_diff + d["valid_label_index_list"][i][1],
+            for j in range(len(d["valid_label_index_list"])):
+                d["valid_label_index_list"][j] = (
+                    length_diff + d["valid_label_index_list"][j][0],
+                    length_diff + d["valid_label_index_list"][j][1],
                 )
             valid_label_index_list.append(d["valid_label_index_list"])
-
+        
+        
+        # debug
+        
+        # total_sum = 0
+        # for sublist in valid_label_index_list:
+        #     for pair in sublist:
+        #         difference = abs(pair[1] - pair[0])
+        #         total_sum += difference
+ 
+        
+        
+        
+        
         # all_prob_supervised = [d["all_prob_supervised"] for d in batch]
         # all_prob_clm = [d["all_prob_clm"] for d in batch]
         # supervised_cnt = [d["supervised_cnt"] for d in batch]
@@ -254,6 +268,7 @@ class SpecialDataCollator:
         
         supervised= [item for d in batch for item in d['supervised'] ]
         clm=[item for d in batch for item in d['clm'] ]
+        
         
         x = optimized_stack(supervised,self.embedding_size)
 
@@ -272,8 +287,8 @@ class SpecialDataCollator:
         
         supervised_cnt = torch.tensor([frequency(sum(xx.values()), xmax=10) for xx in supervised])
         clm_cnt =  torch.tensor([frequency(sum(xx.values())) for xx in clm])
-        
-        
+       
+
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,
