@@ -29,7 +29,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
-    parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
+    parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
     parser.add_argument("--weighted", action="store_true", help="decide to use token level freq weight")

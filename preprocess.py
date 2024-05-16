@@ -209,7 +209,7 @@ def test():
     template=modelType2Template[model_type](tokenizer)
 
     train_dataset = datasets.load_dataset(
-        dataset_dir[args.dataset], keep_in_memory=True
+        dataset_dir[args.dataset]
     )["train"]
 
     train_dataset = train_dataset.map(
@@ -219,18 +219,20 @@ def test():
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
     )
+    
+    synthesis_dict = [data_sample for data_sample in synthesis_dict.items()]
     cnt=0
-    for k,v in synthesis_dict.items():
+    for i in range(len(synthesis_dict)):
 
+        input_ids=synthesis_dict[i][0]
+        length=cnt_list[i][0][-1]
+        if len(input_ids)!=length:
+            pdb.set_trace()
+        # logger.debug(train_dataset[cnt])
         
-        
-        logger.debug(f'{k},{v}')
-        print(cnt_list[0])
-        logger.debug(train_dataset[cnt])
-        pdb.set_trace()
-        cnt+=1
+        # cnt+=1
     logger.debug(len(synthesis_dict))
     
 if __name__ == "__main__":
-    # test()
-    main()
+    test()
+    # main()
