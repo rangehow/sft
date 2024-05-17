@@ -95,7 +95,7 @@ trainer = KLTrainer(
     tokenizer=tokenizer,
     args=TrainingArguments(
         optim="adamw_apex_fused",
-        overwrite_output_dir=False,
+        overwrite_output_dir=True,
         output_dir=args.output_dir,
         logging_steps=1,
         remove_unused_columns=False,
@@ -104,11 +104,22 @@ trainer = KLTrainer(
         dataloader_pin_memory =True,
         dataloader_num_workers=0,
         num_train_epochs=3,
-        auto_find_batch_size=True,
+        # auto_find_batch_size=True,
+        per_device_train_batch_size=8,
         bf16=True,
     ),
     data_collator=collator,
 )
 
+# dataloader=trainer.get_train_dataloader()
+# print(len(dataloader))
+# from tqdm import tqdm
+# for d in tqdm(dataloader):
+#     print(d['valid_label_index_list'])
+#     if d['valid_label_index_list']==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
+#         import pdb
+#         pdb.set_trace()
+
+trainer.get_train_dataloader
 trainer.train()
 trainer.save_model(args.output_dir)

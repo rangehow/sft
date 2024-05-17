@@ -54,10 +54,13 @@ class KLTrainer(Trainer):
                 pdb.set_trace()
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")
-            supervised_loss = ce_loss(last_logits, all_prob_supervised)
-            clm_loss = ce_loss(last_logits, all_prob_clm)
-            supervised_loss=torch.mean(supervised_loss,dim=0)
-        loss = 0.8 * supervised_loss + 0.2 * clm_loss
+            supervised_loss = supervised_cnt@torch.mean(ce_loss(last_logits, all_prob_supervised),dim=0)
+            clm_loss = clm_cnt@torch.mean(ce_loss(last_logits, all_prob_clm),dim=0)
+            
+        if not self.weight_mode:
+            loss = 0.8 * supervised_loss + 0.2 * clm_loss
+        else:
+            pass
         if return_outputs:
             return loss, {"logits": model_logits}
         else:

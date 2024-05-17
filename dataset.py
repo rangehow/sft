@@ -233,10 +233,10 @@ class SpecialDataCollator:
         )
         input_ids_max_len = input_ids["input_ids"].shape[-1]
 
-        # temp_for_debug = [i["valid_label_index_list"] for i in batch]
-        # print(input_ids.input_ids.shape)
-        # print(temp_for_debug)
-        # print(input_ids_max_len, input_ids_len)
+        temp_for_debug = [i["valid_label_index_list"] for i in batch]
+        print(input_ids.input_ids.shape)
+        print(temp_for_debug)
+        print(input_ids_max_len, input_ids_len)
         valid_label_index_list = []
         # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
         # 千万不要改动原batch的内容，不然会与auto_find_bsz冲突。
@@ -252,8 +252,12 @@ class SpecialDataCollator:
                 )
             valid_label_index_list.append(temp_index_list)
 
-        # print(valid_label_index_list)
-        # print("-----------------------------")
+        
+        if valid_label_index_list==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
+            import pdb
+            pdb.set_trace()
+        print(valid_label_index_list)
+        print("-----------------------------")
 
         # all_prob_supervised = [d["all_prob_supervised"] for d in batch]
         # all_prob_clm = [d["all_prob_clm"] for d in batch]
@@ -305,7 +309,10 @@ class SpecialDataCollator:
         #             import pdb
 
         #             pdb.set_trace()
-
+        # return {
+        #     "input_ids": input_ids.input_ids,
+        #     "valid_label_index_list": valid_label_index_list,
+        # }
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,
