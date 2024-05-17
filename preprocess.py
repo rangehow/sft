@@ -74,7 +74,7 @@ def main():
     train_dataset = train_dataset.map(
         partial(dname2func[args.dataset], template=template),
         batched=True,
-        num_proc=50,
+        num_proc=30,
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
     )
@@ -234,5 +234,5 @@ def test():
     logger.debug(len(synthesis_dict))
     
 if __name__ == "__main__":
-    test()
-    # main()
+    # test()
+    main()

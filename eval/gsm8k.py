@@ -5,6 +5,9 @@ https://github.com/google-deepmind/gemma/blob/main/colabs/gsm8k_eval.ipynb
 import json
 import datasets
 import re
+from loguru import logger
+import os
+
 
 gsm8k = datasets.load_dataset("gsm8k", "main")
 gsm8k_train, gsm8k_test = gsm8k["train"], gsm8k["test"]
@@ -155,17 +158,22 @@ TEMPLATE = """
 Q: {question}
 A:"""
 
-from transformers import AutoTokenizer, AutoModelForCausalLM
+
 from argparse import ArgumentParser
 import torch
+
 
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
         "--mode", type=int, help="0: base model(wo template),1:instruct model"
     )
+    parser.add_argument(
+        "--vllm",
+        action="store_true",
+    )
     parser.add_argument("--model")
-    parser.add_argument('--output')
+    parser.add_argument("--output")
     return parser.parse_args()
 
 
@@ -175,27 +183,35 @@ args = parse_args()
 # model = AutoModelForCausalLM.from_pretrained(args.model,torch_dtype=torch.bfloat16).cuda()
 # tokenizer = AutoTokenizer.from_pretrained(args.model)
 
-from vllm import LLM, SamplingParams
-
-# Sample prompts.
-
-# Create a sampling params object.
-
-# Create an LLM.
-model = LLM(model=args.model)
-# Generate texts from the prompts. The output is a list of RequestOutput objects
-# that contain the prompt, generated text, and other information.
-
-# Print the outputs.
-from loguru import logger
-import os
 if os.path.exists(args.output):
-    logger.error(f'{args.output}已经存在')
+    logger.error(f"{args.output}已经存在")
     exit()
-    
-with open(args.output,'w',encoding='utf-8') as o:
-    all_prompt=[]
 
+with open(args.output, "w", encoding="utf-8") as o:
+
+    if args.vllm:
+        from vllm import LLM, SamplingParams
+        model = LLM(model=args.model)
+    else:
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model,
+                torch_dtype=torch.bfloat16,
+                attn_implementation="flash_attention_2"
+            )
+        except Exception as e:
+            logger.error(e)
+            logger.error('尝试退回naive attn，如果torch>2.1则是sqpa')
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model,
+                torch_dtype=torch.bfloat16,
+            )
+        tokenizer=AutoTokenizer.from_pretrained(args.model)
+        tokenizer.padding_side='left'
+    
+    
+    all_prompt = []
     for task_id, problem in enumerate(gsm8k_test):
 
         # Formulate and print the full prompt
@@ -209,31 +225,35 @@ with open(args.output,'w',encoding='utf-8') as o:
         # short_prompt = PREAMBLE + "\n" + TEMPLATE.format(question=problem["question"])
         all_prompt.append(full_prompt)
 
+    samplingParams = SamplingParams(max_tokens=1024, temperature=0)
+    response = model.generate(all_prompt, samplingParams)
 
-    samplingParams=SamplingParams(max_tokens =1024)
-    response = model.generate(all_prompt,samplingParams)
-
-    for task_id,output in enumerate(response):
+    for task_id, output in enumerate(response):
         generated_text = output.outputs[0].text
-        
+
         all_responses[task_id] = generated_text.split("\nQ:")[0]
-        short_responses[task_id] = maybe_remove_comma(find_number(all_responses[task_id]))
+        short_responses[task_id] = maybe_remove_comma(
+            find_number(all_responses[task_id])
+        )
 
         print(f"Short answer: {short_responses[task_id]}")
 
         try:
-            correct += float(maybe_remove_comma(find_number(problem["answer"]))) == float(
-                short_responses[task_id]
-            )
+            correct += float(
+                maybe_remove_comma(find_number(gsm8k_test[task_id]["answer"]))
+            ) == float(short_responses[task_id])
         except:
             correct += maybe_remove_comma(
-                find_number(problem["answer"])
+                find_number(gsm8k_test[task_id]["answer"])
             ) == maybe_remove_comma(find_number(short_responses[task_id]))
         print("-" * 40)
-        print(f"Ground truth answer {problem['answer']}")
-        print(f"Short ground truth answer {find_number(problem['answer'])}")
+        print(f"Ground truth answer {gsm8k_test[task_id]['answer']}")
+        print(
+            f"Short ground truth answer {find_number(gsm8k_test[task_id]['answer'])}"
+        )
         print(f"Correct: {correct} out of {idx+1}")
         print("=" * 40)
         idx += 1
 
-    json.dump(all_responses,o,ensure_ascii=False,indent=4)
+    all_responses["score"] = correct / idx + 1
+    json.dump(all_responses, o, ensure_ascii=False, indent=4)
