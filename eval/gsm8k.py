@@ -2,6 +2,7 @@
 https://github.com/google-deepmind/gemma/blob/main/colabs/gsm8k_eval.ipynb
 """
 
+import json
 import datasets
 import re
 
@@ -164,7 +165,7 @@ def parse_args():
         "--mode", type=int, help="0: base model(wo template),1:instruct model"
     )
     parser.add_argument("--model")
-
+    parser.add_argument('--output')
     return parser.parse_args()
 
 
@@ -186,46 +187,53 @@ model = LLM(model=args.model)
 # that contain the prompt, generated text, and other information.
 
 # Print the outputs.
-
-
-all_prompt=[]
-
-for task_id, problem in enumerate(gsm8k_test):
-
-    # Formulate and print the full prompt
-    full_prompt = (
-        PREAMBLE
-        + "\n\n"
-        + PROMPT
-        + "\n"
-        + TEMPLATE.format(question=problem["question"])
-    )
-    # short_prompt = PREAMBLE + "\n" + TEMPLATE.format(question=problem["question"])
-    all_prompt.append(full_prompt)
-
-
-samplingParams=SamplingParams(max_tokens =1024)
-response = model.generate(all_prompt,samplingParams)
-
-for task_id,output in enumerate(response):
-    generated_text = output.outputs[0].text
+from loguru import logger
+import os
+if os.path.exists(args.output):
+    logger.error(f'{args.output}已经存在')
+    exit()
     
-    all_responses[task_id] = generated_text.split("\nQ:")[0]
-    short_responses[task_id] = maybe_remove_comma(find_number(all_responses[task_id]))
+with open(args.output,'w',encoding='utf-8') as o:
+    all_prompt=[]
 
-    print(f"Short answer: {short_responses[task_id]}")
+    for task_id, problem in enumerate(gsm8k_test):
 
-    try:
-        correct += float(maybe_remove_comma(find_number(problem["answer"]))) == float(
-            short_responses[task_id]
+        # Formulate and print the full prompt
+        full_prompt = (
+            PREAMBLE
+            + "\n\n"
+            + PROMPT
+            + "\n"
+            + TEMPLATE.format(question=problem["question"])
         )
-    except:
-        correct += maybe_remove_comma(
-            find_number(problem["answer"])
-        ) == maybe_remove_comma(find_number(short_responses[task_id]))
-    print("-" * 40)
-    print(f"Ground truth answer {problem['answer']}")
-    print(f"Short ground truth answer {find_number(problem['answer'])}")
-    print(f"Correct: {correct} out of {idx+1}")
-    print("=" * 40)
-    idx += 1
+        # short_prompt = PREAMBLE + "\n" + TEMPLATE.format(question=problem["question"])
+        all_prompt.append(full_prompt)
+
+
+    samplingParams=SamplingParams(max_tokens =1024)
+    response = model.generate(all_prompt,samplingParams)
+
+    for task_id,output in enumerate(response):
+        generated_text = output.outputs[0].text
+        
+        all_responses[task_id] = generated_text.split("\nQ:")[0]
+        short_responses[task_id] = maybe_remove_comma(find_number(all_responses[task_id]))
+
+        print(f"Short answer: {short_responses[task_id]}")
+
+        try:
+            correct += float(maybe_remove_comma(find_number(problem["answer"]))) == float(
+                short_responses[task_id]
+            )
+        except:
+            correct += maybe_remove_comma(
+                find_number(problem["answer"])
+            ) == maybe_remove_comma(find_number(short_responses[task_id]))
+        print("-" * 40)
+        print(f"Ground truth answer {problem['answer']}")
+        print(f"Short ground truth answer {find_number(problem['answer'])}")
+        print(f"Correct: {correct} out of {idx+1}")
+        print("=" * 40)
+        idx += 1
+
+    json.dump(all_responses,o,ensure_ascii=False,indent=4)
