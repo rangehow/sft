@@ -2,3 +2,5 @@ config*
 __pycache__/
 apex/
 test.py
+*.json
+*.jsonl

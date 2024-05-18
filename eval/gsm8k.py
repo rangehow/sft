@@ -75,6 +75,10 @@ def parse_args():
         "--vllm",
         action="store_true",
     )
+    parser.add_argument(
+        "--shot",
+        action="store_true",
+    )
     parser.add_argument('--dataset',)
     parser.add_argument("--model")
     parser.add_argument("--output")
@@ -92,14 +96,13 @@ template=modelType2Template[model_type](tokenizer)
 
 dataset = datasets.load_dataset(args.dataset,'main')['test']
 test_dataset = dataset.map(
-        partial(dname2func[args.dataset], template=template,test=True,vllm=args.vllm,mode=args.mode),
+        partial(dname2func[args.dataset], template=template,test=True,shot=args.shot,vllm=args.vllm,mode=args.mode),
         batched=True,
         num_proc=1, # 进程数不要设置太大，我不知道datasets咋设计的，进程数太大很慢
         desc="tokenize",
         load_from_cache_file=False,
     )
-import pdb
-pdb.set_trace()
+
 
 if os.path.exists(args.output):
     logger.error(f"{args.output}已经存在")
