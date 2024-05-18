@@ -78,7 +78,8 @@ def main():
         remove_columns=train_dataset.features.keys(),
         desc="tokenize",
     )
-
+    import pdb
+    pdb.set_trace()
     def statistic():
         
         supervised_dict = defaultdict(Counter)

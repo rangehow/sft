@@ -21,8 +21,8 @@ class MyCollator(DataCollator):
 def parse_args():
     parser=ArgumentParser()
     parser.add_argument("--model", default="/data/ruanjh/best_training_method/gemma-2b")
-    parser.add_argument("--dataset", default="/data_path")
-    parser.add_argument("--output_dir", default="output_path")
+    parser.add_argument("--dataset", default="/data/ruanjh/best_training_method/alpaca-cleaned/alpaca_data_cleaned.json")
+    parser.add_argument("--output_dir")
     parser.add_argument("--learning_rate", default=5e-5)
     parser.add_argument("--train_batch_size", type=int, default=8)
     parser.add_argument("--num_train_epochs", type=int, default=5)
