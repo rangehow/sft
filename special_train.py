@@ -20,8 +20,6 @@ import torch
 from argparse import ArgumentParser
 from loguru import logger
 import warnings
-# import torch.multiprocessing as mp
-# mp.set_start_method('spawn')
 
 
 
@@ -111,15 +109,6 @@ trainer = KLTrainer(
     data_collator=collator,
 )
 
-# dataloader=trainer.get_train_dataloader()
-# print(len(dataloader))
-# from tqdm import tqdm
-# for d in tqdm(dataloader):
-#     print(d['valid_label_index_list'])
-#     if d['valid_label_index_list']==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
-#         import pdb
-#         pdb.set_trace()
 
-trainer.get_train_dataloader
 trainer.train()
 trainer.save_model(args.output_dir)
