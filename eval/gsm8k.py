@@ -144,16 +144,16 @@ with open(args.output, "w", encoding="utf-8") as o:
 
         try:
             correct += float(
-                maybe_remove_comma(find_number(gsm8k_test[task_id]["answer"]))
+                maybe_remove_comma(find_number(test_dataset[task_id]["answer"]))
             ) == float(short_responses[task_id])
         except:
             correct += maybe_remove_comma(
-                find_number(gsm8k_test[task_id]["answer"])
+                find_number(test_dataset[task_id]["answer"])
             ) == maybe_remove_comma(find_number(short_responses[task_id]))
         print("-" * 40)
-        print(f"Ground truth answer {gsm8k_test[task_id]['answer']}")
+        print(f"Ground truth answer {test_dataset[task_id]['answer']}")
         print(
-            f"Short ground truth answer {find_number(gsm8k_test[task_id]['answer'])}"
+            f"Short ground truth answer {find_number(test_dataset[task_id]['answer'])}"
         )
         print(f"Correct: {correct} out of {idx+1}")
         print("=" * 40)
