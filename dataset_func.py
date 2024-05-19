@@ -37,24 +37,33 @@ def _process(real_input, output, template, test=False, vllm=False, chat=False, m
 
     input_ids, labels = [], []
     for i, o in zip(real_input, output):
-        if test:
-            if vllm:
-                # vllm只需要自然文本输入，不需要自己tokenize，只需要封成template后的格式
-                chat_dict = reformate(i, None, template)
-                input_id = template.tokenizer.apply_chat_template(
-                    chat_dict, tokenize=False, add_generation_prompt=True
-                )
+        if mode == 1:
+            if test:
+                if vllm:
+                    # vllm只需要自然文本输入，不需要自己tokenize，只需要封成template后的格式
+                    chat_dict = reformate(i, None, template)
+                    input_id = template.tokenizer.apply_chat_template(
+                        chat_dict, tokenize=False, add_generation_prompt=True
+                    )
 
-            elif not vllm:
-                chat_dict = reformate(i, None, template)
-                input_id = template.tokenizer.apply_chat_template(
-                    chat_dict, tokenize=True, add_generation_prompt=True
-                )
-            input_ids.append(input_id)
+                elif not vllm:
+                    chat_dict = reformate(i, None, template)
+                    input_id = template.tokenizer.apply_chat_template(
+                        chat_dict, tokenize=True, add_generation_prompt=True
+                    )
+                input_ids.append(input_id)
+            else:
+                input_id, label = reformate(i, o, template)
+                input_ids.append(input_id)
+                labels.append(label)
         else:
-            input_id, label = reformate(i, o, template)
-            input_ids.append(input_id)
-            labels.append(label)
+            if test:
+                
+                return {"input_ids": real_input, "answer": output}
+                    
+            else:
+                # 不允许base模式进入训练
+                exit()
 
     if not test:
         return {"input_ids": input_ids, "labels": labels}
@@ -138,11 +147,6 @@ A:"""
         ]
     output = instances["answer"]
 
-    if (
-        mode == 0
-    ):  # 因为现在没有考虑不带chat template的base模型训练（继续预训练，索性算了）
-        return {"input_ids": real_input, "answer": output}
-    elif mode == 1:
-        return _process(real_input, output, **kwargs)
-    else:
-        exit()
+    # return {"input_ids": real_input, "answer": output}
+
+    return _process(real_input, output, **kwargs)

@@ -12,11 +12,10 @@ from argparse import ArgumentParser
 import torch
 from ..dataset_func import dname2func
 from ..template import modelType2Template
-from transformers import AutoTokenizer, AutoConfig
+from transformers import AutoTokenizer, AutoConfig, DataCollatorForSeq2Seq
 import os
 from .post_process import dname2post
-
-
+from torch.utils.data import DataLoader
 
 
 def parse_args():
@@ -75,38 +74,91 @@ test_dataset = dataset.map(
 #     exit()
 
 
-
 # with open(args.output, "w", encoding="utf-8") as o:
 
 if args.vllm:
     from vllm import LLM, SamplingParams
 
-    model = LLM(model=args.model)
-    samplingParams = SamplingParams(max_tokens=1024, temperature=0)
+    model = LLM(model=args.model, swap_space=0)
+    samplingParams = SamplingParams(max_tokens=1024, temperature=0, logprobs=5,stop=['Q:'])
     all_prompt = [d["input_ids"] for d in test_dataset]
     response = model.generate(all_prompt, samplingParams)
 
 else:
-    from transformers import AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, GenerationConfig,StoppingCriteria
 
-    try:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model,
-            torch_dtype=torch.bfloat16,
-            attn_implementation="flash_attention_2",
+    class DataCollator:
+        def __init__(self, tokenizer):
+            self.tokenizer = tokenizer
+
+        def __call__(
+            self,
+            instance,
+        ):
+
+            inputs = self.tokenizer(
+                [i["input_ids"] for i in instance],
+                padding=True,
+                return_tensors="pt",
+                pad_to_multiple_of=8,
+            )
+            return {
+                "input_ids": inputs.input_ids,
+                "attention_mask": inputs.attention_mask,
+            }
+    with torch.inference_mode():
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+                attn_implementation="flash_attention_2",
+            )
+        except Exception as e:
+            logger.error(e)
+            logger.error("尝试退回naive attn，如果torch>2.1则是sqpa")
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model,
+                torch_dtype=torch.bfloat16,
+            )
+
+        model.cuda()
+
+        collator = DataCollator(tokenizer=tokenizer)
+        dataloader = DataLoader(
+            dataset=test_dataset, collate_fn=collator, batch_size=1, num_workers=8
         )
-    except Exception as e:
-        logger.error(e)
-        logger.error("尝试退回naive attn，如果torch>2.1则是sqpa")
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model,
-            torch_dtype=torch.bfloat16,
-        )
+        response = []
+        class EosListStoppingCriteria(StoppingCriteria):
+            def __init__(self, eos_sequence ):
+                self.eos_sequence = eos_sequence
+            def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+                
+                last_ids = input_ids[:,-len(self.eos_sequence):].tolist()
+                return self.eos_sequence in last_ids
+
+        from tqdm import tqdm
+        for d in tqdm(dataloader):
+            prompt_length = d["input_ids"].shape[1]
+            generation_config = GenerationConfig(
+                max_new_tokens=1024, do_sample=False, 
+            )
+            
+            output = model.generate(
+                input_ids=d["input_ids"].to("cuda"),
+                attention_mask=d["attention_mask"].to("cuda"),
+                generation_config=generation_config,
+                tokenizer=tokenizer,
+                stopping_criteria=[EosListStoppingCriteria(tokenizer.encode('Q:',add_special_tokens=False))]
+            )
+            text = tokenizer.batch_decode(output[:, prompt_length:])
+            print(text)
+            response.append(text)
 
 
+score = dname2post[args.dataset](
+    prediciton=response, reference=[t["answer"] for t in test_dataset], vllm=args.vllm
+)
 
-
-score=dname2post[args.dataset](prediciton=response,reference=[t["answer"] for t in test_dataset])
-
-print(f'score :{score}')
-    # json.dump(all_responses, o, ensure_ascii=False, indent=4)
+print(f"score :{score}")
+# json.dump(all_responses, o, ensure_ascii=False, indent=4)
