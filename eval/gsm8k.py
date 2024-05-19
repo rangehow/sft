@@ -12,16 +12,8 @@ from argparse import ArgumentParser
 import torch
 from ..dataset_func import dname2func
 from ..template import modelType2Template
-from transformers import AutoTokenizer,AutoConfig
+from transformers import AutoTokenizer, AutoConfig
 import os
-
-
-
-
-
-
-
-
 
 
 all_correct = 0
@@ -31,13 +23,13 @@ idx = 0
 correct = 0
 
 
-
-
-
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
-        "--mode", type=int,default=0, help="0: base model(wo chat template),1:instruct model"
+        "--mode",
+        type=int,
+        default=0,
+        help="0: base model(wo chat template),1:instruct model",
     )
     parser.add_argument(
         "--vllm",
@@ -47,7 +39,9 @@ def parse_args():
         "--shot",
         action="store_true",
     )
-    parser.add_argument('--dataset',)
+    parser.add_argument(
+        "--dataset",
+    )
     parser.add_argument("--model")
     parser.add_argument("--output")
     return parser.parse_args()
@@ -56,27 +50,35 @@ def parse_args():
 args = parse_args()
 
 
+model_type = AutoConfig.from_pretrained(
+    os.path.join(args.model, "config.json")
+).model_type
+tokenizer = AutoTokenizer.from_pretrained(args.model)
+tokenizer.padding_side = "left"
+template = modelType2Template[model_type](tokenizer)
 
-model_type=AutoConfig.from_pretrained(os.path.join(args.model,'config.json')).model_type
-tokenizer=AutoTokenizer.from_pretrained(args.model)
-tokenizer.padding_side='left'
-template=modelType2Template[model_type](tokenizer)
-
-dataset = datasets.load_dataset(args.dataset,'main')['test']
+dataset = datasets.load_dataset(args.dataset, "main")["test"]
 test_dataset = dataset.map(
-        partial(dname2func[args.dataset], template=template,test=True,shot=args.shot,vllm=args.vllm,mode=args.mode),
-        batched=True,
-        num_proc=1, # 进程数不要设置太大，我不知道datasets咋设计的，进程数太大很慢
-        desc="tokenize",
-        load_from_cache_file=False,
-    )
+    partial(
+        dname2func[args.dataset],
+        template=template,
+        test=True,
+        shot=args.shot,
+        vllm=args.vllm,
+        mode=args.mode,
+    ),
+    batched=True,
+    num_proc=1,  # 进程数不要设置太大，我不知道datasets咋设计的，进程数太大很慢
+    desc="tokenize",
+    load_from_cache_file=False,
+)
 
 import pdb
+
 pdb.set_trace()
 if os.path.exists(args.output):
     logger.error(f"{args.output}已经存在")
     exit()
-
 
 
 def find_numbers(x: str) -> list[str]:
@@ -108,36 +110,36 @@ def find_number(x: str, answer_delimiter: str = "The answer is") -> str:
 
 
 def maybe_remove_comma(x: str) -> str:
-    # Example: 5,600 -> 5600
-    return x.replace(",", "")
+    # Example: 5,600.00 -> 5600.00
+    return x.replace(",", "").rstrip("0").rstrip(".")
 
 
 with open(args.output, "w", encoding="utf-8") as o:
 
     if args.vllm:
         from vllm import LLM, SamplingParams
+
         model = LLM(model=args.model)
         samplingParams = SamplingParams(max_tokens=1024, temperature=0)
-        all_prompt=[d['input_ids'] for d in test_dataset]
+        all_prompt = [d["input_ids"] for d in test_dataset]
         response = model.generate(all_prompt, samplingParams)
-        
+
     else:
-        from transformers import  AutoModelForCausalLM
+        from transformers import AutoModelForCausalLM
+
         try:
             model = AutoModelForCausalLM.from_pretrained(
                 args.model,
                 torch_dtype=torch.bfloat16,
-                attn_implementation="flash_attention_2"
+                attn_implementation="flash_attention_2",
             )
         except Exception as e:
             logger.error(e)
-            logger.error('尝试退回naive attn，如果torch>2.1则是sqpa')
+            logger.error("尝试退回naive attn，如果torch>2.1则是sqpa")
             model = AutoModelForCausalLM.from_pretrained(
                 args.model,
                 torch_dtype=torch.bfloat16,
             )
-        
-    
 
     for task_id, output in enumerate(response):
         generated_text = output.outputs[0].text
@@ -166,5 +168,6 @@ with open(args.output, "w", encoding="utf-8") as o:
         print("=" * 40)
         idx += 1
 
-    all_responses["score"] = correct / idx *100
+    all_responses["score"] = correct / idx * 100
+    print(f'score :{all_responses["score"]}')
     json.dump(all_responses, o, ensure_ascii=False, indent=4)
