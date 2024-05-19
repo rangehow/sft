@@ -163,5 +163,5 @@ with open(args.output, "w", encoding="utf-8") as o:
         print("=" * 40)
         idx += 1
 
-    all_responses["score"] = correct / idx + 1
+    all_responses["score"] = correct / idx *100
     json.dump(all_responses, o, ensure_ascii=False, indent=4)
