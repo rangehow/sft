@@ -14,13 +14,9 @@ from ..dataset_func import dname2func
 from ..template import modelType2Template
 from transformers import AutoTokenizer, AutoConfig
 import os
+from .post_process import dname2post
 
 
-all_correct = 0
-all_responses = {}
-short_responses = {}
-idx = 0
-correct = 0
 
 
 def parse_args():
@@ -73,101 +69,44 @@ test_dataset = dataset.map(
     load_from_cache_file=False,
 )
 
-import pdb
 
-pdb.set_trace()
-if os.path.exists(args.output):
-    logger.error(f"{args.output}已经存在")
-    exit()
+# if os.path.exists(args.output):
+#     logger.error(f"{args.output}已经存在")
+#     exit()
 
 
-def find_numbers(x: str) -> list[str]:
-    """Finds all numbers in a string."""
-    # Search for number, possibly negative (hyphen), with thousand separators
-    # (comma), and with a decimal point (period inbetween digits).
-    numbers = re.compile(
-        r"-?[\d,]*\.?\d+",
-        re.MULTILINE | re.DOTALL | re.IGNORECASE,
-    ).findall(x)
-    return numbers
 
+# with open(args.output, "w", encoding="utf-8") as o:
 
-def find_number(x: str, answer_delimiter: str = "The answer is") -> str:
-    """Finds the most relevant number in a string."""
-    # If model uses the answer delimiter, then select the first number following
-    # that format.
-    if answer_delimiter in x:
-        answer = x.split(answer_delimiter)[-1]
-        numbers = find_numbers(answer)
-        if numbers:
-            return numbers[0]
+if args.vllm:
+    from vllm import LLM, SamplingParams
 
-    # In general, select the last number in the string.
-    numbers = find_numbers(x)
-    if numbers:
-        return numbers[-1]
-    return ""
+    model = LLM(model=args.model)
+    samplingParams = SamplingParams(max_tokens=1024, temperature=0)
+    all_prompt = [d["input_ids"] for d in test_dataset]
+    response = model.generate(all_prompt, samplingParams)
 
+else:
+    from transformers import AutoModelForCausalLM
 
-def maybe_remove_comma(x: str) -> str:
-    # Example: 5,600.00 -> 5600.00
-    return x.replace(",", "").rstrip("0").rstrip(".")
-
-
-with open(args.output, "w", encoding="utf-8") as o:
-
-    if args.vllm:
-        from vllm import LLM, SamplingParams
-
-        model = LLM(model=args.model)
-        samplingParams = SamplingParams(max_tokens=1024, temperature=0)
-        all_prompt = [d["input_ids"] for d in test_dataset]
-        response = model.generate(all_prompt, samplingParams)
-
-    else:
-        from transformers import AutoModelForCausalLM
-
-        try:
-            model = AutoModelForCausalLM.from_pretrained(
-                args.model,
-                torch_dtype=torch.bfloat16,
-                attn_implementation="flash_attention_2",
-            )
-        except Exception as e:
-            logger.error(e)
-            logger.error("尝试退回naive attn，如果torch>2.1则是sqpa")
-            model = AutoModelForCausalLM.from_pretrained(
-                args.model,
-                torch_dtype=torch.bfloat16,
-            )
-
-    for task_id, output in enumerate(response):
-        generated_text = output.outputs[0].text
-
-        all_responses[task_id] = generated_text.split("\nQ:")[0]
-        short_responses[task_id] = maybe_remove_comma(
-            find_number(all_responses[task_id])
+    try:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=torch.bfloat16,
+            attn_implementation="flash_attention_2",
+        )
+    except Exception as e:
+        logger.error(e)
+        logger.error("尝试退回naive attn，如果torch>2.1则是sqpa")
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=torch.bfloat16,
         )
 
-        print(f"Short answer: {short_responses[task_id]}")
 
-        try:
-            correct += float(
-                maybe_remove_comma(find_number(test_dataset[task_id]["answer"]))
-            ) == float(short_responses[task_id])
-        except:
-            correct += maybe_remove_comma(
-                find_number(test_dataset[task_id]["answer"])
-            ) == maybe_remove_comma(find_number(short_responses[task_id]))
-        print("-" * 40)
-        print(f"Ground truth answer {test_dataset[task_id]['answer']}")
-        print(
-            f"Short ground truth answer {find_number(test_dataset[task_id]['answer'])}"
-        )
-        print(f"Correct: {correct} out of {idx+1}")
-        print("=" * 40)
-        idx += 1
 
-    all_responses["score"] = correct / idx * 100
-    print(f'score :{all_responses["score"]}')
-    json.dump(all_responses, o, ensure_ascii=False, indent=4)
+
+score=dname2post[args.dataset](prediciton=response,reference=[t["answer"] for t in test_dataset])
+
+print(f'score :{score}')
+    # json.dump(all_responses, o, ensure_ascii=False, indent=4)
