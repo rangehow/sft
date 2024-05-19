@@ -85,7 +85,7 @@ train_dataset = load_dataset()
 #     pass
 # ------------------------------------------------------
 
-logger.log(args)
+logger.debug(args)
 
 trainer = KLTrainer(
     weight_mode=args.weighted,
