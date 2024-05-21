@@ -20,6 +20,7 @@ import torch
 from argparse import ArgumentParser
 from loguru import logger
 import warnings
+import os
 
 
 def parse_args():
@@ -116,3 +117,5 @@ trainer = KLTrainer(
 
 trainer.train()
 trainer.save_model(args.output_dir)
+with open(os.path.join(args.output_dir, "args.json"), "w", encoding="utf-8") as o:
+    json.dump(args, o, ensure_ascii=False, indent=4)
