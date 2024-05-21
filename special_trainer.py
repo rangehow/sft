@@ -43,6 +43,11 @@ class KLTrainer(Trainer):
         all_prob_supervised = all_prob_supervised.to(model_logits.device)
         all_prob_clm = all_prob_clm.to(model_logits.device)
 
+        # print("-" * 20)
+        # print("last_logits", last_logits)
+        # print("all_prob_supervised", torch.topk(all_prob_supervised,5))
+        # print("all_prob_clm", torch.topk(all_prob_clm,5))
+
         if not self.weight_mode:
             try:
                 ce_loss = CrossEntropyLoss(ignore_index=-100)
@@ -53,14 +58,17 @@ class KLTrainer(Trainer):
                 pdb.set_trace()
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")
-            supervised_loss = supervised_cnt@ce_loss(last_logits, all_prob_supervised)
-            clm_loss = clm_cnt@ce_loss(last_logits, all_prob_clm)
-            
+            supervised_loss = supervised_cnt @ ce_loss(last_logits, all_prob_supervised)
+            clm_loss = clm_cnt @ ce_loss(last_logits, all_prob_clm)
+
         if not self.weight_mode:
             loss = 0.8 * supervised_loss + 0.2 * clm_loss
         else:
-            loss = (0.8 * supervised_loss + 0.2 * clm_loss)/last_logits.size()[0]
-            
+            loss = (0.8 * supervised_loss + 0.2 * clm_loss) / last_logits.size()[0]
+        # print('valid_label_index_list',valid_label_index_list)
+        # print("supervised_loss", supervised_loss)
+        # print("clm_loss", clm_loss)
+        # print("loss", loss)
         if return_outputs:
             return loss, {"logits": model_logits}
         else:

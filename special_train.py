@@ -22,7 +22,6 @@ from loguru import logger
 import warnings
 
 
-
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
@@ -30,7 +29,11 @@ def parse_args():
     parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
-    parser.add_argument("--weighted", action="store_true", help="decide to use token level freq weight")
+
+    parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
+    parser.add_argument(
+        "--weighted", action="store_true", help="decide to use token level freq weight"
+    )
     return parser.parse_args()
 
 
@@ -43,7 +46,7 @@ tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
-    torch_dtype='auto',
+    torch_dtype="auto",
     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 
@@ -51,7 +54,9 @@ embedding_size = model.lm_head.weight.size()[
     0
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
 
-collator = SpecialDataCollator(tokenizer,zero_prob=0.1,embedding_size=embedding_size)
+collator = SpecialDataCollator(
+    tokenizer, zero_prob=args.zero_prob, embedding_size=embedding_size
+)
 
 
 @logger.catch
@@ -66,7 +71,6 @@ def load_dataset():
         synthesis,
         index,
         embedding_size,
-        zero_prob=0.1,
         div_mode=args.div_mode,
     )
     return train_dataset
@@ -86,24 +90,23 @@ train_dataset = load_dataset()
 # ------------------------------------------------------
 
 logger.debug(args)
-
+torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(
     weight_mode=args.weighted,
     model=model,
     train_dataset=train_dataset,
     tokenizer=tokenizer,
     args=TrainingArguments(
-        # optim="adamw_apex_fused",
+        optim="adamw_apex_fused",
         overwrite_output_dir=True,
         output_dir=args.output_dir,
         logging_steps=1,
         remove_unused_columns=False,
-        gradient_accumulation_steps=8,
+        gradient_accumulation_steps=1,
         save_strategy="epoch",
-        dataloader_pin_memory =True,
+        dataloader_pin_memory=True,
         dataloader_num_workers=0,
         num_train_epochs=3,
-        # auto_find_batch_size=True,
         per_device_train_batch_size=8,
         bf16=True,
     ),

@@ -166,7 +166,6 @@ class SpecialDataset(Dataset):
         synthesis_dict: dict[str : tuple[list[Counter], list[Counter]]],
         cnt_list: list[list[tuple]],  # 在单轮对话里每个list里应该只有tuple
         embedding_size,
-        zero_prob=0.1,
         div_mode=False,
     ):
 
@@ -185,7 +184,6 @@ class SpecialDataset(Dataset):
         self.valid_label_index_list = cnt_list
 
         self.embedding_size = embedding_size
-        self.zero_prob = zero_prob
         self.div_mode = div_mode
 
     def __getitem__(self, index):
@@ -195,7 +193,6 @@ class SpecialDataset(Dataset):
             "supervised": self.supervised[index],
             "clm": self.clm[index],
             "embedding_size": self.embedding_size,
-            "zero_prob": self.zero_prob,
             "div_mode": self.div_mode,
             "valid_label_index_list": self.valid_label_index_list[index],
         }
