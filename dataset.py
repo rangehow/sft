@@ -249,7 +249,6 @@ class SpecialDataCollator:
                 )
             valid_label_index_list.append(temp_index_list)
 
-        
         # if valid_label_index_list==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
         #     import pdb
         #     pdb.set_trace()
@@ -268,20 +267,27 @@ class SpecialDataCollator:
 
         x = optimized_stack(supervised, self.embedding_size)
 
-        all_prob_supervised = (
-            (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        )
-        non_zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
-        temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
-        all_prob_supervised = torch.where(
-            all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
-        )
+        if self.zero_prob == 0:
+            all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+        else:
+            all_prob_supervised = (
+                (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+            )
+            non_zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+            temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
+            all_prob_supervised = torch.where(
+                all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
+            )
 
         x = optimized_stack(clm, self.embedding_size)
-        all_prob_clm = (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
-        temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
-        all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
+
+        if self.zero_prob == 0:
+            all_prob_clm = x / torch.sum(x, dim=-1, keepdim=True)
+        else:
+            all_prob_clm = (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+            zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+            temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
+            all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
