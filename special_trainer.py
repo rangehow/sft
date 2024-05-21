@@ -50,7 +50,6 @@ class KLTrainer(Trainer):
                 clm_loss = ce_loss(last_logits, all_prob_clm)
             except:
                 import pdb
-
                 pdb.set_trace()
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")

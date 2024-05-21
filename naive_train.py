@@ -1,27 +1,38 @@
 from functools import partial
-from transformers import AutoTokenizer,AutoModelForCausalLM,AutoConfig,Trainer,DataCollator
+from transformers import AutoTokenizer,AutoModelForCausalLM,AutoConfig,Trainer,TrainingArguments,DataCollator
 from config import *
 from template import modelType2Template
 from argparse import ArgumentParser
 import datasets
 from loguru import logger
 from dataset_func import dname2func
+import torch
 
-class MyCollator(DataCollator):
+class MyCollator:
     def __call__(self, examples):
-        # examples 是一个包含了所有样本的列表
-        input_ids = [example['input_ids'] for example in examples]  
-        labels = [example['labels'] for example in examples]  
-
-        return {
-            'input_ids': input_ids,  # 返回模型输入的文本数据
-            'labels': labels  # 返回对应的标签数据
+    # Initialize empty lists to collect tensors
+        input_ids = []
+        attention_mask = []
+        labels = []
+        
+        # Loop through each example and append its tensors to the respective list
+        for example in examples:
+            input_ids.append(example['input_ids'])
+            attention_mask.append(example['attention_mask'])
+            labels.append(example['labels'])
+        
+        # Concatenate lists of tensors into single tensors
+        collated_data = {
+            'input_ids': torch.cat(input_ids, dim=0),
+            'attention_mask': torch.cat(attention_mask, dim=0),
+            'labels': torch.cat(labels, dim=0),
         }
+        return collated_data
 
 def parse_args():
     parser=ArgumentParser()
-    parser.add_argument("--model", default="/data/ruanjh/best_training_method/gemma-2b")
-    parser.add_argument("--dataset", default="/data/ruanjh/best_training_method/alpaca-cleaned/alpaca_data_cleaned.json")
+    parser.add_argument("--model", default="gemma_2b")
+    parser.add_argument("--dataset", default="alpaca_cleaned")
     parser.add_argument("--output_dir")
     parser.add_argument("--learning_rate", default=5e-5)
     parser.add_argument("--train_batch_size", type=int, default=8)
@@ -32,10 +43,19 @@ def parse_args():
 
 args = parse_args()
 
-tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
+model_dir = model_dir[args.model]
+tokenizer = AutoTokenizer.from_pretrained(model_dir)
+tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+tokenizer.padding_side = "left"
+model = AutoModelForCausalLM.from_pretrained(
+    model_dir,
+    torch_dtype=torch.bfloat16,
+    # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
+    attn_implementation="sdpa",
+)
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
-config=AutoConfig.from_pretrained(model_dir[args.model])
+config=AutoConfig.from_pretrained(model_dir)
 model_type=config.model_type
 template=modelType2Template[model_type](tokenizer)
 my_collator= MyCollator()
@@ -59,19 +79,20 @@ train_dataset = train_dataset.map(
 
 # TODO 直接初始化一个trainer
 trainer = Trainer(
-    model=args.model,
-    config= config,
-    train_dataset=train_dataset,
-    tokenizer=tokenizer,
-    output_dir=args.output_dir,          # 输出目录
-    evaluation_strategy="epoch",     # 每个epoch结束时进行评估
-    learning_rate=args.learning_rate,              # 学习率
-    per_device_train_batch_size=args.train_batch_size,  # 每个设备的训练批量大小
-    num_train_epochs=args.num_train_epochs,       # 训练的轮次
-    weight_decay=args.weight_decay, 
-    data_collator=my_collator,              # 权重衰减，防止过拟合
-    bf16 = True,
-    remove_unused_columns=True,
+    model = model,
+    args = TrainingArguments(
+        output_dir = args.output_dir,
+        learning_rate = args.learning_rate,              # 学习率
+        per_device_train_batch_size = args.train_batch_size,  # 每个设备的训练批量大小
+        num_train_epochs = args.num_train_epochs,       # 训练的轮次
+        weight_decay = args.weight_decay, 
+        evaluation_strategy = "epoch",
+        bf16 = True,
+        remove_unused_columns = True,
+    ),
+    train_dataset = train_dataset,
+    tokenizer = tokenizer,    
+    data_collator = my_collator,            
 )
 
 if __name__== "__main__":
