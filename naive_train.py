@@ -9,25 +9,25 @@ from dataset_func import dname2func
 import torch
 
 class MyCollator:
+    def __init__(self, tokenizer)-> None:
+        self.tokenizer = tokenizer
+
     def __call__(self, examples):
-    # Initialize empty lists to collect tensors
-        input_ids = []
-        attention_mask = []
-        labels = []
-        
-        # Loop through each example and append its tensors to the respective list
-        for example in examples:
-            input_ids.append(example['input_ids'])
-            attention_mask.append(example['attention_mask'])
-            labels.append(example['labels'])
-        
-        # Concatenate lists of tensors into single tensors
-        collated_data = {
-            'input_ids': torch.cat(input_ids, dim=0),
-            'attention_mask': torch.cat(attention_mask, dim=0),
-            'labels': torch.cat(labels, dim=0),
+        input_ids = [list(example["input_ids"]) for example in examples]
+        labels = [list(example["labels"]) for example in examples]
+
+        input_ids = self.tokenizer.pad(
+            {"input_ids" : input_ids}, return_tensors ="pt", padding = True
+        )
+        labels = self.tokenizer.pad(
+            {"labels" : labels}, return_tensors ="pt", padding = True
+        )
+        return {
+            "input_ids" : input_ids.input_ids,
+            "attention_mask" : input_ids.attention_mask,
+            "labels" : labels.input_ids
         }
-        return collated_data
+
 
 def parse_args():
     parser=ArgumentParser()
@@ -52,18 +52,18 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.bfloat16,
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
     attn_implementation="sdpa",
-)
+).cuda()
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
 config=AutoConfig.from_pretrained(model_dir)
 model_type=config.model_type
 template=modelType2Template[model_type](tokenizer)
-my_collator= MyCollator()
+my_collator= MyCollator(tokenizer)
 # 读取数据集
 train_dataset = datasets.load_dataset(
     dataset_dir[args.dataset]
 )["train"]
-logger.debug(train_dataset)
+# logger.debug(train_dataset)
 
 # 这个地方略有一点复杂，上面的train_dataset是原始的存储格式，在这一步，我们利用dname2func和template来把数据集转换成input_ids和labels
 # 其中dname2func主要负责把原始数据集的格式重组成messages形式（即{'role':xxx , 'content':xxx}），template则负责把messages转成input_ids和labels
@@ -77,6 +77,7 @@ train_dataset = train_dataset.map(
 
 # TODO 先考虑hf现成的collator能不能使用，实现一个collator
 
+print(model)
 # TODO 直接初始化一个trainer
 trainer = Trainer(
     model = model,
@@ -95,5 +96,5 @@ trainer = Trainer(
     data_collator = my_collator,            
 )
 
-if __name__== "__main__":
-    trainer.train()
+
+trainer.train()

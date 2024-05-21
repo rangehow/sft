@@ -16,6 +16,7 @@ from transformers import AutoTokenizer, AutoConfig, DataCollatorForSeq2Seq
 import os
 from .post_process import dname2post
 from torch.utils.data import DataLoader
+from .load_func import dname2load
 
 
 def parse_args():
@@ -52,7 +53,8 @@ tokenizer = AutoTokenizer.from_pretrained(args.model)
 tokenizer.padding_side = "left"
 template = modelType2Template[model_type](tokenizer)
 
-dataset = datasets.load_dataset(args.dataset, "main")["test"]
+dataset = dname2load[args.dataset]()
+
 test_dataset = dataset.map(
     partial(
         dname2func[args.dataset],
@@ -80,12 +82,14 @@ if args.vllm:
     from vllm import LLM, SamplingParams
 
     model = LLM(model=args.model, swap_space=0)
-    samplingParams = SamplingParams(max_tokens=1024, temperature=0, logprobs=5,stop=['Q:'])
+    samplingParams = SamplingParams(
+        max_tokens=1024, temperature=0, logprobs=5, stop=["Q:"]
+    )
     all_prompt = [d["input_ids"] for d in test_dataset]
     response = model.generate(all_prompt, samplingParams)
 
 else:
-    from transformers import AutoModelForCausalLM, GenerationConfig,StoppingCriteria
+    from transformers import AutoModelForCausalLM, GenerationConfig, StoppingCriteria
 
     class DataCollator:
         def __init__(self, tokenizer):
@@ -106,6 +110,7 @@ else:
                 "input_ids": inputs.input_ids,
                 "attention_mask": inputs.attention_mask,
             }
+
     with torch.inference_mode():
         try:
             model = AutoModelForCausalLM.from_pretrained(
@@ -129,27 +134,37 @@ else:
             dataset=test_dataset, collate_fn=collator, batch_size=1, num_workers=8
         )
         response = []
+
         class EosListStoppingCriteria(StoppingCriteria):
-            def __init__(self, eos_sequence ):
+            def __init__(self, eos_sequence):
                 self.eos_sequence = eos_sequence
-            def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-                
-                last_ids = input_ids[:,-len(self.eos_sequence):].tolist()
+
+            def __call__(
+                self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
+            ) -> bool:
+
+                last_ids = input_ids[:, -len(self.eos_sequence) :].tolist()
                 return self.eos_sequence in last_ids
 
         from tqdm import tqdm
+
         for d in tqdm(dataloader):
             prompt_length = d["input_ids"].shape[1]
             generation_config = GenerationConfig(
-                max_new_tokens=1024, do_sample=False, 
+                max_new_tokens=1024,
+                do_sample=False,
             )
-            
+
             output = model.generate(
                 input_ids=d["input_ids"].to("cuda"),
                 attention_mask=d["attention_mask"].to("cuda"),
                 generation_config=generation_config,
                 tokenizer=tokenizer,
-                stopping_criteria=[EosListStoppingCriteria(tokenizer.encode('Q:',add_special_tokens=False))]
+                stopping_criteria=[
+                    EosListStoppingCriteria(
+                        tokenizer.encode("Q:", add_special_tokens=False)
+                    )
+                ],
             )
             text = tokenizer.batch_decode(output[:, prompt_length:])
             print(text)
