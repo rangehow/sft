@@ -43,7 +43,7 @@ tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
-    torch_dtype=torch.bfloat16,
+    torch_dtype='auto',
     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 
