@@ -103,7 +103,7 @@ trainer = KLTrainer(
         output_dir=args.output_dir,
         logging_steps=1,
         remove_unused_columns=False,
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=8,
         save_strategy="epoch",
         dataloader_pin_memory=True,
         dataloader_num_workers=0,
@@ -118,4 +118,4 @@ trainer = KLTrainer(
 trainer.train()
 trainer.save_model(args.output_dir)
 with open(os.path.join(args.output_dir, "args.json"), "w", encoding="utf-8") as o:
-    json.dump(args, o, ensure_ascii=False, indent=4)
+    json.dump(vars(args), o, ensure_ascii=False, indent=4)

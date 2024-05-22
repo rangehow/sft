@@ -83,9 +83,12 @@ if args.vllm:
 
     model = LLM(model=args.model, swap_space=0)
     samplingParams = SamplingParams(
-        max_tokens=1024, temperature=0, logprobs=5, stop=["Q:"]
+        max_tokens=1, temperature=0, logprobs=5, stop=["Q:"],prompt_logprobs=0
     )
     all_prompt = [d["input_ids"] for d in test_dataset]
+    response = model.generate(['I am '], samplingParams)
+    import pdb
+    pdb.set_trace()
     response = model.generate(all_prompt, samplingParams)
 
 else:
