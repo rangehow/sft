@@ -158,21 +158,6 @@ def mmlu(instances, shot=False, mode=0, **kwargs):
 Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\n
 A: Let's think step by step."""
 
-    # if shot:
-        
-    #     real_input = [
-    #         SHOT + PROMPT.format(question=q,A=A,B=B,C=C,D=D)
-    #         for q,A,B,C,D in zip(instances["input"],instances["A"],instances["B"],instances["C"],instances["D"])
-    #     ]
-    # else:
-    #     real_input = [
-    #         PROMPT.format(question=q,A=A,B=B,C=C,D=D)
-    #         for q,A,B,C,D in zip(instances["input"],instances["A"],instances["B"],instances["C"],instances["D"])
-    #     ]
-    # output = instances["target"]
-
-    # return {"input_ids": real_input, "answer": output}
-
     shot_data_path="../eval/a.json"
     # 读入mmlu所有分支的shot数据集, 如cot_prompts={"abstarct_algebra":"shot1","anamoy":"shot2"}
     with open(shot_data_path, 'r') as file:
