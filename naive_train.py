@@ -46,8 +46,9 @@ def parse_args():
     parser.add_argument("--output_dir")
     parser.add_argument("--learning_rate", default=5e-5)
     parser.add_argument("--train_batch_size", type=int, default=4)
-    parser.add_argument("--num_train_epochs", type=int, default=5)
+    parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--weight_decay", default=0.01)
+    parser.add_argument("--gradient_accumulation_steps", default=4)
     # TODO 边写下面边思考，这里需要什么参数？
     return parser.parse_args()
 
@@ -88,14 +89,17 @@ train_dataset = train_dataset.map(
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
+        # optim="adamw_apex_fused",
         output_dir=args.output_dir,
-        learning_rate=args.learning_rate,  # 学习率
+        # learning_rate=args.learning_rate,  # 学习率
         per_device_train_batch_size=args.train_batch_size,  # 每个设备的训练批量大小
         num_train_epochs=args.num_train_epochs,  # 训练的轮次
-        weight_decay=args.weight_decay,
-        evaluation_strategy="epoch",
+        # weight_decay=args.weight_decay,
+        # evaluation_strategy="epoch",
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         bf16=True,
         remove_unused_columns=True,
+        save_strategy='epoch',
     ),
     train_dataset=train_dataset,
     tokenizer=tokenizer,

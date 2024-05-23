@@ -10,6 +10,7 @@ from loguru import logger
 import os
 from argparse import ArgumentParser
 import torch
+from torch.nn.parallel import DataParallel
 from ..dataset_func import dname2func
 from ..template import modelType2Template
 from transformers import AutoTokenizer, AutoConfig, DataCollatorForSeq2Seq
@@ -80,15 +81,14 @@ test_dataset = dataset.map(
 
 if args.vllm:
     from vllm import LLM, SamplingParams
-
-    model = LLM(model=args.model, swap_space=0)
+    # print('将在这么多卡上张量并行:',torch.cuda.device_count())
+    model = LLM(model=args.model, swap_space=0,gpu_memory_utilization=0.9)
     samplingParams = SamplingParams(
-        max_tokens=1, temperature=0, logprobs=5, stop=["Q:"],prompt_logprobs=0
+        max_tokens=1024 ,temperature=0, stop=["Q:"],
     )
+    
     all_prompt = [d["input_ids"] for d in test_dataset]
-    response = model.generate(['I am '], samplingParams)
-    import pdb
-    pdb.set_trace()
+
     response = model.generate(all_prompt, samplingParams)
 
 else:

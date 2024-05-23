@@ -13,12 +13,12 @@ CUDA_VISIBLE_DEVICES=2 python special_train.py --model gemma_2b --dataset alpaca
 
 
 
-CUDA_VISIBLE_DEVICES=1 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir ../model_output/521weighted  --weighted  &
+CUDA_VISIBLE_DEVICES=1 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir ../model_output/522weighted  --weighted  &
 
 
-CUDA_VISIBLE_DEVICES=2 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir  ../model_output/521zeroprob0  --zero_prob 0 &
+CUDA_VISIBLE_DEVICES=2 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir  ../model_output/522zeroprob0  --zero_prob 0 &
 
 
 
 
-CUDA_VISIBLE_DEVICES=3 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir ../model_output/521origin&
+CUDA_VISIBLE_DEVICES=3 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir ../model_output/522origin&
