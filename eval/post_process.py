@@ -75,3 +75,39 @@ def gsm8k(prediciton, reference,vllm):
         print("=" * 40)
 
     return correct / len(reference) * 100
+
+@register2dict(name="mmlu")
+def mmlu(prediciton, reference,vllm):
+    def extract_answer(respone):
+    # 使用正则表达式查找匹配的部分
+        match = re.search(r'(?i)(?<=The answer is \()(.*)(?=\)\.)', respone)
+        if match:
+            return match.group(1).strip()
+        return ""
+   
+    for p, r in zip(prediciton, reference):
+        if vllm:
+            generated_text = p.outputs[0].text
+        else:
+            generated_text=p
+
+        # print(f"generate_text:\n {generated_text}\n")
+        all_responses = generated_text.split("</s>")[0]
+        # print(f"all_responses:\n {all_responses} \n")
+        short_responses =extract_answer(all_responses)
+
+        print(f"Short answer: {short_responses}")
+        print(f"reference answer: {r}")
+        
+        if r == short_responses:
+            correct += 1
+        
+
+        print("-" * 40)
+        print(f"generated answer:\n {all_responses}\n")
+        print(f"Short ground truth answer:\n {short_responses}\n")
+        print(f"correct {correct}")
+        # print(f"Correct: {correct} out of {idx+1}")
+        print("=" * 40)
+
+    return correct / len(reference) * 100
