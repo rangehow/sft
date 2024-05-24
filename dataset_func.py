@@ -159,7 +159,7 @@ Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\n
 A: Let's think step by step."""
     instruction="The following are multiple choice questions (with answers) about "
 
-    shot_data_path="/data/abudukeyumu/sft/eval/mmlu_cot_prompts.json"
+    shot_data_path="eval/mmlu_cot_prompts.json"
     with open(shot_data_path, 'r') as file:
         cot_prompts = json.load(file)
 
