@@ -157,65 +157,29 @@ def mmlu(instances, shot=False, mode=0, **kwargs):
     PROMPT = """
 Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\n
 A: Let's think step by step."""
+    instruction="The following are multiple choice questions (with answers) about "
 
-    shot_data_path="../eval/a.json"
-    # 读入mmlu所有分支的shot数据集, 如cot_prompts={"abstarct_algebra":"shot1","anamoy":"shot2"}
+    shot_data_path="/data/abudukeyumu/sft/eval/mmlu_cot_prompts.json"
     with open(shot_data_path, 'r') as file:
         cot_prompts = json.load(file)
+
     real_input=[]
     output=[]
-    t=0  
-    if shot:
-        
-        """
-        假设instances内容如下：
-        instances={ "input":["abstarct_algebra","aaa","bbb"",anamoy":"ccc"],
-                    "A":["abstarct_algebra","1","2","anamoy":"3"]
-                    }
-        则得到下面这样的real_input
-        real_input=["shot1aaa1","shot1bbb2","shot2ccc3"]
-        """
-        
-        for i in range(len(instances["input"])):
-            sub=instances["input"][t]
-            # 如果instances["input"][t]元素不等于cot_promts的键值，那么把该下标对应的值添加到real_input里
-            if sub not in cot_prompts :
 
-                real_input.append(
-                        shot+PROMPT.format(
-                        question=instances["input"][t],
-                        A=instances["A"][t],
-                        B=instances["B"][t],
-                        C=instances["C"][t],
-                        D=instances["D"][t])
-                )
-                output.append(instances["target"][t])
-            # 如果instances["input"][t]元素值在cot_promts的关键词中
-            else:
-                #保存sub对应的shot值
-                shot= cot_prompts[sub]
-                #利用t+1来把instances对应的下标往后移
-                t=t+1
-                continue
-            
-            
-    else:
-         for i in range(len(instances["input"])):
-            sub=instances["input"][t]
-            if sub not in cot_prompts :
-
-                real_input.append(
-                        PROMPT.format(
-                        question=instances["input"][t],
-                        A=instances["A"][t],
-                        B=instances["B"][t],
-                        C=instances["C"][t],
-                        D=instances["D"][t])
-                )
-                output.append(instances["target"][t])
-
-            else:
-                t=t+1
-                continue
+    # 遍历input_列表中的每个元素，并匹配cot_prompts中的前缀
+    for i, inp in enumerate(instances["input"]):
+        if shot:
+            sub, question = inp.split(' ', 1)
+        # 如果shot为真，使用cot_prompts中的值
+            real_input.append( cot_prompts[sub]+PROMPT.format(question=question,A=instances["A"][i],B=instances["B"][i],C=instances["C"][i],D=instances["D"][i]))
+        else:
+        # 如果shot为假，使用预定义的命令
+            pt = ""
+            sub, question = inp.split(' ', 1)
+            sub = sub.replace('_', ' ')
+            pt = instruction+sub
+            real_input.append( pt+PROMPT.format(question=question,A=instances["A"][i],B=instances["B"][i],C=instances["C"][i],D=instances["D"][i]))
+    
+    output = instances["target"]
 
     return _process(real_input, output, **kwargs)
