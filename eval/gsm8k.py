@@ -71,7 +71,7 @@ test_dataset = dataset.map(
     load_from_cache_file=False,
 )
 
-
+print(test_dataset[0])
 # if os.path.exists(args.output):
 #     logger.error(f"{args.output}已经存在")
 #     exit()
