@@ -5,7 +5,8 @@
 3. 推断还需要区分是不是chat？
 4. 考虑到测试时需要返回标准答案，所以test模式下的返回应该包含一个固定的key “answer”
 """
-import json 
+
+import json
 from typing import Any
 
 
@@ -58,9 +59,9 @@ def _process(real_input, output, template, test=False, vllm=False, chat=False, m
                 labels.append(label)
         else:
             if test:
-                
+
                 return {"input_ids": real_input, "answer": output}
-                    
+
             else:
                 # 不允许base模式进入训练
                 exit()
@@ -151,71 +152,52 @@ A:"""
 
     return _process(real_input, output, **kwargs)
 
+
 @register2dict(name="mmlu")
 def mmlu(instances, shot=False, mode=0, **kwargs):
-    
-    PROMPT = """
-Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\n
-A: Let's think step by step."""
 
-    shot_data_path="../eval/a.json"
-    # 读入mmlu所有分支的shot数据集, 如cot_prompts={"abstarct_algebra":"shot1","anamoy":"shot2"}
-    with open(shot_data_path, 'r') as file:
+    PROMPT = """Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\nA: Let's think step by step."""
+    # INSTRUCTION = "The following are multiple choice questions (with answers) about "
+
+    shot_data_path = "sft/eval/mmlu_cot_prompts.json"
+    with open(shot_data_path, "r") as file:
         cot_prompts = json.load(file)
-    real_input=[]
-    output=[]
-    t=0  
-    if shot:
-        
-        """
-        假设instances内容如下：
-        instances={ "input":["abstarct_algebra","aaa","bbb"",anamoy":"ccc"],
-                    "A":["abstarct_algebra","1","2","anamoy":"3"]
-                    }
-        则得到下面这样的real_input
-        real_input=["shot1aaa1","shot1bbb2","shot2ccc3"]
-        """
-        
-        for i in range(len(instances["input"])):
-            sub=instances["input"][t]
-            # 如果instances["input"][t]元素不等于cot_promts的键值，那么把该下标对应的值添加到real_input里
-            if sub not in cot_prompts :
 
-                real_input.append(
-                        shot+PROMPT.format(
-                        question=instances["input"][t],
-                        A=instances["A"][t],
-                        B=instances["B"][t],
-                        C=instances["C"][t],
-                        D=instances["D"][t])
+  
+    real_input = []
+    output = []
+
+    # 遍历input_列表中的每个元素，并匹配cot_prompts中的前缀
+    length = len(instances["question"])
+    for i in range(length):
+
+        question, answer, subject, choices = (
+            instances["question"][i],
+            instances["answer"][i],
+            instances["subject"][i],
+            instances["choices"][i],
+        )
+
+        if shot:
+            # 如果shot为真，使用cot_prompts中的值
+            real_input.append(
+                cot_prompts[subject]
+                + PROMPT.format(
+                    question=question.strip(),
+                    A=choices[0],
+                    B=choices[1],
+                    C=choices[2],
+                    D=choices[3],
                 )
-                output.append(instances["target"][t])
-            # 如果instances["input"][t]元素值在cot_promts的关键词中
-            else:
-                #保存sub对应的shot值
-                shot= cot_prompts[sub]
-                #利用t+1来把instances对应的下标往后移
-                t=t+1
-                continue
-            
-            
-    else:
-         for i in range(len(instances["input"])):
-            sub=instances["input"][t]
-            if sub not in cot_prompts :
+            )
 
-                real_input.append(
-                        PROMPT.format(
-                        question=instances["input"][t],
-                        A=instances["A"][t],
-                        B=instances["B"][t],
-                        C=instances["C"][t],
-                        D=instances["D"][t])
-                )
-                output.append(instances["target"][t])
+        else:
+            raise RuntimeError("不允许MMLU-cot采用非shot模式")
 
-            else:
-                t=t+1
-                continue
+        output.append(answer)
 
     return _process(real_input, output, **kwargs)
+
+
+if __name__ == "__main__":
+    pass
