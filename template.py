@@ -16,6 +16,7 @@ class Template:
         user_token=None,
         assistant_token=None,
         start_token_id=None,
+        end_token_id=None,
         system_token=None,
         efficient_eos=False,
     ) -> None:
@@ -25,16 +26,24 @@ class Template:
         self.system_token = system_token if system_token else []
         self.efficient_eos = efficient_eos
         self.start_token_id = start_token_id if start_token_id else None
+        self.end_token_id = end_token_id if end_token_id else None
 
     def apply(self, messages: list[dict[str, str]]):
-        input_id = [self.start_token_id]
-        label = [-100 if self.start_token_id else None]
+        
+        
+        if self.start_token_id:
+            input_id = [self.start_token_id]
+            label = [-100]
+        else:
+            input_id, label = [], []
+
         start_idx = 0
         first_user_flag_for_efficient_eos = True
         if messages[0]["role"] == "system":
             chat_tokens += self.system_token + messages[0]["content"]
             start_idx = 1
         for i in range(start_idx, len(messages)):
+            
             if messages[i]["role"] == "user":
                 user_token = self.tokenizer.encode(
                     self.user_token.format_map({"content": messages[i]["content"]}),
@@ -60,9 +69,17 @@ class Template:
             else:
                 error_role = messages[i]["role"]
                 logger.error(f"未经定义的template类型{error_role}")
+            
+            
+            # print(input_id)
+            # print(label)
+            # import pdb
+            # pdb.set_trace()
+            
         if self.efficient_eos:
-            input_id += [self.tokenizer.eos_token_id]
-            label += [self.tokenizer.eos_token_id]
+            if self.end_token_id:
+                input_id += [self.end_token_id]
+                label += [self.end_token_id]
         return input_id, label
 
 
@@ -77,17 +94,36 @@ class GemmaTemplate(Template):
             user_token="<start_of_turn>user\n{content}<end_of_turn>\n<start_of_turn>model\n",
             assistant_token="{content}<end_of_turn>\n",
             start_token_id=tokenizer.bos_token_id,
+            end_token_id=tokenizer.eos_token_id,
             efficient_eos=True,
         )
 
 
+@register_template
+class LlamaTemplate(Template):
+    model_type = "llama"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<|start_header_id|>user<|end_header_id|>\n\n{content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            assistant_token="{content}<|eot_id|>",
+            start_token_id=tokenizer.bos_token_id,
+            end_token_id=tokenizer.eos_token_id,
+            efficient_eos=False,
+        )
+
+
 if __name__ == "__main__":
+    access_token = "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"
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "/data/ruanjh/best_training_method/gemma-2b"
+        "meta-llama/Meta-Llama-3-8B-Instruct", token=access_token
     )
-    g = modelType2Template["gemma"](tokenizer)
+
+    g = modelType2Template["llama"](tokenizer)
     message = [
         {"role": "user", "content": "aaa"},
         {"role": "assistant", "content": "ffff"},
@@ -96,6 +132,7 @@ if __name__ == "__main__":
     ]
     c = tokenizer.apply_chat_template(message, tokenize=True)
     print(c)
+
     a, b = g.apply(message)
     # print(tokenizer.decode(a))
-    print(a, b)
+    assert a==c

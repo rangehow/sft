@@ -23,14 +23,14 @@ def mmlu():
 
 
 if __name__ == "__main__":
-    # dd = mmlu()
-    # print(dd)
+    dd = mmlu()
+    print(dd)
 
 
 
 
-    print(extract_answer("The answer is (B)1213A.\n\n"))
-    print(find_matches("(B)12313A",'B'))
+    # print(extract_answer("The answer is (B)1213A.\n\n"))
+    # print(find_matches("(B)12313A",'B'))
     # ss=set()
     # for d in dd['subject']:
     #     print(d)

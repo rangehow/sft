@@ -99,6 +99,7 @@ def mmlu(prediciton, reference, vllm):
 
     idx2char = {0: "A", 1: "B", 2: "C", 3: "D"}
     correct = 0
+    idx=0
     for p, r in zip(prediciton, reference):
         if vllm:
             generated_text = p.outputs[0].text
@@ -113,12 +114,12 @@ def mmlu(prediciton, reference, vllm):
         if find_matches(short_responses, idx2char[r]):
             correct += 1
 
-        print("-" * 40)
-        print(f"generated answer:\n {all_responses}\n")
-        print(f"Short generated answer:\n{short_responses}")
-        print(f"ground truth answer:\n {short_responses}\n")
-        print(f"correct {correct}")
+        # print("-" * 40)
+        # print(f"generated answer:\n {all_responses}")
+        # print(f"Short generated answer:{short_responses}")
+        # print(f"ground truth answer: {idx2char[r]}")
         # print(f"Correct: {correct} out of {idx+1}")
-        print("=" * 40)
-
+        # print("=" * 40)
+        idx+=1
+    print(f"total_data_: {len(reference)}")
     return correct / len(reference) * 100
