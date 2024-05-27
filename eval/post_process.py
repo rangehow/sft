@@ -13,7 +13,7 @@ def register2dict(name):
 
 
 @register2dict(name="gsm8k")
-def gsm8k(prediciton, reference,vllm):
+def gsm8k(prediciton, reference, vllm):
 
     def find_numbers(x: str) -> list[str]:
         """Finds all numbers in a string."""
@@ -46,13 +46,13 @@ def gsm8k(prediciton, reference,vllm):
         return x.replace(",", "")
 
     correct, correct1 = 0, 0
-    
+
     for p, r in zip(prediciton, reference):
 
         if vllm:
             generated_text = p.outputs[0].text
         else:
-            generated_text=p
+            generated_text = p
         all_responses = generated_text.split("\nQ:")[0]
         short_responses = maybe_remove_comma(find_number(all_responses))
 
@@ -76,36 +76,47 @@ def gsm8k(prediciton, reference,vllm):
 
     return correct / len(reference) * 100
 
+
 @register2dict(name="mmlu")
-def mmlu(prediciton, reference,vllm):
+def mmlu(prediciton, reference, vllm):
+
+    def find_matches(input_string, target):
+        # Define the pattern to match A, B, C, or D
+        all_pattern = r"[A-D]"
+
+        # Use re.findall to find all matches
+        all_matches = re.findall(all_pattern, input_string)
+        matches = re.findall(target, input_string)
+        # print(all_matches,matches)
+        return len(matches) == 1 and len(all_matches) == 1
+
     def extract_answer(respone):
-    # 使用正则表达式查找匹配的部分
-        match = re.search(r'(?i)(?<=The answer is \()(.*)(?=\)\.)', respone)
+        # 使用正则表达式查找匹配的部分
+        match = re.search(r"(?<=The answer is )(.*)(?=.)", respone)
         if match:
             return match.group(1).strip()
         return ""
-   
+
+    idx2char = {0: "A", 1: "B", 2: "C", 3: "D"}
+    correct = 0
     for p, r in zip(prediciton, reference):
         if vllm:
             generated_text = p.outputs[0].text
         else:
-            generated_text=p
+            generated_text = p
 
         # print(f"generate_text:\n {generated_text}\n")
-        all_responses = generated_text.split("</s>")[0]
+        all_responses = generated_text.split("\nQ:")[0]
         # print(f"all_responses:\n {all_responses} \n")
-        short_responses =extract_answer(all_responses)
+        short_responses = extract_answer(all_responses)
 
-        print(f"Short answer: {short_responses}")
-        print(f"reference answer: {r}")
-        
-        if r == short_responses:
+        if find_matches(short_responses, idx2char[r]):
             correct += 1
-        
 
         print("-" * 40)
         print(f"generated answer:\n {all_responses}\n")
-        print(f"Short ground truth answer:\n {short_responses}\n")
+        print(f"Short generated answer:\n{short_responses}")
+        print(f"ground truth answer:\n {short_responses}\n")
         print(f"correct {correct}")
         # print(f"Correct: {correct} out of {idx+1}")
         print("=" * 40)

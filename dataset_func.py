@@ -5,7 +5,8 @@
 3. 推断还需要区分是不是chat？
 4. 考虑到测试时需要返回标准答案，所以test模式下的返回应该包含一个固定的key “answer”
 """
-import json 
+
+import json
 from typing import Any
 
 
@@ -58,9 +59,9 @@ def _process(real_input, output, template, test=False, vllm=False, chat=False, m
                 labels.append(label)
         else:
             if test:
-                
+
                 return {"input_ids": real_input, "answer": output}
-                    
+
             else:
                 # 不允许base模式进入训练
                 exit()
@@ -151,35 +152,52 @@ A:"""
 
     return _process(real_input, output, **kwargs)
 
+
 @register2dict(name="mmlu")
 def mmlu(instances, shot=False, mode=0, **kwargs):
-    
-    PROMPT = """
-Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\n
-A: Let's think step by step."""
-    instruction="The following are multiple choice questions (with answers) about "
 
-    shot_data_path="eval/mmlu_cot_prompts.json"
-    with open(shot_data_path, 'r') as file:
+    PROMPT = """Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\nA: Let's think step by step."""
+    # INSTRUCTION = "The following are multiple choice questions (with answers) about "
+
+    shot_data_path = "sft/eval/mmlu_cot_prompts.json"
+    with open(shot_data_path, "r") as file:
         cot_prompts = json.load(file)
 
-    real_input=[]
-    output=[]
+  
+    real_input = []
+    output = []
 
     # 遍历input_列表中的每个元素，并匹配cot_prompts中的前缀
-    for i, inp in enumerate(instances["input"]):
+    length = len(instances["question"])
+    for i in range(length):
+
+        question, answer, subject, choices = (
+            instances["question"][i],
+            instances["answer"][i],
+            instances["subject"][i],
+            instances["choices"][i],
+        )
+
         if shot:
-            sub, question = inp.split(' ', 1)
-        # 如果shot为真，使用cot_prompts中的值
-            real_input.append( cot_prompts[sub]+PROMPT.format(question=question,A=instances["A"][i],B=instances["B"][i],C=instances["C"][i],D=instances["D"][i]))
+            # 如果shot为真，使用cot_prompts中的值
+            real_input.append(
+                cot_prompts[subject]
+                + PROMPT.format(
+                    question=question.strip(),
+                    A=choices[0],
+                    B=choices[1],
+                    C=choices[2],
+                    D=choices[3],
+                )
+            )
+
         else:
-        # 如果shot为假，使用预定义的命令
-            pt = ""
-            sub, question = inp.split(' ', 1)
-            sub = sub.replace('_', ' ')
-            pt = instruction+sub
-            real_input.append( pt+PROMPT.format(question=question,A=instances["A"][i],B=instances["B"][i],C=instances["C"][i],D=instances["D"][i]))
-    
-    output = instances["target"]
+            raise RuntimeError("不允许MMLU-cot采用非shot模式")
+
+        output.append(answer)
 
     return _process(real_input, output, **kwargs)
+
+
+if __name__ == "__main__":
+    pass
