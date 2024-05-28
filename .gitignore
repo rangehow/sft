@@ -4,3 +4,6 @@ apex/
 test.py
 *.json
 *.jsonl
+*.pkl
+eval/generated/
+eval/result/

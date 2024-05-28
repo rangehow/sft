@@ -41,7 +41,6 @@ def parse_args():
         "--dataset",
     )
     parser.add_argument("--model")
-    parser.add_argument("--output")
     return parser.parse_args()
 
 
@@ -74,29 +73,51 @@ def main():
     )
 
     print(test_dataset[0])
-    # if os.path.exists(args.output):
-    #     logger.error(f"{args.output}已经存在")
-    #     exit()
-
-    print(dname2post[args.dataset])
 
     if args.vllm:
         from vllm import LLM, SamplingParams
 
-        # print('将在这么多卡上张量并行:',torch.cuda.device_count())
-        model = LLM(model=args.model, swap_space=0, gpu_memory_utilization=0.9)
-        samplingParams = SamplingParams(
-            max_tokens=1024,
-            temperature=0,
-            stop=["Q:"],
+        script_path = os.path.dirname(os.path.abspath(__file__))
+        print("script_path", script_path)
+        model_name = os.path.basename(args.model)
+        save_str = (
+            f"{model_name}_{args.dataset}_vllm_{args.mode}_shot"
+            if args.shot
+            else f"{model_name}_{args.dataset}_vllm_{args.mode}"
         )
+        print("save_str", save_str)
+        target_file = os.path.join(script_path, "generated", save_str)
+        print("target_file", target_file)
+        reuse_flag = False
+        if os.path.exists(target_file):
+            while True:
+                i = input("本次任务似乎已经被完成过了~输入y可以复用，输入n则重新生成")
+                if i == "y":
+                    reuse_flag = True
+                    break
+                elif i == "n":
+                    break
+                else:
+                    print("输入错误，必须是y或n")
 
-        all_prompt = [d["input_ids"] for d in test_dataset]
-        
-        response = model.generate(all_prompt, samplingParams)
-        print('response的长度',len(response))
-        with open('fuck_mmlu.pkl','wb') as o:
-            pickle.dump(response,o)
+        if reuse_flag:
+            with open(target_file, "rb") as r:
+                response = pickle.load(r)
+        else:
+            # print('将在这么多卡上张量并行:',torch.cuda.device_count())
+            model = LLM(model=args.model, swap_space=0, gpu_memory_utilization=0.9)
+            samplingParams = SamplingParams(
+                max_tokens=1024,
+                temperature=0,
+                stop=["Q:"],
+            )
+
+            all_prompt = [d["input_ids"] for d in test_dataset]
+
+            response = model.generate(all_prompt, samplingParams)
+            print("response的长度", len(response))
+            with open(target_file, "wb") as o:
+                pickle.dump(response, o)
 
     else:
         from transformers import (
@@ -186,9 +207,6 @@ def main():
                 text = tokenizer.batch_decode(output[:, prompt_length:])
                 print(text)
                 response.append(text)
-
-
-
 
     score = dname2post[args.dataset](
         prediciton=response,
