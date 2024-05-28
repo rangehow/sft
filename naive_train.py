@@ -43,7 +43,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
-    parser.add_argument("--output_dir")
+    parser.add_argument("--output_dir",default=None)
     parser.add_argument("--learning_rate", default=5e-5)
     parser.add_argument("--train_batch_size", type=int, default=4)
     parser.add_argument("--num_train_epochs", type=int, default=3)
@@ -55,6 +55,8 @@ def parse_args():
 
 args = parse_args()
 
+
+
 model_dir = model_dir[args.model]
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
@@ -64,7 +66,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.bfloat16,
     device_map="auto",
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
-    attn_implementation="sdpa",
+    # attn_implementation="sdpa",
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
@@ -99,10 +101,11 @@ trainer = Trainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         bf16=True,
         remove_unused_columns=True,
-        save_strategy='epoch',
+        save_strategy="no",
     ),
     train_dataset=train_dataset,
     tokenizer=tokenizer,
     data_collator=my_collator,
 )
 trainer.train()
+trainer.save_model(args.output_dir)

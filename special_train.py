@@ -41,7 +41,20 @@ def parse_args():
 args = parse_args()
 
 
-model_dir = model_dir[args.model]
+if args.output_dir is None:
+    from datetime import datetime
+
+    current_time = datetime.now()
+    current_month = current_time.month
+    current_day = current_time.day
+    args.output_dir = f"{args.model}_{current_month}_{current_day}_{args.zero_prob}"
+    if args.weighted:
+        args.output_dir = args.output_dir + "_weighted"
+    if args.div_mode:
+        args.output_dir = args.output_dir + "_div"
+    logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
+
+model_dir = model_dir.get(args.model, args.model)
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 tokenizer.padding_side = "left"
