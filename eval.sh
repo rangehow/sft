@@ -18,11 +18,12 @@ CUDA_VISIBLE_DEVICES=2,3 python -m sft.eval.gsm8k --dataset gsm8k --model /data/
 
 
 
-CUDA_VISIBLE_DEVICES=1 python -m sft.eval.gsm8k --model model_output/523zeroprob02 --dataset gsm8k --vllm --mode 0 --shot &
+CUDA_VISIBLE_DEVICES=1 python -m sft.eval.gsm8k --model model_output/523zeroprob02 --dataset mmlu --vllm --mode 0 --shot &
 
 
-CUDA_VISIBLE_DEVICES=2 python -m sft.eval.gsm8k --model model_output/522zeroprob0 --dataset gsm8k --vllm --mode 0 --shot &
+CUDA_VISIBLE_DEVICES=2 python -m sft.eval.gsm8k --model models/Llama-3-8B --dataset gsm8k --vllm --mode 0 --shot &
 
+CUDA_VISIBLE_DEVICES=3 python -m sft.eval.gsm8k --model models/Llama-3-8B --dataset mmlu --vllm --mode 0 --shot &
 
 
 

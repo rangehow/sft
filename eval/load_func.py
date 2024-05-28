@@ -19,15 +19,12 @@ def gsm8k():
 
 @register2dict(name="mmlu")
 def mmlu():
-    return datasets.load_dataset("hails/mmlu_no_train", "all")["test"]
+    return datasets.load_dataset("cais/mmlu", "all")["test"]
 
 
 if __name__ == "__main__":
     dd = mmlu()
     print(dd)
-
-
-
 
     # print(extract_answer("The answer is (B)1213A.\n\n"))
     # print(find_matches("(B)12313A",'B'))
