@@ -47,7 +47,9 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"{args.model}_{current_month}_{current_day}_{args.zero_prob}"
+    args.output_dir = (
+        f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}"
+    )
     if args.weighted:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
@@ -65,6 +67,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
+    device_map="auto",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 model_type = model.config.model_type
