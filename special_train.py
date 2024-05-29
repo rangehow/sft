@@ -124,7 +124,6 @@ trainer = KLTrainer(
     train_dataset=train_dataset,
     tokenizer=tokenizer,
     args=TrainingArguments(
-        optim="adamw_apex_fused",
         overwrite_output_dir=True,
         output_dir=args.output_dir,
         logging_steps=1,
@@ -134,7 +133,7 @@ trainer = KLTrainer(
         dataloader_pin_memory=True,
         dataloader_num_workers=0,
         num_train_epochs=3,
-        per_device_train_batch_size=8,
+        per_device_train_batch_size=64 // torch.cuda.device_count() // 8,
         bf16=True,
     ),
     data_collator=collator,

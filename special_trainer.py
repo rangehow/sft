@@ -26,6 +26,7 @@ class KLTrainer(Trainer):
         supervised_cnt = inputs.pop("supervised_cnt")
         clm_cnt = inputs.pop("clm_cnt")
 
+        # print(clm_cnt.dtype)
         result = model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -43,7 +44,6 @@ class KLTrainer(Trainer):
         all_prob_supervised = all_prob_supervised.to(model_logits.device)
         all_prob_clm = all_prob_clm.to(model_logits.device)
 
-
         if not self.weight_mode:
             try:
                 ce_loss = CrossEntropyLoss(ignore_index=-100)
@@ -51,11 +51,15 @@ class KLTrainer(Trainer):
                 clm_loss = ce_loss(last_logits, all_prob_clm)
             except:
                 import pdb
+
                 pdb.set_trace()
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")
-            supervised_loss = supervised_cnt @ ce_loss(last_logits, all_prob_supervised)
-            clm_loss = clm_cnt @ ce_loss(last_logits, all_prob_clm)
+            # print(supervised_cnt.dtype, ce_loss(last_logits, all_prob_supervised).dtype)
+            supervised_loss = supervised_cnt.to(torch.float32) @ ce_loss(
+                last_logits, all_prob_supervised
+            )
+            clm_loss = clm_cnt.to(torch.float32) @ ce_loss(last_logits, all_prob_clm)
 
         if not self.weight_mode:
             loss = 0.8 * supervised_loss + 0.2 * clm_loss

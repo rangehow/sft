@@ -20,10 +20,10 @@ class TestTemplates(unittest.TestCase):
             "meta-llama/Meta-Llama-3-8B-Instruct", token=self.access_token
         )
 
-        tokenizer.pad_token=tokenizer.eos_token
-        
-        input=['hello,world!','I love you sign,fuck you ']
-        print(tokenizer(input,return_tensors='pt',padding=True))
+        tokenizer.pad_token = tokenizer.eos_token
+
+        input = ["hello,world!", "I love you sign,fuck you "]
+        print(tokenizer(input, return_tensors="pt", padding=True))
         g = modelType2Template["llama"](tokenizer)
 
         c = tokenizer.apply_chat_template(self.message, tokenize=True)
@@ -37,6 +37,7 @@ class TestTemplates(unittest.TestCase):
         )
         # print('label',b)
         print(tokenizer.pad_token)
+        print(tokenizer.convert_tokens_to_ids(["A", "B", "C", "D"]))
         pattern = []
         for i in range(len(a) - 1):
             if b[i + 1] != -100:
