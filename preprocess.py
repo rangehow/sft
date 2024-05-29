@@ -197,13 +197,13 @@ def main():
         f"len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}"
     )
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_synthesis.pkl",
+        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl",
         "wb",
     ) as o:
         pickle.dump(synthesis_dict, o, protocol=5)
 
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_index.pkl",
+        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl",
         "wb",
     ) as o:
         pickle.dump(cnt_list, o, protocol=5)
@@ -219,12 +219,12 @@ def test():
     template = modelType2Template[model_type](tokenizer)
 
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_index.pkl",
+        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl",
         "rb",
     ) as o:
         cnt_list = pickle.load(o)
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_synthesis.pkl",
+        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl",
         "rb",
     ) as o:
         synthesis_dict = pickle.load(o)

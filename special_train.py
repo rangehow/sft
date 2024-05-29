@@ -63,7 +63,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype="auto",
     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
-
+model_type = model.config.model_type
 embedding_size = model.lm_head.weight.size()[
     0
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
@@ -75,10 +75,14 @@ collator = SpecialDataCollator(
 
 @logger.catch
 def load_dataset():
-    with open(f"{dataset_dir[args.dataset]}/synthesis.pkl", "rb") as f:
+    with open(
+        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl", "rb"
+    ) as f:
         synthesis = pickle.load(f)
 
-    with open(f"{dataset_dir[args.dataset]}/index.pkl", "rb") as f:
+    with open(
+        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl", "rb"
+    ) as f:
         index = pickle.load(f)
 
     train_dataset = SpecialDataset(

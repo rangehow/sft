@@ -265,27 +265,29 @@ class SpecialDataCollator:
         supervised = [item for d in batch for item in d["supervised"]]
         clm = [item for d in batch for item in d["clm"]]
 
-        x = optimized_stack(supervised, self.embedding_size)
+        x_sup = optimized_stack(supervised, self.embedding_size)
 
         if self.zero_prob == 0:
-            all_prob_supervised = x / torch.sum(x, dim=-1, keepdim=True)
+            all_prob_supervised = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
         else:
             all_prob_supervised = (
-                (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
+                (1 - self.zero_prob) * x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
             )
-            non_zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+            non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
             temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
             all_prob_supervised = torch.where(
                 all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
             )
 
-        x = optimized_stack(clm, self.embedding_size)
+        x_clm = optimized_stack(clm, self.embedding_size)
 
         if self.zero_prob == 0:
-            all_prob_clm = x / torch.sum(x, dim=-1, keepdim=True)
+            all_prob_clm = x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
         else:
-            all_prob_clm = (1 - self.zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-            zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
+            all_prob_clm = (
+                (1 - self.zero_prob) * x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
+            )
+            zero_cnt = torch.sum(x_clm != 0, keepdim=True, dim=-1)
             temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
             all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
