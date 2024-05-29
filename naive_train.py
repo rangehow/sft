@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument("--train_batch_size", type=int, default=4)
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--weight_decay", default=0.01)
-    parser.add_argument("--gradient_accumulation_steps", default=4)
+    parser.add_argument("--gradient_accumulation_steps", default=16)
     # TODO 边写下面边思考，这里需要什么参数？
     return parser.parse_args()
 

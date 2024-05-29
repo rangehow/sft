@@ -102,7 +102,7 @@ train_dataset = load_dataset()
 # for d in tqdm(dataloader):
 #     pass
 # ------------------------------------------------------
-
+logger.debug(f"训练集大小：{len(train_dataset)}")
 logger.debug(args)
 torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(

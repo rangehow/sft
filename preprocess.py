@@ -197,13 +197,13 @@ def main():
         f"len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}"
     )
     with open(
-        f"{dataset_dir[args.dataset]}/synthesis.pkl",
+        f"{dataset_dir[args.dataset]}/{model_type}_synthesis.pkl",
         "wb",
     ) as o:
         pickle.dump(synthesis_dict, o, protocol=5)
 
     with open(
-        f"{dataset_dir[args.dataset]}/index.pkl",
+        f"{dataset_dir[args.dataset]}/{model_type}_index.pkl",
         "wb",
     ) as o:
         pickle.dump(cnt_list, o, protocol=5)
@@ -213,21 +213,21 @@ def main():
 def test():
     args = parse_args()
 
-    with open(
-        f"{dataset_dir[args.dataset]}/index.pkl",
-        "rb",
-    ) as o:
-        cnt_list = pickle.load(o)
-    with open(
-        f"{dataset_dir[args.dataset]}/synthesis.pkl",
-        "rb",
-    ) as o:
-        synthesis_dict = pickle.load(o)
-
     tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
     config = AutoConfig.from_pretrained(model_dir[args.model])
     model_type = config.model_type
     template = modelType2Template[model_type](tokenizer)
+
+    with open(
+        f"{dataset_dir[args.dataset]}/{model_type}_index.pkl",
+        "rb",
+    ) as o:
+        cnt_list = pickle.load(o)
+    with open(
+        f"{dataset_dir[args.dataset]}/{model_type}_synthesis.pkl",
+        "rb",
+    ) as o:
+        synthesis_dict = pickle.load(o)
 
     train_dataset = datasets.load_dataset(dataset_dir[args.dataset])["train"]
 
@@ -240,6 +240,7 @@ def test():
     )
 
     synthesis_dict = [data_sample for data_sample in synthesis_dict.items()]
+
     cnt = 0
     for i in range(len(synthesis_dict)):
 
@@ -251,6 +252,7 @@ def test():
 
         # cnt+=1
     logger.debug(len(synthesis_dict))
+    logger.debug(len(train_dataset))
 
 
 if __name__ == "__main__":
