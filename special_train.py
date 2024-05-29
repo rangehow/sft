@@ -57,6 +57,10 @@ if args.output_dir is None:
 model_dir = model_dir.get(args.model, args.model)
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+
+
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
@@ -104,7 +108,9 @@ train_dataset = load_dataset()
 
 
 # for d in tqdm(dataloader):
-#     pass
+#     import pdb
+#     pdb.set_trace()
+
 # ------------------------------------------------------
 logger.debug(f"训练集大小：{len(train_dataset)}")
 logger.debug(args)

@@ -2,7 +2,8 @@ import unittest
 from transformers import AutoTokenizer
 from ..template import modelType2Template
 
-#python -m sft.tests.test_templates
+
+# python -m sft.tests.test_templates
 class TestTemplates(unittest.TestCase):
 
     def setUp(self):
@@ -19,6 +20,10 @@ class TestTemplates(unittest.TestCase):
             "meta-llama/Meta-Llama-3-8B-Instruct", token=self.access_token
         )
 
+        tokenizer.pad_token=tokenizer.eos_token
+        
+        input=['hello,world!','I love you sign,fuck you ']
+        print(tokenizer(input,return_tensors='pt',padding=True))
         g = modelType2Template["llama"](tokenizer)
 
         c = tokenizer.apply_chat_template(self.message, tokenize=True)
@@ -31,14 +36,14 @@ class TestTemplates(unittest.TestCase):
             "\n",
         )
         # print('label',b)
-        import pdb
-        pdb.set_trace()
+        print(tokenizer.pad_token)
         pattern = []
         for i in range(len(a) - 1):
             if b[i + 1] != -100:
                 pattern.append((tokenizer.decode(a[i]), tokenizer.decode(b[i + 1])))
         print("pattern", pattern)
-        print(tokenizer.eos_token_id)
+        print(tokenizer.eos_token, tokenizer.eos_token_id)
+
         # print(tokenizer.convert_ids_to_tokens(c))
         # print(tokenizer.decode(a))
         if g.efficient_eos:

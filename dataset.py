@@ -3,7 +3,7 @@ from functools import partial
 from torch.utils.data import Dataset
 import torch
 from scipy.optimize import root_scalar
-from memory_profiler import profile
+
 
 
 def transform_to_log_prob(
