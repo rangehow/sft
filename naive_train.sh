@@ -5,5 +5,5 @@
 
 CUDA_VISIBLE_DEVICES=7,1,2,3,5,6 python /data/ruanjh/best_training_method/sft/naive_train.py \
     --model gemma_2b \
-    --dataset alpaca_cleaned \
+    --dataset alpaca_gpt4 \
     --output_dir /data/ruanjh/best_training_method/output522 \

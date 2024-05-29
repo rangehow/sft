@@ -43,10 +43,6 @@ class KLTrainer(Trainer):
         all_prob_supervised = all_prob_supervised.to(model_logits.device)
         all_prob_clm = all_prob_clm.to(model_logits.device)
 
-        # print("-" * 20)
-        # print("last_logits", last_logits)
-        # print("all_prob_supervised", torch.topk(all_prob_supervised,5))
-        # print("all_prob_clm", torch.topk(all_prob_clm,5))
 
         if not self.weight_mode:
             try:
