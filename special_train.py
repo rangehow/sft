@@ -104,15 +104,15 @@ def load_dataset():
 
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
-dataloader = DataLoader(
-    dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=16,pin_memory=True
-)
+# dataloader = DataLoader(
+#     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=16,pin_memory=True
+# )
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
 
-for d in tqdm(dataloader):
-    continue
+# for d in tqdm(dataloader):
+#     continue
 
 # ------------------------------------------------------
 logger.debug(f"训练集大小：{len(train_dataset)}")
