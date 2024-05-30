@@ -11,9 +11,9 @@ CUDA_VISIBLE_DEVICES=2 python special_train.py --model gemma_2b --dataset alpaca
 
 
 
+CUDA_VISIBLE_DEVICES=1  --config_file 8b3card.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4  --weighted --zero_prob 0 
 
-
-CUDA_VISIBLE_DEVICES=1,2 accelerate launch --config_file 8b2card.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4  --weighted --zero_prob 0 
+CUDA_VISIBLE_DEVICES=1,2,3 accelerate launch --config_file 8b3card.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4  --weighted --zero_prob 0 
 
 
 CUDA_VISIBLE_DEVICES=2 python special_train.py --model gemma_2b --dataset alpaca_gpt4 --output_dir  ../model_output/523zeroprob02  --zero_prob 0.2 &

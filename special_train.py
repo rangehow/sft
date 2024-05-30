@@ -32,6 +32,7 @@ def parse_args():
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
 
     parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
+    parser.add_argument("--gradient_accumulation_steps", default=8, type=int)
     parser.add_argument(
         "--weighted", action="store_true", help="decide to use token level freq weight"
     )
@@ -103,20 +104,23 @@ def load_dataset():
 
 train_dataset = load_dataset()
 # 检查数据的调试代码----------------------------------
-# dataloader = DataLoader(
-#     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=0,pin_memory=True
-# )
+dataloader = DataLoader(
+    dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=16,pin_memory=True
+)
 
-# from tqdm import tqdm
+from tqdm import tqdm
 
 
-# for d in tqdm(dataloader):
-#     import pdb
-#     pdb.set_trace()
+for d in tqdm(dataloader):
+    continue
 
 # ------------------------------------------------------
 logger.debug(f"训练集大小：{len(train_dataset)}")
 logger.debug(args)
+
+real_bsz=64 // torch.cuda.device_count() // 8
+logger.debug(f'实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}')
+
 torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(
     weight_mode=args.weighted,
@@ -128,12 +132,12 @@ trainer = KLTrainer(
         output_dir=args.output_dir,
         logging_steps=1,
         remove_unused_columns=False,
-        gradient_accumulation_steps=8,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
         dataloader_pin_memory=True,
         dataloader_num_workers=0,
         num_train_epochs=3,
-        per_device_train_batch_size=64 // torch.cuda.device_count() // 8,
+        per_device_train_batch_size=real_bsz,
         bf16=True,
     ),
     data_collator=collator,
