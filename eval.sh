@@ -16,14 +16,16 @@
 CUDA_VISIBLE_DEVICES=2,3 python -m sft.eval.gsm8k --dataset gsm8k --model /data/ruanjh/best_training_method/output522  --vllm --mode 0 --shot 
 
 
+CUDA_VISIBLE_DEVICES=2 python -m sft.eval.gsm8k --model models/Meta-Llama-3-8B-Instruct --dataset mmlu --vllm --mode 0 --shot &
 
 
-CUDA_VISIBLE_DEVICES=1 python -m sft.eval.gsm8k --model model_output/523zeroprob02 --dataset mmlu --vllm --mode 0 --shot &
+
+CUDA_VISIBLE_DEVICES=3 python -m sft.eval.gsm8k --model model_output/523zeroprob02 --dataset mmlu --vllm --mode 0 --shot &
 
 
-CUDA_VISIBLE_DEVICES=2 python -m sft.eval.gsm8k --model models/Llama-3-8B --dataset gsm8k --vllm --mode 0 --shot &
+CUDA_VISIBLE_DEVICES=2 python -m sft.eval.gsm8k --model models/Meta-Llama-3-8B-Instruct --dataset gsm8k --vllm --mode 0 --shot &
 
-CUDA_VISIBLE_DEVICES=3 python -m sft.eval.gsm8k --model models/Llama-3-8B --dataset mmlu --vllm --mode 0 --shot &
+CUDA_VISIBLE_DEVICES=3 python -m sft.eval.gsm8k --model models/Meta-Llama-3-8B-Instruct --dataset mmlu --vllm --mode 0 --shot &
 
 
 

@@ -214,7 +214,7 @@ def main():
         vllm=args.vllm,
     )
 
-    print(f"score :{score}")
+    logger.debug(f"task:{args.dataset},model:{args.model},score :{score}")
 
 
 if __name__ == "__main__":
