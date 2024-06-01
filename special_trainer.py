@@ -56,10 +56,14 @@ class KLTrainer(Trainer):
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")
             # print(supervised_cnt.dtype, ce_loss(last_logits, all_prob_supervised).dtype)
-            supervised_loss = supervised_cnt.to(torch.float32) @ ce_loss(
+            # supervised_loss = supervised_cnt.to(torch.float32) @ ce_loss(
+            #     last_logits, all_prob_supervised
+            # )
+            # clm_loss = clm_cnt.to(torch.float32) @ ce_loss(last_logits, all_prob_clm)
+            supervised_loss = supervised_cnt  @ ce_loss(
                 last_logits, all_prob_supervised
             )
-            clm_loss = clm_cnt.to(torch.float32) @ ce_loss(last_logits, all_prob_clm)
+            clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
 
         if not self.weight_mode:
             loss = 0.8 * supervised_loss + 0.2 * clm_loss

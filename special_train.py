@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
-
+    parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
     parser.add_argument("--gradient_accumulation_steps", default=8, type=int)
     parser.add_argument(
@@ -123,7 +123,21 @@ logger.debug(
     f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
 )
 
-torch.backends.cudnn.benchmark = False
+if args.lora:
+    from peft import LoraConfig, TaskType, get_peft_model
+
+    peft_config = LoraConfig(
+        task_type=TaskType.SEQ_2_SEQ_LM,
+        inference_mode=False,
+        r=8,
+        lora_alpha=32,
+        lora_dropout=0.1,
+    )
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+
+
+# torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(
     weight_mode=args.weighted,
     model=model,

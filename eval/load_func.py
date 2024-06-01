@@ -23,17 +23,5 @@ def mmlu():
 
 
 if __name__ == "__main__":
-    dd = mmlu()
-    print(dd)
-
-    # print(extract_answer("The answer is (B)1213A.\n\n"))
-    # print(find_matches("(B)12313A",'B'))
-    # ss=set()
-    # for d in dd['subject']:
-    #     print(d)
-    #     ss.add(d)
-    # print(len(ss))
-    # import json
-    # a=open('/data/ruanjh/best_training_method/sft/eval/mmlu_cot_prompts.json')
-    # aa=json.load(a)
-    # print(len(aa))
+    d=datasets.load_dataset("cais/mmlu")
+    print(d)

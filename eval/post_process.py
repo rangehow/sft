@@ -77,26 +77,58 @@ def gsm8k(prediciton, reference, vllm):
     return correct / len(reference) * 100
 
 
+# @register2dict(name="mmlu")
+# def mmlu(prediciton, reference, vllm):
+
+#     def find_matches(input_string, target):
+#         # Define the pattern to match A, B, C, or D
+#         all_pattern = r"[A-D]"
+
+#         # Use re.findall to find all matches
+#         all_matches = re.findall(all_pattern, input_string)
+#         matches = re.findall(target, input_string)
+#         # print(all_matches,matches)
+#         return len(matches) == 1 and len(all_matches) == 1
+
+#     def extract_answer(respone):
+#         # 使用正则表达式查找匹配的部分
+#         match = re.search(r"(?<=The answer is )(.*)(?=.)", respone)
+#         if match:
+#             return match.group(1).strip()
+#         return ""
+
+#     idx2char = {0: "A", 1: "B", 2: "C", 3: "D"}
+#     correct = 0
+#     idx=0
+#     for p, r in zip(prediciton, reference):
+#         if vllm:
+#             generated_text = p.outputs[0].text
+#         else:
+#             generated_text = p
+
+#         # print(f"generate_text:\n {generated_text}\n")
+#         all_responses = generated_text.split("\nQ:")[0]
+#         # print(f"all_responses:\n {all_responses} \n")
+#         short_responses = extract_answer(all_responses)
+
+#         if find_matches(short_responses, idx2char[r]):
+#             correct += 1
+
+#         # print("-" * 40)
+#         # print(f"generated answer:\n {all_responses}")
+#         # print(f"Short generated answer:{short_responses}")
+#         # print(f"ground truth answer: {idx2char[r]}")
+#         # print(f"Correct: {correct} out of {idx+1}")
+#         # print("=" * 40)
+#         idx+=1
+#     print(f"total_data_: {len(reference)}")
+#     return correct / len(reference) * 100
+
+
 @register2dict(name="mmlu")
 def mmlu(prediciton, reference, vllm):
 
-    def find_matches(input_string, target):
-        # Define the pattern to match A, B, C, or D
-        all_pattern = r"[A-D]"
-
-        # Use re.findall to find all matches
-        all_matches = re.findall(all_pattern, input_string)
-        matches = re.findall(target, input_string)
-        # print(all_matches,matches)
-        return len(matches) == 1 and len(all_matches) == 1
-
-    def extract_answer(respone):
-        # 使用正则表达式查找匹配的部分
-        match = re.search(r"(?<=The answer is )(.*)(?=.)", respone)
-        if match:
-            return match.group(1).strip()
-        return ""
-
+    
     idx2char = {0: "A", 1: "B", 2: "C", 3: "D"}
     correct = 0
     idx=0
@@ -107,11 +139,10 @@ def mmlu(prediciton, reference, vllm):
             generated_text = p
 
         # print(f"generate_text:\n {generated_text}\n")
-        all_responses = generated_text.split("\nQ:")[0]
-        # print(f"all_responses:\n {all_responses} \n")
-        short_responses = extract_answer(all_responses)
-
-        if find_matches(short_responses, idx2char[r]):
+        all_responses = generated_text[1]
+        # import pdb
+        # pdb.set_trace()
+        if all_responses==idx2char[r]:
             correct += 1
 
         # print("-" * 40)

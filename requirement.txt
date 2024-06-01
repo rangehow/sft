@@ -1,0 +1,9 @@
+transformers
+torch
+vllm
+datasets
+accelerate
+deepspeed
+peft
+bitsandbytes
+flash_attn

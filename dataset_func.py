@@ -156,10 +156,10 @@ A:"""
 @register2dict(name="mmlu")
 def mmlu(instances, shot=False, mode=0, **kwargs):
 
-    PROMPT = """Q: {question}\n(A) {A} (B) {B} (C) {C} (D) {D}\nA: Let's think step by step."""
+    PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
 
-    shot_data_path = "sft/eval/mmlu_cot_prompts.json"
+    shot_data_path = "sft/eval/mmlu_few_shot_promot.json"
     with open(shot_data_path, "r") as file:
         cot_prompts = json.load(file)
 

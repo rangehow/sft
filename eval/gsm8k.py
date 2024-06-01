@@ -19,7 +19,7 @@ import os
 from .post_process import dname2post
 from torch.utils.data import DataLoader
 from .load_func import dname2load
-
+from .samplingparam import dname2samplingparams
 
 def parse_args():
     parser = ArgumentParser()
@@ -41,6 +41,11 @@ def parse_args():
         "--dataset",
     )
     parser.add_argument("--model")
+    parser.add_argument(
+        "--dp",
+        action="store_true",
+    )
+    
     return parser.parse_args()
 
 
@@ -73,9 +78,15 @@ def main():
     )
 
     print(test_dataset[0])
-
+    # for i in test_dataset:
+    #     print('question',i['question'])
+    #     print('answer',i['answer'])
+    #     print('input_ids\n',i['input_ids'])
+    #     print('-'*20)
+    #     import pdb
+    #     pdb.set_trace()
     if args.vllm:
-        from vllm import LLM, SamplingParams
+        from vllm import LLM 
 
         script_path = os.path.dirname(os.path.abspath(__file__))
         print("script_path", script_path)
@@ -91,7 +102,7 @@ def main():
         reuse_flag = False
         if os.path.exists(target_file):
             while True:
-                i = input("本次任务似乎已经被完成过了~输入y可以复用，输入n则重新生成")
+                i = input("本次任务似乎已经被完成过了~输入y可以复用，输入n则重新生成：")
                 if i == "y":
                     reuse_flag = True
                     break
@@ -104,18 +115,44 @@ def main():
             with open(target_file, "rb") as r:
                 response = pickle.load(r)
         else:
-            # print('将在这么多卡上张量并行:',torch.cuda.device_count())
-            model = LLM(model=args.model, swap_space=0, gpu_memory_utilization=0.9)
-            samplingParams = SamplingParams(
-                max_tokens=1024,
-                temperature=0,
-                stop=["Q:"],
-            )
-
+            
             all_prompt = [d["input_ids"] for d in test_dataset]
+            samplingParams=dname2samplingparams[args.dataset]()
+            if args.dp:
+                def split_list(lst, n=torch.cuda.device_count()):
+                    avg = len(lst) / float(n)
+                    return [lst[int(avg * i):int(avg * (i + 1))] for i in range(n)]
+                all_prompt=split_list(all_prompt)
 
-            response = model.generate(all_prompt, samplingParams)
-            print("response的长度", len(response))
+                import ray
+                @ray.remote(num_gpus=1)
+                def run(prompts):
+                    model = LLM(model=args.model)
+                    response = model.generate(prompts, samplingParams)
+                    return response
+
+                outputs=[]
+                for i in range(len(all_prompt)):
+                    output=run.remote(all_prompt[i])
+                    outputs.append(output)
+
+                response=[]
+                for i in range(len(outputs)):
+                    result=ray.get(outputs[i])
+                    response.extend(result)
+
+                
+                
+                ray.shutdown()
+
+
+            else:
+                model = LLM(model=args.model,tensor_parallel_size=torch.cuda.device_count() )
+                response = model.generate(all_prompt, samplingParams)
+                
+                
+            logger.debug(f"response的长度:{len(response)}")
+            # 不只保存文本是因为未来很可能有一些任务，是需要log prob的，所以没办法，最好整个保存。
             with open(target_file, "wb") as o:
                 pickle.dump(response, o)
 
