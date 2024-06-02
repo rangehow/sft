@@ -59,6 +59,8 @@ args = parse_args()
 model_dir = model_dir[args.model]
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
