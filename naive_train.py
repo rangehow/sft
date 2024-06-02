@@ -28,7 +28,7 @@ class MyCollator:
             {"input_ids": input_ids}, return_tensors="pt", padding=True
         )
         max_len = input_ids_padded.input_ids.shape[-1]
-        labels_padded=[[-100] * (max_len - len(label)) + label for label in labels]
+        labels_padded = [[-100] * (max_len - len(label)) + label for label in labels]
         return {
             "input_ids": input_ids_padded.input_ids,
             "attention_mask": input_ids_padded.attention_mask,
@@ -119,10 +119,10 @@ trainer = Trainer(
     tokenizer=tokenizer,
     data_collator=my_collator,
 )
-dataloader=trainer.get_train_dataloader()
-for d in dataloader:
-    print(d)
-    import pdb
-    pdb.set_trace()
-# trainer.train()
+# dataloader=trainer.get_train_dataloader()
+# for d in dataloader:
+#     print(d)
+#     import pdb
+#     pdb.set_trace()
+trainer.train()
 trainer.save_model(args.output_dir)

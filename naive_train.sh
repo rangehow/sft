@@ -3,10 +3,10 @@
 #     --dataset alpaca_cleaned \
 #     --output_dir /data/ruanjh/best_training_method/output \
 
-CUDA_VISIBLE_DEVICES=3 python  naive_train.py \
-    --model llama3_8b \
+CUDA_VISIBLE_DEVICES=2 python  naive_train.py \
+    --model gemma_2b \
     --dataset alpaca_gpt4 \
-    --lora \
     --train_batch_size 8 \
     --gradient_accumulation_steps 8 \
-    --output_dir naive_lora_6m2d \
+    --output_dir gemma_naive_6m2d \
+    # --lora \
