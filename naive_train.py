@@ -44,8 +44,8 @@ def parse_args():
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
     parser.add_argument("--output_dir",default=None)
-    parser.add_argument("--train_batch_size", type=int, default=4,type=int)
-    parser.add_argument("--num_train_epochs", type=int, default=3,type=int)
+    parser.add_argument("--train_batch_size", type=int, default=4)
+    parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--gradient_accumulation_steps", default=16,type=int)
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     # TODO 边写下面边思考，这里需要什么参数？
