@@ -17,7 +17,7 @@ CUDA_VISIBLE_DEVICES=1,3 python -m sft.eval.gsm8k --dataset gsm8k --model /data/
 
 
 
-CUDA_VISIBLE_DEVICES=1,3  python -m sft.eval.gsm8k  --dataset mmlu --vllm --mode 0 --shot --dp  --model models/Meta-Llama-3-8B-Instruct
+CUDA_VISIBLE_DEVICES=1,3  python -m sft.eval.gsm8k  --dataset mmlu --vllm --mode 0 --shot --dp  --model sft/smile
 
 CUDA_VISIBLE_DEVICES=2 python -m sft.eval.gsm8k --model sft/gemma_2b_alpaca_gpt4_5m30d_0_weighted_div  --dataset gsm8k --vllm --mode 0 --shot &
 

@@ -27,11 +27,8 @@ class MyCollator:
         input_ids_padded = self.tokenizer.pad(
             {"input_ids": input_ids}, return_tensors="pt", padding=True
         )
-        labels_padded = torch.nn.utils.rnn.pad_sequence(
-            [torch.tensor(label) for label in labels],
-            batch_first=True,
-            padding_value=-100,
-        )
+        max_len = input_ids_padded.input_ids.shape[-1]
+        labels_padded=[[-100] * (max_len - len(label)) + label for label in labels]
         return {
             "input_ids": input_ids_padded.input_ids,
             "attention_mask": input_ids_padded.attention_mask,
@@ -43,17 +40,16 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
-    parser.add_argument("--output_dir",default=None)
+    parser.add_argument("--output_dir", default=None)
     parser.add_argument("--train_batch_size", type=int, default=4)
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--gradient_accumulation_steps", default=16,type=int)
+    parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     # TODO 边写下面边思考，这里需要什么参数？
     return parser.parse_args()
 
 
 args = parse_args()
-
 
 
 model_dir = model_dir[args.model]
@@ -98,7 +94,7 @@ if args.lora:
         r=8,
         lora_alpha=32,
         lora_dropout=0.1,
-        target_modules='all-linear',
+        target_modules="all-linear",
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
@@ -123,5 +119,10 @@ trainer = Trainer(
     tokenizer=tokenizer,
     data_collator=my_collator,
 )
-trainer.train()
+dataloader=trainer.get_train_dataloader()
+for d in dataloader:
+    print(d)
+    import pdb
+    pdb.set_trace()
+# trainer.train()
 trainer.save_model(args.output_dir)
