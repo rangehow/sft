@@ -128,11 +128,11 @@ if args.lora:
     from peft import LoraConfig, TaskType, get_peft_model
 
     peft_config = LoraConfig(
-        task_type=TaskType.SEQ_2_SEQ_LM,
         inference_mode=False,
         r=8,
         lora_alpha=32,
         lora_dropout=0.1,
+        target_modules='all-linear',
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
