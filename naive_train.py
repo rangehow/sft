@@ -44,11 +44,10 @@ def parse_args():
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
     parser.add_argument("--output_dir",default=None)
-    parser.add_argument("--learning_rate", default=5e-5)
     parser.add_argument("--train_batch_size", type=int, default=4)
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--weight_decay", default=0.01)
     parser.add_argument("--gradient_accumulation_steps", default=16)
+    parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     # TODO 边写下面边思考，这里需要什么参数？
     return parser.parse_args()
 
@@ -87,6 +86,21 @@ train_dataset = train_dataset.map(
     remove_columns=train_dataset.features.keys(),
     desc="tokenize",
 )
+
+
+if args.lora:
+    from peft import LoraConfig, TaskType, get_peft_model
+
+    peft_config = LoraConfig(
+        inference_mode=False,
+        r=8,
+        lora_alpha=32,
+        lora_dropout=0.1,
+        target_modules='all-linear',
+    )
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+
 
 trainer = Trainer(
     model=model,
