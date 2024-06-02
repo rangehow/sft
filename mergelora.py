@@ -26,6 +26,7 @@ import os
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
+    return parser.parse_args()
 
 
 args = parse_args()
