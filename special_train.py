@@ -165,6 +165,8 @@ trainer = KLTrainer(
 
 trainer.train()
 trainer.save_model(args.output_dir)
+
+
 saved_args_dict = vars(args)
 saved_args_dict["实际的总batch_size"] = (
     args.gradient_accumulation_steps * real_bsz * torch.cuda.device_count()
