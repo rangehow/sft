@@ -90,7 +90,8 @@ def main():
 
         script_path = os.path.dirname(os.path.abspath(__file__))
         print("script_path", script_path)
-        model_name = os.path.basename(args.model)
+        
+        model_name = os.path.basename(args.model.rstrip(os.sep)) # 不去掉sep，碰到 a/b/ 就会读到空。
         save_str = (
             f"{model_name}_{args.dataset}_vllm_{args.mode}_shot"
             if args.shot
