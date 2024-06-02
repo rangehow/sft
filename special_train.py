@@ -50,12 +50,14 @@ if args.output_dir is None:
     current_month = current_time.month
     current_day = current_time.day
     args.output_dir = (
-        f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}"
+        f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
     )
     if args.weighted:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
         args.output_dir = args.output_dir + "_div"
+    if args.lora:
+        args.output_dir = args.output_dir + "_lora"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 model_dir = model_dir.get(args.model, args.model)
