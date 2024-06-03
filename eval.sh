@@ -32,3 +32,5 @@ CUDA_VISIBLE_DEVICES=3 python -m sft.eval.gsm8k --model models/Meta-Llama-3-8B-I
 
 
 CUDA_VISIBLE_DEVICES=3 python -m sft.eval.gsm8k --model model_output/522origin --dataset gsm8k --vllm --mode 0 --shot&
+
+CUDA_VISIBLE_DEVICES=1 python -m sft.eval.gsm8k --model models/gemma-2b --dataset truthfulqa --vllm --mode 0 --logprob --shot&
