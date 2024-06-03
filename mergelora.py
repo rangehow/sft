@@ -68,7 +68,7 @@ with open(os.path.join(args.model, "adapter_config.json")) as o:
 print(base_model, args.model)
 tokenizer = AutoTokenizer.from_pretrained(base_model)
 tokenizer.save_pretrained(args.model)
-base_model = AutoModelForCausalLM.from_pretrained(base_model)
+base_model = AutoModelForCausalLM.from_pretrained(base_model, torch_dtype="auto")
 model = PeftModelForCausalLM.from_pretrained(base_model, args.model)
 merged_model = model.merge_and_unload()
 merged_model.save_pretrained(args.model)
