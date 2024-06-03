@@ -146,8 +146,8 @@ def truthfulqa(prediciton, reference, vllm):
         acc,num =0 ,0   #准确率，问题数
     # 计算模型对于每个问题的准确率
         for labels, ll in zip(doc, results):
-            print("\n\n\nlabels=",labels)
-            print("\ll=",ll)
+            #print("\n\n\nlabels=",labels)
+            #print("\ll=",ll)
             split_idx = labels.index(0)
             ll_true, ll_false = ll[:split_idx], ll[split_idx:]
             p_true, p_false = np.exp(np.array(ll_true)), np.exp(np.array(ll_false))
