@@ -28,7 +28,13 @@ def mmlu():
                 stop=["\n\nQuestion:"],
             )
 
-
+@register2dict(name="truthfulqa")
+def truthfulqa():
+    return  SamplingParams(
+                temperature=0, 
+                prompt_logprobs=1, 
+                max_tokens=1
+    )
 if __name__ == "__main__":
     d=datasets.load_dataset("cais/mmlu")
     print(d)
