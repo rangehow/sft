@@ -224,7 +224,7 @@ def truthfulqa(instances, template,shot=False, mode=0,**kwargs ):
             # 找出选项部分的token ids
             continuation_enc = whole_enc[context_enc_len:]
 
-            inp = (context_enc + continuation_enc)[1:]
+            inp = (context_enc + continuation_enc)
 
             res.append(inp)
             
