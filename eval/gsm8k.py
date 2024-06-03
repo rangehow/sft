@@ -134,7 +134,7 @@ def main():
 
                 @ray.remote(num_gpus=1)
                 def run(prompts):
-                    model = LLM(model=args.model, dtype="bfloat16")
+                    model = LLM(model=args.model)
                     response = model.generate(prompts, samplingParams)
                     return response
 
@@ -154,7 +154,7 @@ def main():
                 model = LLM(
                     model=args.model,
                     tensor_parallel_size=torch.cuda.device_count(),
-                    dtype="bfloat16",
+                    
                 )
                 response = model.generate(all_prompt, samplingParams)
 
