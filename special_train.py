@@ -49,9 +49,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = (
-        f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
-    )
+    args.output_dir = f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
     if args.weighted:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
@@ -131,10 +129,10 @@ if args.lora:
 
     peft_config = LoraConfig(
         inference_mode=False,
-        r=8,
+        r=64,
         lora_alpha=32,
         lora_dropout=0.1,
-        target_modules='all-linear',
+        target_modules="all-linear",
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
