@@ -21,6 +21,7 @@ from torch.utils.data import DataLoader
 from .load_func import dname2load
 from .samplingparam import dname2samplingparams
 
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
@@ -45,11 +46,13 @@ def parse_args():
         "--dp",
         action="store_true",
     )
+
     parser.add_argument(
         "--logprob",
         action="store_true",
     )
     
+
     return parser.parse_args()
 
 
@@ -90,12 +93,14 @@ def main():
     #     import pdb
     #     pdb.set_trace()
     if args.vllm:
-        from vllm import LLM 
+        from vllm import LLM
 
         script_path = os.path.dirname(os.path.abspath(__file__))
         print("script_path", script_path)
-        
-        model_name = os.path.basename(args.model.rstrip(os.sep)) # 不去掉sep，碰到 a/b/ 就会读到空。
+
+        model_name = os.path.basename(
+            args.model.rstrip(os.sep)
+        )  # 不去掉sep，碰到 a/b/ 就会读到空。
         save_str = (
             f"{model_name}_{args.dataset}_vllm_{args.mode}_shot"
             if args.shot
@@ -120,38 +125,39 @@ def main():
             with open(target_file, "rb") as r:
                 response = pickle.load(r)
         else:
-            
+
             all_prompt = [d["input_ids"] for d in test_dataset]
-            samplingParams=dname2samplingparams[args.dataset]()
+            samplingParams = dname2samplingparams[args.dataset]()
             if args.dp:
+
                 def split_list(lst, n=torch.cuda.device_count()):
                     avg = len(lst) / float(n)
-                    return [lst[int(avg * i):int(avg * (i + 1))] for i in range(n)]
-                all_prompt=split_list(all_prompt)
+                    return [lst[int(avg * i) : int(avg * (i + 1))] for i in range(n)]
+
+                all_prompt = split_list(all_prompt)
 
                 import ray
+
                 @ray.remote(num_gpus=1)
                 def run(prompts):
                     model = LLM(model=args.model)
                     response = model.generate(prompts, samplingParams)
                     return response
 
-                outputs=[]
+                outputs = []
                 for i in range(len(all_prompt)):
-                    output=run.remote(all_prompt[i])
+                    output = run.remote(all_prompt[i])
                     outputs.append(output)
 
-                response=[]
+                response = []
                 for i in range(len(outputs)):
-                    result=ray.get(outputs[i])
+                    result = ray.get(outputs[i])
                     response.extend(result)
 
-                
-                
                 ray.shutdown()
 
-
             else:
+
                 model = LLM(model=args.model,tensor_parallel_size=torch.cuda.device_count() )
                 
                 if args.logprob:
@@ -175,6 +181,7 @@ def main():
                     response = model.generate(all_prompt, samplingParams)
                 
                 
+
             logger.debug(f"response的长度:{len(response)}")
             # 不只保存文本是因为未来很可能有一些任务，是需要log prob的，所以没办法，最好整个保存。
             with open(target_file, "wb") as o:
