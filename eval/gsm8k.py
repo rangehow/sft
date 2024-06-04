@@ -47,6 +47,12 @@ def parse_args():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--logprob",
+        action="store_true",
+    )
+    
+
     return parser.parse_args()
 
 
@@ -151,12 +157,30 @@ def main():
                 ray.shutdown()
 
             else:
-                model = LLM(
-                    model=args.model,
-                    tensor_parallel_size=torch.cuda.device_count(),
-                    
-                )
-                response = model.generate(all_prompt, samplingParams)
+
+                model = LLM(model=args.model,tensor_parallel_size=torch.cuda.device_count() )
+                
+                if args.logprob:
+                    response = []
+                    # all_prompt内容大概长这样，每一个列表的列表对应一个问题和它对应的选项。[[[问题1+选项1],[问题1+选项2]],[[问题2+选项1],[问题2+选项2]]
+                    for input in all_prompt:
+                        res = []
+                        for ins in input:
+                                
+                            # 对于每一个问题+选项生成一个输出 
+                            output = model.generate(
+                                    prompt_token_ids=[ins],
+                                    sampling_params=samplingParams
+                                )
+
+                            res.append(output)
+                             
+                        response.append(res)
+                        
+                else:
+                    response = model.generate(all_prompt, samplingParams)
+                
+                
 
             logger.debug(f"response的长度:{len(response)}")
             # 不只保存文本是因为未来很可能有一些任务，是需要log prob的，所以没办法，最好整个保存。

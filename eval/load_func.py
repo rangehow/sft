@@ -20,7 +20,10 @@ def gsm8k():
 @register2dict(name="mmlu")
 def mmlu():
     return datasets.load_dataset("cais/mmlu", "all")["test"]
-
+    
+@register2dict(name="truthfulqa")
+def truthfulqa():
+    return datasets.load_dataset('truthful_qa', "multiple_choice")['validation']
 
 if __name__ == "__main__":
     d=datasets.load_dataset("cais/mmlu")
