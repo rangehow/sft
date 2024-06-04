@@ -51,7 +51,6 @@ def parse_args():
         "--logprob",
         action="store_true",
     )
-    
 
     return parser.parse_args()
 
@@ -82,16 +81,11 @@ def main():
         num_proc=1,  # 进程数不要设置太大，我不知道datasets咋设计的，进程数太大很慢
         desc="tokenize",
         load_from_cache_file=False,
+        remove_columns=dataset.features.keys(),
     )
 
     print(test_dataset[0])
-    # for i in test_dataset:
-    #     print('question',i['question'])
-    #     print('answer',i['answer'])
-    #     print('input_ids\n',i['input_ids'])
-    #     print('-'*20)
-    #     import pdb
-    #     pdb.set_trace()
+
     if args.vllm:
         from vllm import LLM
 
@@ -158,29 +152,34 @@ def main():
 
             else:
 
-                model = LLM(model=args.model,tensor_parallel_size=torch.cuda.device_count() )
-                
-                if args.logprob:
-                    response = []
-                    # all_prompt内容大概长这样，每一个列表的列表对应一个问题和它对应的选项。[[[问题1+选项1],[问题1+选项2]],[[问题2+选项1],[问题2+选项2]]
-                    for input in all_prompt:
-                        res = []
-                        for ins in input:
-                                
-                            # 对于每一个问题+选项生成一个输出 
-                            output = model.generate(
-                                    prompt_token_ids=[ins],
-                                    sampling_params=samplingParams
-                                )
+                model = LLM(
+                    model=args.model,
+                    tensor_parallel_size=torch.cuda.device_count(),
+                    gpu_memory_utilization=0.9,
+                )
 
-                            res.append(output)
-                             
-                        response.append(res)
-                        
-                else:
-                    response = model.generate(all_prompt, samplingParams)
-                
-                
+                # if args.logprob:
+                #     response = []
+                #     # all_prompt内容大概长这样，每一个列表的列表对应一个问题和它对应的选项。[[[问题1+选项1],[问题1+选项2]],[[问题2+选项1],[问题2+选项2]]
+                #     for input in all_prompt:
+                #         res = []
+                #         for ins in input:
+
+                #             # 对于每一个问题+选项生成一个输出
+                #             output = model.generate(
+                #                 prompt_token_ids=[ins], sampling_params=samplingParams
+                #             )
+
+                #             res.append(output)
+
+                #         response.append(res)
+
+                # else:
+                max_len=0
+                for p in all_prompt:
+                    max_len=max(max_len,len(p))
+                print(max_len)
+                response = model.generate(all_prompt, samplingParams)
 
             logger.debug(f"response的长度:{len(response)}")
             # 不只保存文本是因为未来很可能有一些任务，是需要log prob的，所以没办法，最好整个保存。
@@ -188,93 +187,7 @@ def main():
                 pickle.dump(response, o)
 
     else:
-        from transformers import (
-            AutoModelForCausalLM,
-            GenerationConfig,
-            StoppingCriteria,
-        )
-
-        class DataCollator:
-            def __init__(self, tokenizer):
-                self.tokenizer = tokenizer
-
-            def __call__(
-                self,
-                instance,
-            ):
-
-                inputs = self.tokenizer(
-                    [i["input_ids"] for i in instance],
-                    padding=True,
-                    return_tensors="pt",
-                    pad_to_multiple_of=8,
-                )
-                return {
-                    "input_ids": inputs.input_ids,
-                    "attention_mask": inputs.attention_mask,
-                }
-
-        with torch.inference_mode():
-            try:
-                model = AutoModelForCausalLM.from_pretrained(
-                    args.model,
-                    torch_dtype=torch.bfloat16,
-                    low_cpu_mem_usage=True,
-                    attn_implementation="flash_attention_2",
-                )
-            except Exception as e:
-                logger.error(e)
-                logger.error("尝试退回naive attn，如果torch>2.1则是sqpa")
-                model = AutoModelForCausalLM.from_pretrained(
-                    args.model,
-                    torch_dtype=torch.bfloat16,
-                )
-
-            model.cuda()
-
-            collator = DataCollator(tokenizer=tokenizer)
-            dataloader = DataLoader(
-                dataset=test_dataset, collate_fn=collator, batch_size=1, num_workers=8
-            )
-            response = []
-
-            class EosListStoppingCriteria(StoppingCriteria):
-                def __init__(self, eos_sequence):
-                    self.eos_sequence = eos_sequence
-
-                def __call__(
-                    self,
-                    input_ids: torch.LongTensor,
-                    scores: torch.FloatTensor,
-                    **kwargs,
-                ) -> bool:
-
-                    last_ids = input_ids[:, -len(self.eos_sequence) :].tolist()
-                    return self.eos_sequence in last_ids
-
-            from tqdm import tqdm
-
-            for d in tqdm(dataloader):
-                prompt_length = d["input_ids"].shape[1]
-                generation_config = GenerationConfig(
-                    max_new_tokens=1024,
-                    do_sample=False,
-                )
-
-                output = model.generate(
-                    input_ids=d["input_ids"].to("cuda"),
-                    attention_mask=d["attention_mask"].to("cuda"),
-                    generation_config=generation_config,
-                    tokenizer=tokenizer,
-                    stopping_criteria=[
-                        EosListStoppingCriteria(
-                            tokenizer.encode("Q:", add_special_tokens=False)
-                        )
-                    ],
-                )
-                text = tokenizer.batch_decode(output[:, prompt_length:])
-                print(text)
-                response.append(text)
+        logger.error("不支持非vllm的实现")
 
     score = dname2post[args.dataset](
         prediciton=response,

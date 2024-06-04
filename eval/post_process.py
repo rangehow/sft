@@ -1,6 +1,8 @@
 # 为每个数据集定义一个接口？接口应该是 ref和prediction就行，然后里面负责后处理和调用metrics
 import re
 
+import numpy as np
+
 dname2post = {}
 
 
@@ -77,15 +79,12 @@ def gsm8k(prediciton, reference, vllm):
     return correct / len(reference) * 100
 
 
-
-
 @register2dict(name="mmlu")
 def mmlu(prediciton, reference, vllm):
 
-    
     idx2char = {0: "A", 1: "B", 2: "C", 3: "D"}
     correct = 0
-    idx=0
+    idx = 0
     for p, r in zip(prediciton, reference):
         if vllm:
             generated_text = p.outputs[0].text
@@ -96,7 +95,7 @@ def mmlu(prediciton, reference, vllm):
         all_responses = generated_text[1]
         # import pdb
         # pdb.set_trace()
-        if all_responses==idx2char[r]:
+        if all_responses == idx2char[r]:
             correct += 1
 
         # print("-" * 40)
@@ -105,49 +104,50 @@ def mmlu(prediciton, reference, vllm):
         # print(f"ground truth answer: {idx2char[r]}")
         # print(f"Correct: {correct} out of {idx+1}")
         # print("=" * 40)
-        idx+=1
+        idx += 1
     print(f"total_data_: {len(reference)}")
     return correct / len(reference) * 100
 
 
+def _parse_logprobs(tokens: list, outputs, ctxlen: int) -> tuple[float, bool]:
+    # The first entry of prompt_logprobs is None because the model has no previous tokens to condition on.
+    continuation_logprobs_dicts = outputs[0].prompt_logprobs
 
-@register2dict(name="truthfulqa")
-def truthfulqa(prediciton, reference, vllm):
-    
-    def _parse_logprobs(tokens: list, outputs, ctxlen: int) -> tuple[float, bool]:
-        # The first entry of prompt_logprobs is None because the model has no previous tokens to condition on.
-        continuation_logprobs_dicts = outputs[0].prompt_logprobs
+    def coerce_logprob_to_num(logprob):
+        return getattr(logprob, "logprob", logprob)
 
-        def coerce_logprob_to_num(logprob):
-            return getattr(logprob, "logprob", logprob)
-
-        continuation_logprobs_dicts = [
+    continuation_logprobs_dicts = [
+        (
             {
                 token: coerce_logprob_to_num(logprob)
                 for token, logprob in logprob_dict.items()
             }
             if logprob_dict is not None
             else None
-            for logprob_dict in continuation_logprobs_dicts
-        ]
-
-        # Calculate continuation_logprobs
-        # assume ctxlen always >= 1
-        continuation_logprobs = sum(
-            logprob_dict.get(token)
-            for token, logprob_dict in zip(
-                tokens[ctxlen:], continuation_logprobs_dicts[ctxlen:]
-            )
         )
-        return continuation_logprobs
+        for logprob_dict in continuation_logprobs_dicts
+    ]
 
-    
+    # Calculate continuation_logprobs
+    # assume ctxlen always >= 1
+    continuation_logprobs = sum(
+        logprob_dict.get(token)
+        for token, logprob_dict in zip(
+            tokens[ctxlen:], continuation_logprobs_dicts[ctxlen:]
+        )
+    )
+    return continuation_logprobs
+
+
+@register2dict(name="truthfulqa")
+def truthfulqa(prediciton, reference, vllm):
+
     def process_results_mc2(doc, results):
-        acc,num =0 ,0   #准确率，问题数
-    # 计算模型对于每个问题的准确率
+        acc, num = 0, 0  # 准确率，问题数
+        # 计算模型对于每个问题的准确率
         for labels, ll in zip(doc, results):
-            #print("\n\n\nlabels=",labels)
-            #print("\ll=",ll)
+            # print("\n\n\nlabels=",labels)
+            # print("\ll=",ll)
             split_idx = labels.index(0)
             ll_true, ll_false = ll[:split_idx], ll[split_idx:]
             p_true, p_false = np.exp(np.array(ll_true)), np.exp(np.array(ll_false))
@@ -156,19 +156,16 @@ def truthfulqa(prediciton, reference, vllm):
             acc += sum(p_true)
             num += 1
 
-        return acc/num 
+        return acc / num
     
-  
     results = []
-    ctx_len=[t[-1] for t in reference]
-    for pre,len in zip(prediciton,ctx_len):
+    ctx_len = [t[-1] for t in reference]
+    for pre, len in zip(prediciton, ctx_len):
         res = []
-        for p in pre :
-            prompt_log=_parse_logprobs(
-                    tokens=p[0].prompt_token_ids,
-                    outputs=p,
-                     ctxlen=len
-                    )
-            res.append(prompt_log) 
+        for p in pre:
+            prompt_log = _parse_logprobs(
+                tokens=p[0].prompt_token_ids, outputs=p, ctxlen=len
+            )
+            res.append(prompt_log)
         results.append(res)
     return process_results_mc2([labels[:-1] for labels in reference], results)

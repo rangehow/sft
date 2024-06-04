@@ -28,7 +28,9 @@ class MyCollator:
             {"input_ids": input_ids}, return_tensors="pt", padding=True
         )
         max_len = input_ids_padded.input_ids.shape[-1]
-        labels_padded = torch.tensor([[-100] * (max_len - len(label)) + label for label in labels])
+        labels_padded = torch.tensor(
+            [[-100] * (max_len - len(label)) + label for label in labels]
+        )
         return {
             "input_ids": input_ids_padded.input_ids,
             "attention_mask": input_ids_padded.attention_mask,
@@ -43,8 +45,9 @@ def parse_args():
     parser.add_argument("--output_dir", default=None)
     parser.add_argument("--train_batch_size", type=int, default=4)
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
+    parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
+    parser.add_argument("--total_bsz", default=64, type=int)
     # TODO 边写下面边思考，这里需要什么参数？
     return parser.parse_args()
 
@@ -99,14 +102,17 @@ if args.lora:
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-
+real_bsz = args.total_bsz // torch.cuda.device_count() // 8
+logger.debug(
+    f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
+)
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
         # optim="adamw_apex_fused",
         output_dir=args.output_dir,
         # learning_rate=args.learning_rate,  # 学习率
-        per_device_train_batch_size=args.train_batch_size,  # 每个设备的训练批量大小
+        per_device_train_batch_size=real_bsz,  # 每个设备的训练批量大小
         num_train_epochs=args.num_train_epochs,  # 训练的轮次
         # weight_decay=args.weight_decay,
         # evaluation_strategy="epoch",
