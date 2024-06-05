@@ -78,7 +78,7 @@ embedding_size = model.lm_head.weight.size()[
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
 
 collator = SpecialDataCollator(
-    tokenizer, zero_prob=args.zero_prob, embedding_size=embedding_size
+    tokenizer, zero_prob=args.zero_prob, embedding_size=embedding_size,div_mode=args.div_mode
 )
 
 
@@ -152,13 +152,18 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
         dataloader_pin_memory=True,
-        dataloader_num_workers=0,
+        dataloader_num_workers=8,
         num_train_epochs=3,
         per_device_train_batch_size=real_bsz,
         bf16=True,
     ),
     data_collator=collator,
 )
+
+from tqdm import tqdm
+d=trainer.get_train_dataloader()
+for dd in tqdm(d):
+    continue
 
 
 trainer.train()

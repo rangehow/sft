@@ -5,7 +5,6 @@ import torch
 from scipy.optimize import root_scalar
 
 
-
 def transform_to_log_prob(
     knns,
     vocab_size=None,
@@ -100,7 +99,7 @@ def optimized_stack(supervised, embedding_size):
     """
 
     # Pre-allocate the tensor for efficiency
-    x = torch.zeros(len(supervised), embedding_size)  # 因为每个位置很难超过int16
+    x = torch.zeros(len(supervised), embedding_size)
 
     # Iterate through the Counters and directly update the tensor
     for i, counter in enumerate(supervised):
@@ -109,6 +108,10 @@ def optimized_stack(supervised, embedding_size):
                 x[i, key] = value
 
     return x
+
+
+import torch
+from collections import Counter
 
 
 def get_data(
@@ -160,6 +163,9 @@ def get_data(
     return temp_dict
 
 
+from time import time
+
+
 class SpecialDataset(Dataset):
     def __init__(
         self,
@@ -188,6 +194,7 @@ class SpecialDataset(Dataset):
 
     def __getitem__(self, index):
 
+        # 很不耗时，e-6
         return {
             "input_ids": self.input_ids[index],
             "supervised": self.supervised[index],
@@ -197,16 +204,6 @@ class SpecialDataset(Dataset):
             "valid_label_index_list": self.valid_label_index_list[index],
         }
 
-        return get_data(
-            self.supervised[index],
-            self.clm[index],
-            self.input_ids[index],
-            self.cnt_list[index],
-            self.embedding_size,
-            zero_prob=self.zero_prob,
-            div_mode=self.div_mode,
-        )
-
     def __len__(self):
         return len(self.input_ids)
 
@@ -215,10 +212,11 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 class SpecialDataCollator:
-    def __init__(self, tokenizer, zero_prob, embedding_size) -> None:
+    def __init__(self, tokenizer, zero_prob, embedding_size, div_mode) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
         self.embedding_size = embedding_size
+        self.div_mode = div_mode
 
     def __call__(self, batch) -> torch.Any:
 
@@ -237,6 +235,8 @@ class SpecialDataCollator:
         valid_label_index_list = []
         # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
         # 千万不要改动原batch的内容，不然会与auto_find_bsz冲突。
+
+        # 不耗时。e-5
         for i, d in enumerate(batch):
             length_diff = input_ids_max_len - input_ids_len[i]
             temp_index_list = []
@@ -260,36 +260,50 @@ class SpecialDataCollator:
         # supervised_cnt = [d["supervised_cnt"] for d in batch]
         # clm_cnt = [d["clm_cnt"] for d in batch]
 
+        # TIME --------------------------------------------------------------
+        # e-4 不算耗时
         # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
-
         supervised = [item for d in batch for item in d["supervised"]]
         clm = [item for d in batch for item in d["clm"]]
+        # ----------------------------------------------------------------
 
         x_sup = optimized_stack(supervised, self.embedding_size)
-
-        if self.zero_prob == 0:
-            all_prob_supervised = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
-        else:
-            all_prob_supervised = (
-                (1 - self.zero_prob) * x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
-            )
-            non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
-            temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
-            all_prob_supervised = torch.where(
-                all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
-            )
-
         x_clm = optimized_stack(clm, self.embedding_size)
 
-        if self.zero_prob == 0:
-            all_prob_clm = x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
+        if self.div_mode:
+
+            if self.zero_prob == 0:
+                all_prob_supervised = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
+            else:
+                all_prob_supervised = (
+                    (1 - self.zero_prob)
+                    * x_sup
+                    / torch.sum(x_sup, dim=-1, keepdim=True)
+                )
+                non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
+                temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
+                all_prob_supervised = torch.where(
+                    all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
+                )
+
+            if self.zero_prob == 0:
+                all_prob_clm = x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
+            else:
+                all_prob_clm = (
+                    (1 - self.zero_prob)
+                    * x_clm
+                    / torch.sum(x_clm, dim=-1, keepdim=True)
+                )
+                zero_cnt = torch.sum(x_clm != 0, keepdim=True, dim=-1)
+                temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
+                all_prob_clm = torch.where(
+                    all_prob_clm == 0, temp_zero_prob, all_prob_clm
+                )
         else:
-            all_prob_clm = (
-                (1 - self.zero_prob) * x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
-            )
-            zero_cnt = torch.sum(x_clm != 0, keepdim=True, dim=-1)
-            temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
-            all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
+
+            all_prob_supervised = transform_to_log_prob(x, zero_prob=self.zero_prob)
+
+            all_prob_clm = transform_to_log_prob(x, zero_prob=self.zero_prob)
 
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
@@ -330,14 +344,104 @@ class SpecialDataCollator:
 
 
 if __name__ == "__main__":
-    collator = SpecialDataCollator()
+    # torch.multiprocessing.set_sharing_strategy('file_descriptor')
+    import ast
+    import json
+    from transformers import (
+        AutoTokenizer,
+        AutoModelForCausalLM,
+        Seq2SeqTrainer,
+        DataCollatorForSeq2Seq,
+        BartTokenizerFast,
+        TrainingArguments,
+        Seq2SeqTrainingArguments,
+        BartTokenizer,
+    )
+    from torch.utils.data import Dataset, DataLoader
+    import datasets
+    from dataset import SpecialDataset, SpecialDataCollator
+    from special_trainer import KLTrainer
+    import pickle
+    from config import model_dir, dataset_dir
+    import torch
+    from argparse import ArgumentParser
+    from loguru import logger
+    import warnings
+    import os
+
+    def parse_args():
+        parser = ArgumentParser()
+        parser.add_argument("--model", default="gemma_2b")
+        parser.add_argument("--dataset", default="alpaca_gpt4")
+        parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
+        parser.add_argument("--output_dir")
+        parser.add_argument(
+            "--fa2", action="store_true", help="decide to use fa2 or not"
+        )
+        parser.add_argument(
+            "--lora", action="store_true", help="decide to use lora or not"
+        )
+        parser.add_argument("--zero_prob", default=0, type=ast.literal_eval)
+        parser.add_argument("--gradient_accumulation_steps", default=8, type=int)
+        parser.add_argument("--total_bsz", default=64, type=int)
+        parser.add_argument(
+            "--weighted",
+            action="store_true",
+            help="decide to use token level freq weight",
+        )
+        return parser.parse_args()
+
+    args = parse_args()
+    model_dir = model_dir.get(args.model, args.model)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"
+    model = AutoModelForCausalLM.from_pretrained(
+        model_dir,
+        torch_dtype="auto",
+        # device_map="auto",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
+        attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
+    )
+    model_type = model.config.model_type
+    embedding_size = model.lm_head.weight.size()[
+        0
+    ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
+
+    collator = SpecialDataCollator(
+        tokenizer, zero_prob=args.zero_prob, embedding_size=embedding_size
+    )
+
+    @logger.catch
+    def load_dataset():
+        with open(
+            f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl",
+            "rb",
+        ) as f:
+            synthesis = pickle.load(f)
+
+        with open(
+            f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl", "rb"
+        ) as f:
+            index = pickle.load(f)
+
+        train_dataset = SpecialDataset(
+            synthesis,
+            index,
+            embedding_size,
+            div_mode=args.div_mode,
+        )
+        return train_dataset
+
     train_dataset = load_dataset()
     dataloader = DataLoader(
         dataset=train_dataset,
         batch_size=8,
         collate_fn=collator,
-        num_workers=60,
-        pin_memory=False,
+        num_workers=0,
+        pin_memory=True,
     )
 
     from tqdm import tqdm

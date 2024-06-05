@@ -89,4 +89,29 @@ dataset_dir={
    CUDA_VISIBLE_DEVICES=可见的GPU_id accelerate launch --config_file my.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4 ---weighted zero_prob 0.1 &
    ```
 
-   
+## eval
+### 常规的测试，我们采用lm-eval
+
+安装lm-eval最新版本
+```bash
+pip install git+https://github.com/bigcode-project/bigcode-evaluation-harness.git
+```
+
+lm_eval 里的task list
+gsm8k_cot mmlu  truthfulqa_mc2	bbh_cot_fewshot	arc_challenge drop	TriviaQA  agieval														
+
+启动的命令大概像下面这样
+```bash
+CUDA_VISIBLE_DEVICES=2 lm_eval --model hf   --tasks bbh_cot_fewshot     --device cuda:0  --batch_size auto --model_args pretrained=/niutrans/NEUNLP/rjh/models/gemma-2b
+```
+
+
+### 代码类的测试
+依赖于 bigcode-evaluation-harness,
+```bash
+https://github.com/bigcode-project/bigcode-evaluation-harness.git
+```
+
+
+MT-bench
+https://github.com/lm-sys/FastChat/blob/main/fastchat/llm_judge/README.md#mt-bench
