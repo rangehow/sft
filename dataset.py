@@ -301,9 +301,9 @@ class SpecialDataCollator:
                 )
         else:
 
-            all_prob_supervised = transform_to_log_prob(x, zero_prob=self.zero_prob)
+            all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
 
-            all_prob_clm = transform_to_log_prob(x, zero_prob=self.zero_prob)
+            all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
 
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
