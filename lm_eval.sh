@@ -14,5 +14,5 @@ for model in "${models[@]}"; do
     accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
         --model_args pretrained="$model" \
         --tasks triviaqa \
-        --batch_size auto
+        --batch_size 8
 done
