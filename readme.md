@@ -107,11 +107,12 @@ CUDA_VISIBLE_DEVICES=2 lm_eval --model hf   --tasks bbh_cot_fewshot     --device
 
 
 ### 代码类的测试
-依赖于 bigcode-evaluation-harness,
+依赖于 bigcode-evaluation-harness,  主要测humaneval
 ```bash
 https://github.com/bigcode-project/bigcode-evaluation-harness.git
 ```
 
 
-MT-bench
+### MT-bench
+这个需要GPT4的key
 https://github.com/lm-sys/FastChat/blob/main/fastchat/llm_judge/README.md#mt-bench

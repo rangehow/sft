@@ -200,6 +200,7 @@ def main():
     ) as o:
         pickle.dump(synthesis_dict, o, protocol=5)
 
+    # 这个写法其实还可以，麻烦之处在于不方便大规模开展ngram的搜索实验。
     with open(
         f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl",
         "wb",
