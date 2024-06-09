@@ -48,7 +48,8 @@ def parse_args():
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     parser.add_argument("--total_bsz", default=64, type=int)
-    # TODO 边写下面边思考，这里需要什么参数？
+    parser.add_argument("--label_smoothing_factor ", default=0, type=float)
+
     return parser.parse_args()
 
 
@@ -120,6 +121,7 @@ trainer = Trainer(
         bf16=True,
         remove_unused_columns=True,
         save_strategy="no",
+        label_smoothing_factor =args.label_smoothing_factor,
     ),
     train_dataset=train_dataset,
     tokenizer=tokenizer,
