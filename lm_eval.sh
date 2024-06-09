@@ -1,20 +1,22 @@
 #!/bin/bash
 
+{
 # 定义模型列表
-# models=(
-#     '/niutrans/NEUNLP/rjh/sft/gemma_2b_alpaca_gpt4_5m30d_0_weighted_div'
-#     '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m2d'
-#     '/niutrans/NEUNLP/rjh/models/gemma-1.1-2b-it'
-#     '/niutrans/NEUNLP/rjh/models/gemma-2b'
-#     '/niutrans/NEUNLP/rjh/models/gemma-2b-it'
-# )
-
 models=(
-    '/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_6m2d_0_bsz64_weighted_div_lora' # r=32
-    '/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_6m2d_0_bsz64_weighted_div_lora_save' # r=8
-    '/niutrans/NEUNLP/rjh/models/Llama-3-8B'
-    '/niutrans/NEUNLP/rjh/models/Meta-Llama-3-8B-Instruct'
+    # '/niutrans/NEUNLP/rjh/sft/gemma_2b_alpaca_gpt4_5m30d_0_weighted_div'
+    # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m2d'
+    # '/niutrans/NEUNLP/rjh/models/gemma-1.1-2b-it'
+    # '/niutrans/NEUNLP/rjh/models/gemma-2b'
+    # '/niutrans/NEUNLP/rjh/models/gemma-2b-it'
+    '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m9d_ls0.1'
 )
+
+# models=(
+#     '/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_6m2d_0_bsz64_weighted_div_lora' # r=32
+#     '/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_6m2d_0_bsz64_weighted_div_lora_save' # r=8
+#     '/niutrans/NEUNLP/rjh/models/Llama-3-8B'
+#     '/niutrans/NEUNLP/rjh/models/Meta-Llama-3-8B-Instruct'
+# )
 
 
 
@@ -25,6 +27,8 @@ models=(
 #    "mmlu 0"
 # 定义任务列表和对应的 num_fewshot
 tasks=(
+    "mmlu 0"
+    "gsm8k 0"
     "triviaqa 5"
     "gsm8k_cot 0"
     "agieval 0"
@@ -42,17 +46,24 @@ for model in "${models[@]}"; do
         # 解析任务和 num_fewshot
         IFS=' ' read -r task_name num_fewshot <<< "$task"
         
-        # 执行命令
-        accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
-            --model_args pretrained="$model" \
-            --tasks "$task_name" \
-            --batch_size 8 \
-            --num_fewshot "$num_fewshot"
+        if [ "$task_name" == "mmlu" ] || [ "$task_name" == "gsm8k" ]; then
+            CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k   --vllm --mode 0 --shot --dp --dataset "$task_name" --model "$model"
+        else
+            # 执行命令
+            accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
+                --model_args pretrained="$model" \
+                --tasks "$task_name" \
+                --batch_size 8 \
+                --num_fewshot "$num_fewshot"
+        fi
+        
     done
 done
 
-accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
-            --model_args pretrained='/niutrans/NEUNLP/rjh/models/gemma-2b-it' \
-            --tasks winogrande \
-            --batch_size 8 \
-            --num_fewshot 5
+# accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
+#             --model_args pretrained='/niutrans/NEUNLP/rjh/models/gemma-2b-it' \
+#             --tasks winogrande \
+#             --batch_size 8 \
+#             --num_fewshot 5
+
+} >> output.txt
