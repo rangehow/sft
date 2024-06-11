@@ -99,10 +99,9 @@ def get_data(
     # clm_cnt = [frequency(sum(xx.values())) for xx in clm]
     supervised_cnt = None
     clm_cnt = None
+    x = optimized_stack(supervised, embdding_size)
+    x = optimized_stack(clm, embdding_size)
     if div_mode:
-
-        x = optimized_stack(supervised, embdding_size)
-
         all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
         zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
@@ -110,23 +109,15 @@ def get_data(
             all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
         )
 
-        x = optimized_stack(clm, embdding_size)
-
         all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
         zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
         temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
     else:
-        from time import time
-        a=time()
-        x = optimized_stack(supervised, embdding_size)
         all_prob_supervised = transform_to_log_prob(x, zero_prob=zero_prob)
-        b=time()
-        x = optimized_stack(clm, embdding_size)
         all_prob_clm = transform_to_log_prob(x, zero_prob=zero_prob)
-        c=time()
-        print(b-a,c-b)
+        
     temp_dict["input_ids"] = input_ids
     temp_dict["valid_label_index_list"] = valid_label_index_list
     temp_dict["all_prob_supervised"] = all_prob_supervised
