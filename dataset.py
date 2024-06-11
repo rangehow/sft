@@ -2,7 +2,8 @@ from collections import Counter
 from functools import partial
 from torch.utils.data import Dataset
 import torch
-from scipy.optimize import root_scalar
+from scipy.optimize import root_scalar, fsolve
+import cupy as cp
 
 
 def transform_to_log_prob(
@@ -22,25 +23,22 @@ def transform_to_log_prob(
 
             # 预先计算,免得在多次fun的迭代里都要重算
             zero_count_per_tensor = torch.sum(knns == 0, dim=-1)
-            non_zero_index = torch.nonzero(knns)
             # 分母
             bsz = knns.size(0)
 
             def fun(x):
-
                 if x <= 0:
                     return 10000
 
                 tensor_with_temperature = knns / x
-
                 exp_tensor = torch.exp(tensor_with_temperature)
-
                 sum_exp = torch.sum(exp_tensor, dim=-1)
                 result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
+
                 return result.item()
 
             # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
-            result = root_scalar(fun, bracket=[0.01, 100], method="toms748")
+            result = root_scalar(fun, bracket=[0.01, 50], method="toms748")
             knn_temperature = result.root
 
         probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)

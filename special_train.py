@@ -26,7 +26,7 @@ import os
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
-    parser.add_argument("--dataset", default="alpaca_cleaned")
+    parser.add_argument("--dataset", default="alpaca_gpt4")
     parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
@@ -154,8 +154,8 @@ trainer = KLTrainer(
         remove_unused_columns=False,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
-        dataloader_pin_memory=True,
-        dataloader_num_workers=8,
+        dataloader_pin_memory=False,
+        dataloader_num_workers=0,
         num_train_epochs=3,
         per_device_train_batch_size=real_bsz,
         bf16=True,
@@ -164,9 +164,10 @@ trainer = KLTrainer(
 )
 
 # from tqdm import tqdm
-# d=trainer.get_train_dataloader()
+
+# d = trainer.get_train_dataloader()
 # for dd in tqdm(d):
-#     print(dd)
+#     continue
 
 
 trainer.train()
