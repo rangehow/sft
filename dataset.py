@@ -10,7 +10,7 @@ def transform_to_log_prob(
     vocab_size=None,
     zero_prob=None,
 ):
-    
+
     if len(knns) == 0:
         # return torch.zeros((vocab_size))
         return None
@@ -27,7 +27,7 @@ def transform_to_log_prob(
             bsz = knns.size(0)
 
             def fun(x):
-                
+
                 if x <= 0:
                     return 10000
 
@@ -40,9 +40,7 @@ def transform_to_log_prob(
                 return result.item()
 
             # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
-            result = root_scalar(
-                fun, bracket=[0.01, 100], method="toms748"
-            )
+            result = root_scalar(fun, bracket=[0.01, 100], method="toms748")
             knn_temperature = result.root
 
         probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
@@ -52,7 +50,6 @@ def transform_to_log_prob(
 
 def frequency(x, xmax=50):
     return (x / xmax) ** 0.75 if x < xmax else 1
-
 
 
 def optimized_stack(supervised, embedding_size):
@@ -81,53 +78,6 @@ def optimized_stack(supervised, embedding_size):
 
 import torch
 from collections import Counter
-
-
-def get_data(
-    supervised,
-    clm,
-    input_ids,
-    valid_label_index_list,
-    embdding_size,
-    zero_prob,
-    div_mode,
-):
-
-    temp_dict = {}
-
-    # supervised_cnt = [frequency(sum(xx.values()), xmax=10) for xx in supervised]
-    # clm_cnt = [frequency(sum(xx.values())) for xx in clm]
-    supervised_cnt = None
-    clm_cnt = None
-    x = optimized_stack(supervised, embdding_size)
-    x = optimized_stack(clm, embdding_size)
-    if div_mode:
-        all_prob_supervised = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
-        temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
-        all_prob_supervised = torch.where(
-            all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
-        )
-
-        all_prob_clm = (1 - zero_prob) * x / torch.sum(x, dim=-1, keepdim=True)
-        zero_cnt = torch.sum(x != 0, keepdim=True, dim=-1)
-        temp_zero_prob = zero_prob / (embdding_size - zero_cnt)
-        all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
-
-    else:
-        all_prob_supervised = transform_to_log_prob(x, zero_prob=zero_prob)
-        all_prob_clm = transform_to_log_prob(x, zero_prob=zero_prob)
-        
-    temp_dict["input_ids"] = input_ids
-    temp_dict["valid_label_index_list"] = valid_label_index_list
-    temp_dict["all_prob_supervised"] = all_prob_supervised
-    temp_dict["all_prob_clm"] = all_prob_clm
-    temp_dict["supervised_cnt"] = supervised_cnt
-    temp_dict["clm_cnt"] = clm_cnt
-    return temp_dict
-
-
-from time import time
 
 
 class SpecialDataset(Dataset):
@@ -264,13 +214,9 @@ class SpecialDataCollator:
                     all_prob_clm == 0, temp_zero_prob, all_prob_clm
                 )
         else:
-            from time import time
-            a=time()
             all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
-            b=time()
             all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
-            c=time()
-            print(b-a,c-b)
+
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         )
