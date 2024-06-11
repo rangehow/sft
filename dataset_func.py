@@ -8,7 +8,7 @@
 
 import json
 from typing import Any
-
+from loguru import logger
 
 dname2func = {}
 
@@ -196,6 +196,19 @@ def mmlu(instances, shot=False, mode=0, **kwargs):
         output.append(answer)
 
     return _process(real_input, output, **kwargs)
+
+
+@register2dict(name="humaneval")
+def humaneval(instances, shot=False, mode=0, **kwargs):
+
+    if shot:
+        logger.warning("humaneval不支持shot，自动切换成非shot模式")
+
+    num_repeat = 1  # 因为是贪心算法，所以根本无所谓。
+    task_id = [item for item in instances["task_id"] for _ in range(num_repeat)]
+    real_input = [item for item in instances["prompt"] for _ in range(num_repeat)]
+
+    return _process(real_input, task_id, **kwargs)
 
 
 @register2dict(name="truthfulqa")

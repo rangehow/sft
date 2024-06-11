@@ -163,7 +163,7 @@ trainer = KLTrainer(
 from tqdm import tqdm
 d=trainer.get_train_dataloader()
 for dd in tqdm(d):
-    continue
+    print(dd)
 
 
 trainer.train()

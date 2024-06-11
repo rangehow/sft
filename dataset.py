@@ -10,14 +10,14 @@ def transform_to_log_prob(
     vocab_size=None,
     zero_prob=None,
 ):
-
+    
     if len(knns) == 0:
         # return torch.zeros((vocab_size))
         return None
     else:
         # 不需要拟合温度的情况。
         if zero_prob == 0:
-            knn_temperature = 0.000001  # 要放大，才能压低概率
+            knn_temperature = 1e-6  # 要放大，才能压低概率
         else:
 
             # 预先计算,免得在多次fun的迭代里都要重算
@@ -26,7 +26,8 @@ def transform_to_log_prob(
             # 分母
             bsz = knns.size(0)
 
-            def fun(knns, x):
+            def fun(x):
+                
                 if x <= 0:
                     return 10000
 
@@ -40,7 +41,7 @@ def transform_to_log_prob(
 
             # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
             result = root_scalar(
-                partial(fun, knns=knns), bracket=[0.01, 100], method="Ridder"
+                fun, bracket=[0.01, 100], method="toms748"
             )
             knn_temperature = result.root
 
@@ -52,38 +53,6 @@ def transform_to_log_prob(
 def frequency(x, xmax=50):
     return (x / xmax) ** 0.75 if x < xmax else 1
 
-
-def optimized_stack_batch(supervised, embedding_size):
-    """
-    Optimizes the provided code for stacking Counters into a PyTorch tensor.
-
-    Args:
-        supervised: A list of Counter objects.
-        embedding_size: The desired size of the embedding dimension.
-
-    Returns:
-        A PyTorch tensor representing the stacked Counters.
-    """
-
-    # Pre-allocate the tensor for efficiency
-    import pdb
-
-    pdb.set_trace()
-    x = torch.stack(
-        [
-            torch.bincount(torch.tensor(list(xx.elements())), minlength=embedding_size)
-            for xx in supervised
-        ]
-    )
-    x = torch.zeros(len(supervised), embedding_size)  # 因为每个位置很难超过int16
-
-    # Iterate through the Counters and directly update the tensor
-    for i, counter in enumerate(supervised):
-        for key, value in counter.items():
-            if key < embedding_size:  # Handle out-of-bounds indices
-                x[i, key] = value
-
-    return x
 
 
 def optimized_stack(supervised, embedding_size):
@@ -149,11 +118,15 @@ def get_data(
         all_prob_clm = torch.where(all_prob_clm == 0, temp_zero_prob, all_prob_clm)
 
     else:
+        from time import time
+        a=time()
         x = optimized_stack(supervised, embdding_size)
         all_prob_supervised = transform_to_log_prob(x, zero_prob=zero_prob)
+        b=time()
         x = optimized_stack(clm, embdding_size)
         all_prob_clm = transform_to_log_prob(x, zero_prob=zero_prob)
-
+        c=time()
+        print(b-a,c-b)
     temp_dict["input_ids"] = input_ids
     temp_dict["valid_label_index_list"] = valid_label_index_list
     temp_dict["all_prob_supervised"] = all_prob_supervised
@@ -300,11 +273,13 @@ class SpecialDataCollator:
                     all_prob_clm == 0, temp_zero_prob, all_prob_clm
                 )
         else:
-
+            from time import time
+            a=time()
             all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
-
+            b=time()
             all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
-
+            c=time()
+            print(b-a,c-b)
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         )
@@ -373,7 +348,7 @@ if __name__ == "__main__":
         parser = ArgumentParser()
         parser.add_argument("--model", default="gemma_2b")
         parser.add_argument("--dataset", default="alpaca_gpt4")
-        parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
+        parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
         parser.add_argument("--output_dir")
         parser.add_argument(
             "--fa2", action="store_true", help="decide to use fa2 or not"

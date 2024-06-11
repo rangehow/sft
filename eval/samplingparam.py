@@ -20,6 +20,24 @@ def gsm8k():
     )
 
 
+@register2dict(name="humaneval")
+def gsm8k():
+    return SamplingParams(
+        max_tokens=512,
+        temperature=0,
+        stop=[
+            "\nclass",
+            "\ndef",
+            "\n#",
+            "\n@",
+            "\nprint",
+            "\nif",
+            "\n```",
+            "<file_sep>",
+        ],
+    )
+
+
 @register2dict(name="mmlu")
 def mmlu():
     return SamplingParams(

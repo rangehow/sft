@@ -45,7 +45,7 @@ for model in "${models[@]}"; do
     for task in "${tasks[@]}"; do
         # 解析任务和 num_fewshot
         IFS=' ' read -r task_name num_fewshot <<< "$task"
-        
+        echo "$task_name"
         if [ "$task_name" == "mmlu" ] || [ "$task_name" == "gsm8k" ]; then
             CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k   --vllm --mode 0 --shot --dp --dataset "$task_name" --model "$model"
         else
@@ -59,6 +59,9 @@ for model in "${models[@]}"; do
         
     done
 done
+
+# 代码测试应该如何进行？
+# Human-Eval
 
 # accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
 #             --model_args pretrained='/niutrans/NEUNLP/rjh/models/gemma-2b-it' \

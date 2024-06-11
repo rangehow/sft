@@ -109,6 +109,29 @@ def mmlu(prediciton, reference, vllm):
     return correct / len(reference) * 100
 
 
+@register2dict(name="humaneval")
+def humaneval(prediciton, reference, vllm):
+    from human_eval.data import write_jsonl
+    import os
+
+    samples = [
+        dict(task_id=task_id, completion=completion.outputs[0].text)
+        for completion, task_id in zip(prediciton, reference)
+    ]
+    write_jsonl("samples.jsonl", samples)
+    with os.popen("evaluate_functional_correctness samples.jsonl") as stream:
+        output = stream.read()
+    match = re.search(r"\{.*\}", output)
+
+    if match:
+        dict_str = match.group()
+        result_dict = eval(dict_str)  
+        return result_dict["pass@1"]
+    else:
+        print("No dictionary found")
+    
+
+
 def _parse_logprobs(tokens: list, outputs, ctxlen: int) -> tuple[float, bool]:
     # The first entry of prompt_logprobs is None because the model has no previous tokens to condition on.
     continuation_logprobs_dicts = outputs[0].prompt_logprobs
@@ -157,7 +180,7 @@ def truthfulqa(prediciton, reference, vllm):
             num += 1
 
         return acc / num
-    
+
     results = []
     ctx_len = [t[-1] for t in reference]
     for pre, len in zip(prediciton, ctx_len):
