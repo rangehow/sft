@@ -38,6 +38,7 @@ tasks=(
     "winogrande 5"
     "sciq 0"
     "wikitext 0"
+    "humaneval 0"
 )
 
 # 遍历每个模型和任务并执行命令
@@ -46,11 +47,11 @@ for model in "${models[@]}"; do
         # 解析任务和 num_fewshot
         IFS=' ' read -r task_name num_fewshot <<< "$task"
         echo "$task_name"
-        if [ "$task_name" == "mmlu" ] || [ "$task_name" == "gsm8k" ]; then
+        if [ "$task_name" == "mmlu" ] || [ "$task_name" == "gsm8k" ] || [ "$task_name" == "humaneval" ]; then
             CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k   --vllm --mode 0 --shot --dp --dataset "$task_name" --model "$model"
         else
             # 执行命令
-            accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
+            accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
                 --model_args pretrained="$model" \
                 --tasks "$task_name" \
                 --batch_size 8 \

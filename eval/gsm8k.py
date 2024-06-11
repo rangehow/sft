@@ -135,7 +135,7 @@ def main():
                 @ray.remote(num_gpus=1)
                 def run(prompts):
                     model = LLM(model=args.model)
-                    response = model.generate(prompts, samplingParams)
+                    response = model.generate(prompts, samplingParams,use_tqdm=False)
                     return response
 
                 outputs = []
