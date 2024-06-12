@@ -16,7 +16,7 @@ import ast
 from config import model_dir, dataset_dir
 from dataset_func import dname2func
 from template import modelType2Template
-
+from eval.load_func import dname2load
 from tqdm import tqdm
 from loguru import logger
 
@@ -65,24 +65,30 @@ def find_ranges(lst, target=-100):
 @logger.catch
 def main():
     args = parse_args()
-
+    
     tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
     config = AutoConfig.from_pretrained(model_dir[args.model])
     model_type = config.model_type
     template = modelType2Template[model_type](tokenizer)
 
-    train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
-        "train"
-    ]
+    
+    train_dataset = dname2load[args.dataset]()
+    # train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
+    #     "train"
+    # ]
     print(train_dataset)
     train_dataset = train_dataset.map(
         partial(dname2func[args.dataset], template=template),
         batched=True,
         num_proc=30,
-        remove_columns=train_dataset.features.keys(),
+        # remove_columns=train_dataset.features.keys(),
+        load_from_cache_file=False,
         desc="tokenize",
     )
 
+    # import pdb
+
+    # pdb.set_trace()
 
     def statistic():
 
@@ -194,19 +200,22 @@ def main():
     logger.debug(
         f"len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}"
     )
+    
+    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+    os.makedirs(os.path.join(script_path, "train_dataset"),exist_ok=True)
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl",
+        f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl",
         "wb",
     ) as o:
         pickle.dump(synthesis_dict, o, protocol=5)
 
     # 这个写法其实还可以，麻烦之处在于不方便大规模开展ngram的搜索实验。
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl",
+        f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl",
         "wb",
     ) as o:
         pickle.dump(cnt_list, o, protocol=5)
-    logger.debug(f"整合文件被保存到{dataset_dir[args.dataset]}")
+    logger.debug(f"整合文件被保存到train_dataset/{model_type}_{args.dataset}")
 
 
 def test():

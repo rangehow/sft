@@ -17,6 +17,16 @@ def gsm8k():
     return datasets.load_dataset("gsm8k", "main")["test"]
 
 
+@register2dict(name="apps")
+def apps():
+    return datasets.load_dataset("codeparrot/apps", "all")["train"]
+
+@register2dict(name="alpaca_gpt4")
+def alpaca_gpt4():
+    return datasets.load_dataset("vicgalle/alpaca-gpt4")["train"]
+
+
+
 @register2dict(name="mmlu")
 def mmlu():
     return datasets.load_dataset("cais/mmlu", "all")["test"]

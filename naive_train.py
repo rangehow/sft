@@ -13,6 +13,7 @@ from argparse import ArgumentParser
 import datasets
 from loguru import logger
 from dataset_func import dname2func
+from eval.load_func import dname2load
 import torch
 
 
@@ -43,7 +44,6 @@ def parse_args():
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
     parser.add_argument("--output_dir", default=None)
-    parser.add_argument("--train_batch_size", type=int, default=4)
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
@@ -65,7 +65,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype=torch.bfloat16,
-    device_map="auto",
+    # device_map="auto",
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
     # attn_implementation="sdpa",
 )
@@ -76,7 +76,7 @@ model_type = config.model_type
 template = modelType2Template[model_type](tokenizer)
 my_collator = MyCollator(tokenizer)
 # 读取数据集
-train_dataset = datasets.load_dataset(dataset_dir[args.dataset])["train"]
+train_dataset = dname2load[args.dataset]()
 # logger.debug(train_dataset)
 
 # 这个地方略有一点复杂，上面的train_dataset是原始的存储格式，在这一步，我们利用dname2func和template来把数据集转换成input_ids和labels
@@ -103,7 +103,7 @@ if args.lora:
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-real_bsz = args.total_bsz // torch.cuda.device_count() // 8
+real_bsz = args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
 logger.debug(
     f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
 )

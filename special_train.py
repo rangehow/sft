@@ -87,13 +87,14 @@ collator = SpecialDataCollator(
 
 @logger.catch
 def load_dataset():
+    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl", "rb"
+        f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl", "rb"
     ) as f:
         synthesis = pickle.load(f)
 
     with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl", "rb"
+        f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl", "rb"
     ) as f:
         index = pickle.load(f)
 
@@ -155,7 +156,7 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
         dataloader_pin_memory=False,
-        dataloader_num_workers=0,
+        dataloader_num_workers=12,
         num_train_epochs=3,
         per_device_train_batch_size=real_bsz,
         bf16=True,

@@ -211,6 +211,27 @@ def humaneval(instances, shot=False, mode=0, **kwargs):
     return _process(real_input, task_id, **kwargs)
 
 
+@register2dict(name="apps")
+def apps(
+    instances,
+    template,
+):
+
+    real_input, label = (
+        instances["question"],
+        instances["solutions"],
+    )
+
+    input_ids, labels = [], []
+
+    for i, o in zip(real_input, label):
+        input_id, label = template.apply(reformate(i, eval(o)[0], template))
+        input_ids.append(input_id)
+        labels.append(label)
+
+    return {"input_ids": input_ids, "labels": labels}
+
+
 @register2dict(name="truthfulqa")
 def truthfulqa(instances, template, shot=False, mode=0, **kwargs):
 
