@@ -166,11 +166,11 @@ trainer = KLTrainer(
     data_collator=collator,
 )
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
-d = trainer.get_train_dataloader()
-for dd in tqdm(d):
-    continue
+# d = trainer.get_train_dataloader()
+# for dd in tqdm(d):
+#     continue
 
 
 trainer.train()
