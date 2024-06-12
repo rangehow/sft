@@ -102,6 +102,7 @@ def load_dataset():
         synthesis,
         index,
         embedding_size,
+        zero_prob=args.zero_prob,
         div_mode=args.div_mode,
     )
     return train_dataset
