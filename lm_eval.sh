@@ -21,7 +21,7 @@ models=(
 
 
 
-
+timestamp=$(date +"%Y%m%d_%H%M%S")
 
 #     "drop 0"
 #    "mmlu 0"
@@ -47,14 +47,17 @@ for model in "${models[@]}"; do
         IFS=' ' read -r task_name num_fewshot <<< "$task"
         echo "$task_name"
         if [ "$task_name" == "mmlu" ] || [ "$task_name" == "gsm8k" ] || [ "$task_name" == "humaneval" ]; then
-            CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset "$task_name" --model "$model"
+            CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset "$task_name" --model "$model" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
         else
             # 执行命令
             accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
                 --model_args pretrained="$model" \
                 --tasks "$task_name" \
                 --batch_size 8 \
-                --num_fewshot "$num_fewshot"
+                --num_fewshot "$num_fewshot" \
+                --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+
+
         fi
         
     done

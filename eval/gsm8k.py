@@ -47,6 +47,9 @@ def parse_args():
         "--logprob",
         action="store_true",
     )
+    parser.add_argument(
+        "--output_path",
+    )
 
     return parser.parse_args()
 
@@ -191,6 +194,9 @@ def main():
         vllm=args.vllm,
     )
 
+    os.makedirs(args.output_path),exist_ok=True)
+    with open(os.path.join(args.output_path,f'{args.dataset}.jsonl'),'w',encoding='utf-8') as o:
+        o.write(f"task:{args.dataset},model:{args.model},score :{score}")
     logger.debug(f"task:{args.dataset},model:{args.model},score :{score}")
 
 

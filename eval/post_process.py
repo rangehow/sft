@@ -126,7 +126,7 @@ def humaneval(prediciton, reference, vllm):
     if match:
         dict_str = match.group()
         result_dict = eval(dict_str)  
-        return result_dict["pass@1"]
+        return result_dict["pass@1"]*100
     else:
         print("No dictionary found")
     
