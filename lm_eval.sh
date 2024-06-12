@@ -31,7 +31,6 @@ tasks=(
     "gsm8k 0"
     "humaneval 0"
     "triviaqa 5"
-    "gsm8k_cot 0"
     "agieval 0"
     "truthfulqa_mc2 0"
     "bbh_cot_fewshot 0"
