@@ -123,7 +123,9 @@ train_dataset = load_dataset()
 logger.debug(f"训练集大小：{len(train_dataset)}")
 logger.debug(args)
 
-real_bsz = args.total_bsz // torch.cuda.device_count() // 8
+real_bsz = (
+    args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
+)
 logger.debug(
     f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
 )
@@ -155,8 +157,8 @@ trainer = KLTrainer(
         remove_unused_columns=False,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
-        dataloader_pin_memory=False,
-        dataloader_num_workers=12,
+        dataloader_pin_memory=True,
+        dataloader_num_workers=8,
         num_train_epochs=3,
         per_device_train_batch_size=real_bsz,
         bf16=True,
@@ -164,11 +166,11 @@ trainer = KLTrainer(
     data_collator=collator,
 )
 
-# from tqdm import tqdm
+from tqdm import tqdm
 
-# d = trainer.get_train_dataloader()
-# for dd in tqdm(d):
-#     continue
+d = trainer.get_train_dataloader()
+for dd in tqdm(d):
+    continue
 
 
 trainer.train()
@@ -179,5 +181,6 @@ saved_args_dict = vars(args)
 saved_args_dict["实际的总batch_size"] = (
     args.gradient_accumulation_steps * real_bsz * torch.cuda.device_count()
 )
+logger.log(f"模型被保存至{args.output_dir}")
 with open(os.path.join(args.output_dir, "args.json"), "w", encoding="utf-8") as o:
     json.dump(saved_args_dict, o, ensure_ascii=False, indent=4)
