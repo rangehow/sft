@@ -29,6 +29,7 @@ models=(
 tasks=(
     "mmlu 0"
     "gsm8k 0"
+    "humaneval 0"
     "triviaqa 5"
     "gsm8k_cot 0"
     "agieval 0"
@@ -38,7 +39,6 @@ tasks=(
     "winogrande 5"
     "sciq 0"
     "wikitext 0"
-    "humaneval 0"
 )
 
 # 遍历每个模型和任务并执行命令
