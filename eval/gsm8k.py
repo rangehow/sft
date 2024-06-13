@@ -73,7 +73,7 @@ def main():
             template=template,
             test=True,
             shot=args.shot,
-            vllm=args.vllm,
+            vllm=True,
             mode=args.mode,
         ),
         batched=True,
@@ -191,10 +191,10 @@ def main():
     score = dname2post[args.dataset](
         prediciton=response,
         reference=[t["answer"] for t in test_dataset],
-        vllm=args.vllm,
+        vllm=True,
     )
 
-    os.makedirs(args.output_path),exist_ok=True)
+    os.makedirs(args.output_path,exist_ok=True)
     with open(os.path.join(args.output_path,f'{args.dataset}.jsonl'),'w',encoding='utf-8') as o:
         o.write(f"task:{args.dataset},model:{args.model},score :{score}")
     logger.debug(f"task:{args.dataset},model:{args.model},score :{score}")
