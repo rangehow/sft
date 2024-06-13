@@ -5,44 +5,7 @@ import torch
 from scipy.optimize import root_scalar, fsolve
 
 
-def transform_to_log_prob(
-    knns,
-    vocab_size=None,
-    zero_prob=None,
-):
 
-    if len(knns) == 0:
-        # return torch.zeros((vocab_size))
-        return None
-    else:
-        # 不需要拟合温度的情况。
-        if zero_prob == 0:
-            knn_temperature = 1e-6  # 要放大，才能压低概率
-        else:
-
-            # 预先计算,免得在多次fun的迭代里都要重算
-            zero_count_per_tensor = torch.sum(knns == 0, dim=-1)
-            # 分母
-            bsz = knns.size(0)
-
-            def fun(x):
-                if x <= 0:
-                    return 10000
-
-                tensor_with_temperature = knns / x
-                exp_tensor = torch.exp(tensor_with_temperature)
-                sum_exp = torch.sum(exp_tensor, dim=-1)
-                result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
-
-                return result.item()
-
-            # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
-            result = root_scalar(fun, bracket=[0.01, 50], method="toms748")
-            knn_temperature = result.root
-
-        probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
-
-    return probs
 
 
 def frequency(x, xmax=50):
@@ -97,7 +60,7 @@ class SpecialDataset(Dataset):
             [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
             for i in range(len(synthesis_dict))
         ]
-        self.input_ids = [synthesis_dict[i][0] for i in range(len(synthesis_dict))]
+        self.input_ids = [list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))]
 
         self.valid_label_index_list = cnt_list
 
@@ -106,80 +69,47 @@ class SpecialDataset(Dataset):
         self.zero_prob = zero_prob
 
     def __getitem__(self, index):
+        
+        def transform_to_log_prob(
+            knns,
+            vocab_size=None,
+            zero_prob=None,
+        ):
 
-        # 很不耗时，e-6
-        return {
-            "input_ids": self.input_ids[index],
-            "supervised": self.supervised[index],
-            "clm": self.clm[index],
-            "embedding_size": self.embedding_size,
-            "div_mode": self.div_mode,
-            "valid_label_index_list": self.valid_label_index_list[index],
-        }
+            if len(knns) == 0:
+                # return torch.zeros((vocab_size))
+                return None
+            else:
+                # 不需要拟合温度的情况。
+                if zero_prob == 0:
+                    knn_temperature = 1e-6  # 要放大，才能压低概率
+                else:
 
-    def __len__(self):
-        return len(self.input_ids)
+                    # 预先计算,免得在多次fun的迭代里都要重算
+                    zero_count_per_tensor = torch.sum(knns == 0, dim=-1)
+                    # 分母
+                    bsz = knns.size(0)
 
+                    def fun(x):
+                        if x <= 0:
+                            return 10000
 
-from torch.nn.utils.rnn import pad_sequence
+                        tensor_with_temperature = knns / x
+                        exp_tensor = torch.exp(tensor_with_temperature)
+                        sum_exp = torch.sum(exp_tensor, dim=-1)
+                        result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
 
+                        return result.item()
 
-class SpecialDataCollator:
-    def __init__(self, tokenizer, zero_prob, embedding_size, div_mode) -> None:
-        self.tokenizer = tokenizer
-        self.zero_prob = zero_prob
-        self.embedding_size = embedding_size
-        self.div_mode = div_mode
+                    # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
+                    result = root_scalar(fun, bracket=[0.01, 50], method="toms748")
+                    knn_temperature = result.root
 
-    def __call__(self, batch) -> torch.Any:
+                probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
 
-        input_ids = [list(d["input_ids"]) for d in batch]
-        input_ids_len = list(len(input_id) for input_id in input_ids)
-        # input_ids_max_len = max(input_ids_len)
-        input_ids = self.tokenizer.pad(
-            {"input_ids": input_ids}, return_tensors="pt", padding=True
-        )
-        input_ids_max_len = input_ids["input_ids"].shape[-1]
-
-        # temp_for_debug = [i["valid_label_index_list"] for i in batch]
-        # print(input_ids.input_ids.shape)
-        # print(temp_for_debug)
-        # print(input_ids_max_len, input_ids_len)
-        valid_label_index_list = []
-        # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
-        # 千万不要改动原batch的内容，不然会与auto_find_bsz冲突。
-
-        # 不耗时。e-5
-        for i, d in enumerate(batch):
-            length_diff = input_ids_max_len - input_ids_len[i]
-            temp_index_list = []
-            for j in range(len(d["valid_label_index_list"])):
-                temp_index_list.append(
-                    (
-                        length_diff + d["valid_label_index_list"][j][0],
-                        length_diff + d["valid_label_index_list"][j][1],
-                    )
-                )
-            valid_label_index_list.append(temp_index_list)
-
-        # if valid_label_index_list==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
-        #     import pdb
-        #     pdb.set_trace()
-        # print(valid_label_index_list)
-        # print("-----------------------------")
-
-        # all_prob_supervised = [d["all_prob_supervised"] for d in batch]
-        # all_prob_clm = [d["all_prob_clm"] for d in batch]
-        # supervised_cnt = [d["supervised_cnt"] for d in batch]
-        # clm_cnt = [d["clm_cnt"] for d in batch]
-
-        # TIME --------------------------------------------------------------
-        # e-4 不算耗时
-        # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
-        supervised = [item for d in batch for item in d["supervised"]]
-        clm = [item for d in batch for item in d["clm"]]
-        # ----------------------------------------------------------------
-
+            return probs
+        supervised = self.supervised[index]
+        clm = self.clm[index]
         x_sup = optimized_stack(supervised, self.embedding_size)
         x_clm = optimized_stack(clm, self.embedding_size)
 
@@ -220,6 +150,77 @@ class SpecialDataCollator:
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         )
         clm_cnt = torch.tensor([frequency(sum(xx.values())) for xx in clm])
+        # 很不耗时，e-6
+        return {
+            "input_ids": self.input_ids[index],
+            "supervised": all_prob_supervised,
+            "clm": all_prob_clm,
+            "valid_label_index_list": self.valid_label_index_list[index],
+            "supervised_cnt": supervised_cnt,
+            "clm_cnt": clm_cnt,
+        }
+
+    def __len__(self):
+        return len(self.input_ids)
+
+
+from torch.nn.utils.rnn import pad_sequence
+
+
+class SpecialDataCollator:
+    def __init__(self, tokenizer, zero_prob, embedding_size, div_mode) -> None:
+        self.tokenizer = tokenizer
+        self.zero_prob = zero_prob
+        self.embedding_size = embedding_size
+        self.div_mode = div_mode
+
+    def __call__(self, batch) -> torch.Any:
+
+        input_ids = [d["input_ids"] for d in batch]
+        input_ids_len = list(len(input_id) for input_id in input_ids)
+        # input_ids_max_len = max(input_ids_len)
+        input_ids = self.tokenizer.pad(
+            {"input_ids": input_ids}, return_tensors="pt", padding=True
+        )
+        input_ids_max_len = input_ids["input_ids"].shape[-1]
+
+        # temp_for_debug = [i["valid_label_index_list"] for i in batch]
+        # print(input_ids.input_ids.shape)
+        # print(temp_for_debug)
+        # print(input_ids_max_len, input_ids_len)
+        valid_label_index_list = []
+        # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
+        # 千万不要改动原batch的内容，不然会与auto_find_bsz冲突。
+
+        # 不耗时。e-5
+        for i, d in enumerate(batch):
+            length_diff = input_ids_max_len - input_ids_len[i]
+            temp_index_list = []
+            for j in range(len(d["valid_label_index_list"])):
+                temp_index_list.append(
+                    (
+                        length_diff + d["valid_label_index_list"][j][0],
+                        length_diff + d["valid_label_index_list"][j][1],
+                    )
+                )
+            valid_label_index_list.append(temp_index_list)
+
+        # if valid_label_index_list==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
+        #     import pdb
+        #     pdb.set_trace()
+        # print(valid_label_index_list)
+        # print("-----------------------------")
+
+        all_prob_supervised = torch.cat([d["supervised"] for d in batch],dim=0)
+        all_prob_clm = torch.cat([d["clm"] for d in batch],dim=0)
+        supervised_cnt = torch.cat([d["supervised_cnt"] for d in batch],dim=0)
+        clm_cnt = torch.cat([d["clm_cnt"] for d in batch],dim=0)
+
+        # TIME --------------------------------------------------------------
+        # e-4 不算耗时
+        # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
+
+        # ----------------------------------------------------------------
 
         return {
             "input_ids": input_ids.input_ids,
@@ -333,7 +334,7 @@ if __name__ == "__main__":
         dataset=train_dataset,
         batch_size=8,
         collate_fn=collator,
-        num_workers=8,
+        num_workers=16,
         pin_memory=True,
     )
 

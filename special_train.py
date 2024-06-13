@@ -182,6 +182,6 @@ saved_args_dict = vars(args)
 saved_args_dict["实际的总batch_size"] = (
     args.gradient_accumulation_steps * real_bsz * torch.cuda.device_count()
 )
-logger.log(f"模型被保存至{args.output_dir}")
+logger.info(f"模型被保存至{args.output_dir}")
 with open(os.path.join(args.output_dir, "args.json"), "w", encoding="utf-8") as o:
     json.dump(saved_args_dict, o, ensure_ascii=False, indent=4)
