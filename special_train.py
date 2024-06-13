@@ -32,8 +32,8 @@ def parse_args():
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
-    parser.add_argument("--gradient_accumulation_steps", default=8, type=int)
-    parser.add_argument("--total_bsz", default=64, type=int)
+    parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
+    parser.add_argument("--total_bsz", default=128, type=int)
     parser.add_argument(
         "--weighted", action="store_true", help="decide to use token level freq weight"
     )

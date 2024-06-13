@@ -97,7 +97,7 @@ class SpecialDataset(Dataset):
             [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
             for i in range(len(synthesis_dict))
         ]
-        self.input_ids = [synthesis_dict[i][0] for i in range(len(synthesis_dict))]
+        self.input_ids = [list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))]
 
         self.valid_label_index_list = cnt_list
 
@@ -133,7 +133,7 @@ class SpecialDataCollator:
 
     def __call__(self, batch) -> torch.Any:
 
-        input_ids = [list(d["input_ids"]) for d in batch]
+        input_ids = [d["input_ids"] for d in batch]
         input_ids_len = list(len(input_id) for input_id in input_ids)
         # input_ids_max_len = max(input_ids_len)
         input_ids = self.tokenizer.pad(
