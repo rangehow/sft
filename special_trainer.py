@@ -8,8 +8,9 @@ import time
 
 class KLTrainer(Trainer):
 
-    def __init__(self, weight_mode=False, **kwargs):
+    def __init__(self, weight_mode=False,alpha=1, **kwargs):
         self.weight_mode = weight_mode
+        self.alpha = alpha
         super().__init__(**kwargs)
 
     def compute_loss(self, model, inputs, return_outputs=False):
@@ -66,9 +67,9 @@ class KLTrainer(Trainer):
             clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
 
         if not self.weight_mode:
-            loss = 0.8 * supervised_loss + 0.2 * clm_loss
+            loss = alpha* supervised_loss + (1-alpha) * clm_loss
         else:
-            loss = (0.8 * supervised_loss + 0.2 * clm_loss) / last_logits.size()[0]
+            loss = (alpha* supervised_loss + (1-alpha) * clm_loss) / last_logits.size()[0]
         # print('valid_label_index_list',valid_label_index_list)
         # print("supervised_loss", supervised_loss)
         # print("clm_loss", clm_loss)

@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument("--dataset", default="alpaca_gpt4")
     parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
+    parser.add_argument("--alpha",default=0.8, type=ast.literal_eval)
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
@@ -49,7 +50,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
+    args.output_dir = f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}_alpha{args.alpha}"
     if args.weighted:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
@@ -148,6 +149,7 @@ if args.lora:
 # torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(
     weight_mode=args.weighted,
+    alpha=args.alpha,
     model=model,
     train_dataset=train_dataset,
     tokenizer=tokenizer,
@@ -159,7 +161,7 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="no",
         dataloader_pin_memory=True,
-        dataloader_num_workers=8,
+        dataloader_num_workers=0,
         num_train_epochs=3,
         per_device_train_batch_size=real_bsz,
         bf16=True,
