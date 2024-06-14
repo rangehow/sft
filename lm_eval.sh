@@ -33,7 +33,7 @@ tasks=(
     "triviaqa 5"
     "agieval 0"
     "truthfulqa_mc2 0"
-    "bbh_cot_fewshot 0"
+    "bbh_cot_fewshot 3"
     "arc_challenge 0"
     "winogrande 5"
     "sciq 0"

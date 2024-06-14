@@ -3,7 +3,9 @@ from functools import partial
 from torch.utils.data import Dataset
 import torch
 from scipy.optimize import root_scalar, fsolve
-
+import faulthandler
+# 在import之后直接添加以下启用代码即可
+faulthandler.enable()
 
 def transform_to_log_prob(
     knns,
@@ -232,6 +234,7 @@ class SpecialDataCollator:
         }
 
 
+
 if __name__ == "__main__":
     # torch.multiprocessing.set_sharing_strategy('file_descriptor')
     import ast
@@ -239,12 +242,6 @@ if __name__ == "__main__":
     from transformers import (
         AutoTokenizer,
         AutoModelForCausalLM,
-        Seq2SeqTrainer,
-        DataCollatorForSeq2Seq,
-        BartTokenizerFast,
-        TrainingArguments,
-        Seq2SeqTrainingArguments,
-        BartTokenizer,
     )
     from torch.utils.data import Dataset, DataLoader
     import datasets
@@ -261,7 +258,7 @@ if __name__ == "__main__":
         parser = ArgumentParser()
         parser.add_argument("--model", default="gemma_2b")
         parser.add_argument("--dataset", default="alpaca_gpt4")
-        parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
+        parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
         parser.add_argument("--output_dir")
         parser.add_argument(
             "--fa2", action="store_true", help="decide to use fa2 or not"
@@ -338,6 +335,10 @@ if __name__ == "__main__":
     )
 
     from tqdm import tqdm
-
+    from sklearn import UMAP
+    # all_prob_supervised=
+    # all_prob_clm=[]
     for d in tqdm(dataloader):
+        # print(d['all_prob_supervised'].shape)
+        # all_prob_supervised.append()
         continue

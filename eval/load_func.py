@@ -17,6 +17,11 @@ def gsm8k():
     return datasets.load_dataset("gsm8k", "main")["test"]
 
 
+@register2dict(name="bbh")
+def bbh():
+    return datasets.load_dataset("chiayewken/bbh-cot", "main")["test"]
+
+
 @register2dict(name="apps")
 def apps():
     return datasets.load_dataset("codeparrot/apps", "all")["train"]
