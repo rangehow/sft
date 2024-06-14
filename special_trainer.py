@@ -67,9 +67,9 @@ class KLTrainer(Trainer):
             clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
 
         if not self.weight_mode:
-            loss = alpha* supervised_loss + (1-alpha) * clm_loss
+            loss = self.alpha* supervised_loss + (1-self.alpha) * clm_loss
         else:
-            loss = (alpha* supervised_loss + (1-alpha) * clm_loss) / last_logits.size()[0]
+            loss = (self.alpha* supervised_loss + (1-self.alpha) * clm_loss) / last_logits.size()[0]
         # print('valid_label_index_list',valid_label_index_list)
         # print("supervised_loss", supervised_loss)
         # print("clm_loss", clm_loss)
