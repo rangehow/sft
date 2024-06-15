@@ -159,9 +159,9 @@ def bbh(prediciton, reference, vllm):
         
         else:
             print("-" * 40)
-            print(f"origin answer {generated_text}")
-            print(f"generated answer {all_responses}")
-            print(f"Short ground truth answer {r.lower()}")
+            print(f"origin answer: {generated_text}")
+            print(f"generated answer: {result}")
+            print(f"Short ground truth answer: {r.lower()}")
             print(f"correct {correct}")
             # print(f"Correct: {correct} out of {idx+1}")
             print("=" * 40)
