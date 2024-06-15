@@ -148,7 +148,7 @@ def bbh(prediciton, reference, vllm):
         all_responses = generated_text.split("Q:")[0].lower()
         pattern = r"(?<=the answer is )(.*)(?=.)"
         # 使用 re.search 进行匹配
-        match = re.search(pattern, text)
+        match = re.search(pattern, all_responses)
         # 检查是否匹配成功
         if match:
             # 提取匹配的内容
