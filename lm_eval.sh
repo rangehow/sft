@@ -37,7 +37,6 @@ tasks=(
     "arc_challenge 0"
     "winogrande 5"
     "sciq 0"
-    "wikitext 0"
 )
 
 # 遍历每个模型和任务并执行命令
@@ -47,7 +46,7 @@ for model in "${models[@]}"; do
         IFS=' ' read -r task_name num_fewshot <<< "$task"
         echo "$task_name"
         if [ "$task_name" == "mmlu" ] || [ "$task_name" == "gsm8k" ] || [ "$task_name" == "humaneval" ]; then
-            CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset "$task_name" --model "$model" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+            CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 0 --shot --dp --dataset "$task_name" --model "$model" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
         else
             # 执行命令
             accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
