@@ -100,7 +100,8 @@ def main():
             )
 
             print(test_dataset[0])
-
+            import pdb
+            pdb.set_trace()
             save_str = (
                 f"{model_name}_{d}_vllm_{args.mode}_shot"
                 if args.shot
