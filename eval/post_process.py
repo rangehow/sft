@@ -148,6 +148,13 @@ def bbh(prediciton, reference, vllm):
         
         if all_responses == r.lower():
             correct+=1
+            
+        print("-" * 40)
+        print(f"generated answer {all_responses}")
+        print(f"Short ground truth answer {r.lower()}")
+        print(f"correct {correct}")
+        # print(f"Correct: {correct} out of {idx+1}")
+        print("=" * 40)
         
     return correct / len(reference) * 100
 
