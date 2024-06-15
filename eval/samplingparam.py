@@ -50,7 +50,7 @@ def mmlu():
 @register2dict(name="bbh")
 def bbh():
     return SamplingParams(
-        max_tokens=512,
+        max_tokens=1024,
         temperature=0,
         stop=["Q:"],
     )
