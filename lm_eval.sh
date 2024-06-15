@@ -54,7 +54,7 @@ for model in "${models[@]}"; do
                 --tasks "$task_name" \
                 --batch_size 8 \
                 --num_fewshot "$num_fewshot" \
-                --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+                --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
 
 
         fi
