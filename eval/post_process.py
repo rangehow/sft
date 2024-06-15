@@ -144,7 +144,7 @@ def bbh(prediciton, reference, vllm):
         
         generated_text = p.outputs[0].text
 
-        all_responses = generated_text.split("Q:")[0].split('the answer is ')[-1].lower()
+        all_responses = generated_text.split("Q:")[0].split('the answer is ')[-1].lower().replace('.','')
         
         if all_responses == r.lower():
             correct+=1
