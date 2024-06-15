@@ -132,6 +132,26 @@ def humaneval(prediciton, reference, vllm):
     
 
 
+
+
+@register2dict(name="bbh")
+def bbh(prediciton, reference, vllm):
+
+    
+    correct=0
+    for p, r in zip(prediciton, reference):
+
+        
+        generated_text = p.outputs[0].text
+
+        all_responses = generated_text.split("Q:")[0].split('the answer is ')[-1].lower()
+        
+        if all_responses == r.lower():
+            correct+=1
+        
+    return correct / len(reference) * 100
+
+
 def _parse_logprobs(tokens: list, outputs, ctxlen: int) -> tuple[float, bool]:
     # The first entry of prompt_logprobs is None because the model has no previous tokens to condition on.
     continuation_logprobs_dicts = outputs[0].prompt_logprobs

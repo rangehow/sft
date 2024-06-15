@@ -198,6 +198,22 @@ def mmlu(instances, shot=False, mode=0, **kwargs):
     return _process(real_input, output, **kwargs)
 
 
+@register2dict(name="bbh")
+def bbh(instances, shot=True, mode=0, **kwargs):
+
+    if not shot:
+        logger.warning("bbh只支持shot，自动转成shot")
+
+    
+    real_input=instances['inputs']
+    target=instances['targets']
+
+    return _process(real_input, target, **kwargs)
+
+
+
+
+
 @register2dict(name="humaneval")
 def humaneval(instances, shot=False, mode=0, **kwargs):
 

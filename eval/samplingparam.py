@@ -21,7 +21,7 @@ def gsm8k():
 
 
 @register2dict(name="humaneval")
-def gsm8k():
+def humaneval():
     return SamplingParams(
         max_tokens=512,
         temperature=0,
@@ -46,6 +46,14 @@ def mmlu():
         stop=["\n\nQuestion:"],
     )
 
+
+@register2dict(name="bbh")
+def bbh():
+    return SamplingParams(
+        max_tokens=512,
+        temperature=0,
+        stop=["Q:"],
+    )
 
 @register2dict(name="truthfulqa")
 def truthfulqa():

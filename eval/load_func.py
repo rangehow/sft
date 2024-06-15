@@ -19,7 +19,9 @@ def gsm8k():
 
 @register2dict(name="bbh")
 def bbh():
-    return datasets.load_dataset("chiayewken/bbh-cot", "main")["test"]
+    return datasets.load_dataset("huanmit/flan-t5-boosting-bbh_cot")["validation"]
+    
+    # return datasets.load_dataset("chiayewken/bbh-cot", "main")["test"]
 
 
 @register2dict(name="apps")
