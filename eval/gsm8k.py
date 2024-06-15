@@ -141,7 +141,7 @@ def main():
                     @ray.remote(num_gpus=1)
                     def run(prompts):
                         model = LLM(model=m)
-                        response = model.generate(prompts, samplingParams,use_tqdm=False)
+                        response = model.generate(prompts, samplingParams)
                         return response
 
                     outputs = []
@@ -200,10 +200,11 @@ def main():
                 reference=[t["answer"] for t in test_dataset],
                 vllm=True,
             )
-
+            
+            logger.debug(f"task:{d},model:{m},score :{score}")
             os.makedirs(args.output_path,exist_ok=True)
             record_list.append(f"task:{d},model:{m},score :{score}")
-            logger.debug(f"task:{d},model:{m},score :{score}")
+
         with open(os.path.join(args.output_path,f'{m}.jsonl'),'w',encoding='utf-8') as o:
             json.dump(record_list,o,indent=2,ensure_ascii=False)
         
