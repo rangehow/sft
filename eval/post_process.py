@@ -143,10 +143,18 @@ def bbh(prediciton, reference, vllm):
 
         
         generated_text = p.outputs[0].text
-
-        all_responses = generated_text.split("Q:")[0].split('the answer is ')[-1].strip().lower().replace('.','')
         
-        if all_responses == r.lower():
+        # all_responses = generated_text.split("Q:")[0].split('the answer is ')[-1].strip().lower().replace('.','')
+        all_responses = generated_text.split("Q:")[0].lower()
+        pattern = r"(?<=the answer is )(.*)(?=.)"
+        # 使用 re.search 进行匹配
+        match = re.search(pattern, text)
+        # 检查是否匹配成功
+        if match:
+            # 提取匹配的内容
+            result = match.group(1)
+
+        if result == r.lower():
             correct+=1
         
         else:
