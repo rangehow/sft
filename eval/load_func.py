@@ -23,7 +23,7 @@ def bbh():
     
     # return datasets.load_dataset("lukaemon/bbh")["test"]
     
-    return datasets.load_dataset("huanmit/flan-t5-boosting-bbh_direct", "main")["test"]
+    return datasets.load_dataset("huanmit/flan-t5-boosting-bbh_direct")["validation"]
 
 
 @register2dict(name="apps")
