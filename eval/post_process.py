@@ -99,8 +99,8 @@ def mmlu(prediciton, reference, vllm):
             correct += 1
         else:
             print("-" * 40)
-            print(f"generated answer:\n {all_responses}")
-            print(f"Short generated answer:{short_responses}")
+            print(f"generated answer:\n {generated_text}")
+            print(f"Short generated answer:{all_responses}")
             print(f"ground truth answer: {idx2char[r]}")
             print(f"Correct: {correct} out of {idx+1}")
             print("=" * 40)
