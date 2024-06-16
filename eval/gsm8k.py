@@ -100,8 +100,7 @@ def main():
             )
 
             print(test_dataset[0])
-            import pdb
-            pdb.set_trace()
+
             save_str = (
                 f"{model_name}_{d}_vllm_{args.mode}_shot"
                 if args.shot
@@ -110,7 +109,7 @@ def main():
             print("save_str", save_str)
             target_file = os.path.join(script_path, "generated", save_str)
             print("target_file", target_file)
-            reuse_flag = True if args.reuse else False
+            reuse_flag = True if args.reuse and os.path.exists(target_file) else False
             if not args.reuse:
                 if os.path.exists(target_file):
                     while True:
