@@ -34,7 +34,7 @@ def reformate(i, o, template):
     return chat_dict
 
 
-def _process(real_input, output, template, test=False, vllm=False, chat=False, mode=0):
+def _process(real_input, output, template, test=False, vllm=True, chat=False, mode=0):
 
     input_ids, labels = [], []
     for i, o in zip(real_input, output):
@@ -105,7 +105,7 @@ dname2func["alpaca_gpt4"] = alpaca_cleaned
 
 
 @register2dict(name="gsm8k")
-def gsm8k(instances, shot=False, mode=0, **kwargs):
+def gsm8k(instances, shot=False,  **kwargs):
     INSTURCTION = """As an expert problem solver solve step by step the following mathematical questions."""
 
     # The default gsm8k prompt from the CoT paper
@@ -154,7 +154,7 @@ A:"""
 
 
 @register2dict(name="mmlu")
-def mmlu(instances, shot=False, mode=0, **kwargs):
+def mmlu(instances, shot=False,  **kwargs):
 
     PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
@@ -199,7 +199,7 @@ def mmlu(instances, shot=False, mode=0, **kwargs):
 
 
 @register2dict(name="bbh")
-def bbh(instances, shot=True, mode=0, **kwargs):
+def bbh(instances, shot=True, **kwargs):
 
     if not shot:
         logger.warning("bbh只支持shot，自动转成shot")
@@ -215,7 +215,7 @@ def bbh(instances, shot=True, mode=0, **kwargs):
 
 
 @register2dict(name="humaneval")
-def humaneval(instances, shot=False, mode=0, **kwargs):
+def humaneval(instances, shot=False, **kwargs):
 
     if shot:
         logger.warning("humaneval不支持shot，自动切换成非shot模式")

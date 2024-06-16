@@ -66,7 +66,7 @@ def main():
     model_list=args.model.split(',')
     dataset_list=args.dataset.split(',')
 
-
+    # os.makedirs(args.output_path,exist_ok=True)
     script_path = os.path.dirname(os.path.abspath(__file__))
     print("script_path", script_path)
     for m in model_list:
@@ -202,11 +202,17 @@ def main():
             )
             
             logger.debug(f"task:{d},model:{m},score :{score}")
-            os.makedirs(args.output_path,exist_ok=True)
+            
             record_list.append(f"task:{d},model:{m},score :{score}")
-
-        with open(os.path.join(args.output_path,f'{m}.jsonl'),'w',encoding='utf-8') as o:
-            json.dump(record_list,o,indent=2,ensure_ascii=False)
+        try:
+            with open(os.path.join(args.output_path, f'{m}.jsonl'), 'w', encoding='utf-8') as o:
+                json.dump(record_list,o,indent=2,ensure_ascii=False)
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            os.makedirs(os.path.dirname(os.path.join(args.output_path, f'{m}.jsonl')), exist_ok=True)
+            with open(os.path.join(args.output_path, f'{m}.jsonl'), 'w', encoding='utf-8') as o: 
+                json.dump(record_list,o,indent=2,ensure_ascii=False)
+            
         
 
 
