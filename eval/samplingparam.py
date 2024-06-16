@@ -57,7 +57,7 @@ def bbh():
 
 @register2dict(name="truthfulqa")
 def truthfulqa():
-    return SamplingParams(temperature=0, prompt_logprobs=0, max_tokens=1)
+    return SamplingParams(temperature=0, prompt_logprobs=0, max_tokens=512)
 
 
 if __name__ == "__main__":
