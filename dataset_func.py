@@ -75,7 +75,7 @@ def _process(real_input, output, template, test=False, vllm=True, chat=False, mo
 
 
 @register2dict(name="alpaca_cleaned")
-def alpaca_cleaned(instances, template, test=False):
+def alpaca_cleaned(instances, template, test=False,**kwargs):
 
     instruction, input, output = (
         instances["instruction"],
