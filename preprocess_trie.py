@@ -1,3 +1,40 @@
+from collections import Counter, defaultdict
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.value = Counter()
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def insert(self, key_list, value):
+        node = self.root
+        for key in key_list:
+            if key not in node.children:
+                node.children[key] = TrieNode()
+            node = node.children[key]
+        node.value[value]+=1
+
+    def search(self, key_list):
+        node = self.root
+        for key in key_list:
+            if key not in node.children:
+                return None
+            node = node.children[key]
+        return node.value
+# 创建一个 Trie 实例
+trie = Trie()
+
+# 插入具有公共前缀的列表
+trie.insert([1, 2, 3, 4, 5], 1)
+trie.insert([1, 2, 3, 4, 6], 2)
+
+# 搜索列表
+print(trie.search([1, 2, 3, 4, 5]))  # 输出: 1
+print(trie.search([1, 2, 3, 4, 6]))  # 输出: 2
+print(trie.search([1, 2, 1, 4]))     # 输出: None
+
 from functools import partial
 import gc
 import os
@@ -95,10 +132,12 @@ def main():
     # pdb.set_trace()
 
     def statistic():
-
-        supervised_dict = defaultdict(Counter)
+        
+        supervised_trie=Trie()
+        # supervised_dict = defaultdict(Counter)
         if args.clm:
-            clm_dict = defaultdict(Counter)
+            clm_trie=Trie()
+            # clm_dict = defaultdict(Counter)
 
         logger.debug(f"start to make statistic")
         # 统计begin-----------------------------------------------------------------------------------
@@ -120,8 +159,9 @@ def main():
 
                 if label[i + 1] != -100:
 
-                    supervised_key = tuple(input_id[: i + 1])
-                    supervised_dict[supervised_key].update([label[i + 1]])
+                    # supervised_key = tuple(input_id[: i + 1])
+                    # supervised_dict[supervised_key].update([label[i + 1]])
+                    supervised_trie.insert(input_id[: i + 1],label[i + 1])
 
                     if args.clm:
                         if flag4LossArea is False:
@@ -130,19 +170,19 @@ def main():
                             flag4LossArea = True
 
                         if i - regionBeginIdx >= args.ngram:
-                            clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
-                            clm_dict[clm_key].update([label[i + 1]])
-
+                            # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
+                            # clm_dict[clm_key].update([label[i + 1]])
+                            clm_trie.insert(label[regionBeginIdx + 1 : i + 1],label[i + 1])
                 elif args.clm and flag4LossArea:
                     flag4LossArea = False
 
-        logger.debug(f"supervised_dict,{len(supervised_dict)}")
-        if args.clm:
-            logger.debug(f"clm_dict,{len(clm_dict)}")
+        # logger.debug(f"supervised_dict,{len(supervised_dict)}")
+        # if args.clm:
+        #     logger.debug(f"clm_dict,{len(clm_dict)}")
 
-        return supervised_dict, clm_dict
+        return supervised_trie, clm_trie
 
-    supervised_dict, clm_dict = statistic()
+    supervised_trie, clm_trie = statistic()
 
     def synthesis():
         synthesis_dict = defaultdict(list)
@@ -165,7 +205,7 @@ def main():
             if (
                 synthesis_dict[key] == []
                 or tokenizer.eos_token_id not in synthesis_dict[key][-1][0]
-            ):  # 防止重复示例:
+            ):  # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
                 # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
                 cnt_list.append(find_ranges(label))
 
@@ -177,18 +217,20 @@ def main():
                         label[i + 1] != -100
                     ):  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
 
-                        supervised_key = tuple(input_id[: i + 1])
-                        supervised_value = supervised_dict[supervised_key]
-
+                        # supervised_key = tuple(input_id[: i + 1])
+                        # supervised_value = supervised_dict[supervised_key]
+                        supervised_value = supervised_trie.search(input_id[: i + 1])
+                        
                         if args.clm:
                             if flag4LossArea is False:
                                 # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
                                 regionBeginIdx = i
                                 flag4LossArea = True
 
-                            clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
-                            clm_value = clm_dict.get(clm_key, supervised_value)
-
+                            # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
+                            # clm_value = clm_dict.get(clm_key, supervised_value)
+                            clm_value = clm_trie.search(label[regionBeginIdx + 1 : i + 1], supervised_value)
+                            
                         synthesis_dict[key].append([supervised_value, clm_value])
 
                     elif args.clm and flag4LossArea:

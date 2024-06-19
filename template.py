@@ -19,6 +19,7 @@ class Template:
         end_token_id=None,
         system_token=None,
         efficient_eos=False,
+        default_system=None,
     ) -> None:
         self.tokenizer = tokenizer
         self.user_token = user_token if user_token else []
@@ -27,7 +28,7 @@ class Template:
         self.efficient_eos = efficient_eos
         self.start_token_id = start_token_id if start_token_id else None
         self.end_token_id = end_token_id if end_token_id else None
-
+        self.default_system= default_system if default_system else None
     def apply(self, messages: list[dict[str, str]]):
         
         
@@ -40,8 +41,14 @@ class Template:
         start_idx = 0
         first_user_flag_for_efficient_eos = True
         if messages[0]["role"] == "system":
-            chat_tokens += self.system_token + messages[0]["content"]
-            start_idx = 1
+            exit() # 还没实现
+        elif  self.default_system:
+            system_token = self.tokenizer.encode(
+                    self.system_token.format_map({"content": self.default_system}),
+                    add_special_tokens=False,
+            )
+            input_id+=system_token
+            label += [-100] * len(system_token)
         for i in range(start_idx, len(messages)):
             
             if messages[i]["role"] == "user":
@@ -98,6 +105,23 @@ class GemmaTemplate(Template):
             efficient_eos=True,
         )
 
+@register_template
+class Qwen2Template(Template):
+    model_type = "qwen2"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<|im_start|>user\n{content}<|im_end|>\n<|im_start|>assistant\n",
+            assistant_token="{content}<|im_end|>\n",
+            start_token_id=tokenizer.bos_token_id,
+            end_token_id=tokenizer.eos_token_id,
+            efficient_eos=False,
+            system_token="<|im_start|>system\n{content}<|im_end|>\n",
+            default_system="You are a helpful assistant."
+        )
+
 
 @register_template
 class LlamaTemplate(Template):
@@ -120,19 +144,22 @@ if __name__ == "__main__":
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "meta-llama/Meta-Llama-3-8B-Instruct", token=access_token
+        "Qwen/Qwen2-1.5B-Instruct", token=access_token
     )
-
-    g = modelType2Template["llama"](tokenizer)
+    print(tokenizer)
+    g = modelType2Template["qwen2"](tokenizer)
     message = [
         {"role": "user", "content": "aaa"},
-        {"role": "assistant", "content": "ffff"},
+        {"role": "assistant", "content": "sad"},
         {"role": "user", "content": "aaa"},
-        {"role": "assistant", "content": "ffff"},
+        {"role": "assistant", "content": "smile"},
     ]
     c = tokenizer.apply_chat_template(message, tokenize=True)
     print(c)
-
+    print('---------')
     a, b = g.apply(message)
-    # print(tokenizer.decode(a))
+    print(tokenizer.decode(a))
+    print(b)
+    print(list(zip(a,b)))
+    print([tokenizer.convert_ids_to_tokens(bb) for bb in b if bb!=-100 ])
     assert a==c
