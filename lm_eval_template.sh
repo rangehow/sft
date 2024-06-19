@@ -44,7 +44,7 @@ timestamp=$(date +"%Y%m%d_%H%M%S")
 #    "mmlu 0"
 # 定义任务列表和对应的 num_fewshot
 tasks=(
-
+    "ifeval 0"
     "triviaqa 5"
     "agieval 0"
     "truthfulqa_mc2 0"
@@ -53,7 +53,7 @@ tasks=(
     "winogrande 5"
     "sciq 0"
 )
- CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 1 --shot --dp --dataset mmlu,gsm8k,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+# CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 1 --shot --dp --dataset mmlu,gsm8k,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 # 遍历每个模型和任务并执行命令
 for model in "${models[@]}"; do
     for task in "${tasks[@]}"; do

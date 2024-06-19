@@ -71,24 +71,28 @@ def main():
     model_type = config.model_type
     template = modelType2Template[model_type](tokenizer)
 
-    
-    train_dataset = dname2load[args.dataset]()
-    # train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
-    #     "train"
-    # ]
-    print(train_dataset)
-    train_dataset = train_dataset.map(
-        partial(dname2func[args.dataset], template=template),
-        batched=True,
-        num_proc=30,
-        # remove_columns=train_dataset.features.keys(),
-        load_from_cache_file=False,
-        desc="tokenize",
-    )
+    dataset_name_list=args.dataset.split(',')
+    dataset_list=[]
+    for dname in dataset_name_list:
+        train_dataset = dname2load[dname]()
+        # train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
+        #     "train"
+        # ]
+        
+        print(train_dataset)
+        train_dataset = train_dataset.map(
+            partial(dname2func[dname], template=template,mode=1,test=False),
+            batched=True,
+            num_proc=30,
+            # remove_columns=train_dataset.features.keys(),
+            load_from_cache_file=False,
+            desc="tokenize",
+        )
+        dataset_list.append(train_dataset)
+    train_dataset=datasets.concatenate_datasets(dataset_list)
+    import pdb
 
-    # import pdb
-
-    # pdb.set_trace()
+    pdb.set_trace()
 
     def statistic():
 

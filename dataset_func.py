@@ -54,7 +54,7 @@ def _process(real_input, output, template, test=False, vllm=True, chat=False, mo
                     )
                 input_ids.append(input_id)
             else:
-                input_id, label = reformate(i, o, template)
+                input_id, label = template.apply(reformate(i, o, template))
                 input_ids.append(input_id)
                 labels.append(label)
         else:
@@ -231,6 +231,7 @@ def humaneval(instances, shot=False, **kwargs):
 def apps(
     instances,
     template,
+    **kwargs,
 ):
 
     real_input, label = (
@@ -241,11 +242,28 @@ def apps(
     input_ids, labels = [], []
 
     for i, o in zip(real_input, label):
-        input_id, label = template.apply(reformate(i, eval(o)[0], template))
-        input_ids.append(input_id)
-        labels.append(label)
 
-    return {"input_ids": input_ids, "labels": labels}
+        input_ids.append(i)
+        labels.append(eval(o)[0])
+
+    return _process(input_ids, labels,template=template, **kwargs)
+
+
+@register2dict(name="math")
+def math(
+    instances,
+    template,
+    **kwargs,
+):
+
+    real_input, label = (
+        instances["problem"],
+        instances["solution"],
+    )
+
+
+    return _process(real_input, label,template=template, **kwargs)
+
 
 
 @register2dict(name="truthfulqa")

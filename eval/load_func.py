@@ -60,6 +60,10 @@ def humaneval():
 def truthfulqa():
     return datasets.load_dataset('truthful_qa', "multiple_choice")['validation']
 
+@register2dict(name="math")
+def math():
+    return datasets.load_dataset('lighteval/MATH','all')['train']
+
 if __name__ == "__main__":
     humaneval()
 
