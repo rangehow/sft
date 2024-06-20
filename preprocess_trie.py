@@ -127,6 +127,7 @@ def main():
         )
         dataset_list.append(train_dataset)
     train_dataset=datasets.concatenate_datasets(dataset_list)
+    train_dataset = train_dataset.sort('input_ids')
     import pdb
 
     # pdb.set_trace()
@@ -229,8 +230,9 @@ def main():
 
                             # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
                             # clm_value = clm_dict.get(clm_key, supervised_value)
-                            clm_value = clm_trie.search(label[regionBeginIdx + 1 : i + 1], supervised_value)
-                            
+                            clm_value = clm_trie.search(label[regionBeginIdx + 1 : i + 1])
+                            if clm_value==None:
+                                clm_value = supervised_value
                         synthesis_dict[key].append([supervised_value, clm_value])
 
                     elif args.clm and flag4LossArea:
