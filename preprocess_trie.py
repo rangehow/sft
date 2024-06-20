@@ -127,7 +127,7 @@ def main():
         )
         dataset_list.append(train_dataset)
     train_dataset=datasets.concatenate_datasets(dataset_list)
-    train_dataset = train_dataset.sort('input_ids')
+    # train_dataset = train_dataset.sort('input_ids')
     import pdb
 
     # pdb.set_trace()
