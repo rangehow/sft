@@ -31,11 +31,16 @@ def transform_to_log_prob(
                 if x <= 0:
                     return 10000
 
-                tensor_with_temperature = knns / x
-                exp_tensor = torch.exp(tensor_with_temperature)
-                sum_exp = torch.sum(exp_tensor, dim=-1)
-                result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
-
+                # tensor_with_temperature = knns / x
+                # exp_tensor = torch.exp(tensor_with_temperature)
+                # sum_exp = torch.sum(exp_tensor, dim=-1)
+                # result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
+                
+                x = knns / x
+                x = torch.exp(x)
+                x = torch.sum(x, dim=-1)
+                result = torch.sum(zero_count_per_tensor / x) - bsz * zero_prob
+                
                 return result.item()
 
             # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
@@ -74,6 +79,23 @@ def optimized_stack(supervised, embedding_size):
 
     return x
 
+def directly_softmax(supervised, embedding_size):
+
+    x = torch.zeros(len(supervised), embedding_size)
+    
+    # Iterate through the Counters and directly update the tensor
+    for i, counter in enumerate(supervised):
+        
+        temp_values=torch.nn.functional.softmax(torch.tensor(list(counter.values()),dtype=float))
+        # if len(counter.values())>1:
+        #     import pdb
+        #     pdb.set_trace()
+        for j,key in enumerate(counter.keys()):
+            x[i][key]=temp_values[j] 
+        # print(x[0],x[1],temp_values)
+    # import pdb
+    # pdb.set_trace()
+    return x
 
 import torch
 from collections import Counter
@@ -182,11 +204,11 @@ class SpecialDataCollator:
         clm = [item for d in batch for item in d["clm"]]
         # ----------------------------------------------------------------
 
-        x_sup = optimized_stack(supervised, self.embedding_size)
-        x_clm = optimized_stack(clm, self.embedding_size)
+        
 
         if self.div_mode:
-
+            x_sup = optimized_stack(supervised, self.embedding_size)
+            x_clm = optimized_stack(clm, self.embedding_size)
             if self.zero_prob == 0:
                 all_prob_supervised = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
             else:
@@ -215,8 +237,17 @@ class SpecialDataCollator:
                     all_prob_clm == 0, temp_zero_prob, all_prob_clm
                 )
         else:
-            all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
-            all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
+            
+            if self.zero_prob == 0:
+                all_prob_supervised=directly_softmax(supervised, self.embedding_size)
+                all_prob_clm=directly_softmax(clm, self.embedding_size)
+                # import pdb
+                # pdb.set_trace()
+            else:
+                x_sup = optimized_stack(supervised, self.embedding_size)
+                x_clm = optimized_stack(clm, self.embedding_size)
+                all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
+                all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
 
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
@@ -330,12 +361,12 @@ if __name__ == "__main__":
         dataset=train_dataset,
         batch_size=8,
         collate_fn=collator,
-        num_workers=8,
+        num_workers=0,
         pin_memory=True,
     )
 
     from tqdm import tqdm
-    from sklearn import UMAP
+    # from sklearn import UMAP
     # all_prob_supervised=
     # all_prob_clm=[]
     for d in tqdm(dataloader):
