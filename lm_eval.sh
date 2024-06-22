@@ -9,13 +9,16 @@ models=(
     # '/niutrans/NEUNLP/rjh/models/gemma-2b'
     # '/niutrans/NEUNLP/rjh/models/gemma-2b-it'
     # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m9d_ls0.1'
-    'sft/gemma_naive_bsz256'
-    'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.5_div'                          
-    'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.8_div'                          
-    'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha1_div'
-    'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0.1_div/'
-    'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0.2_div/'
-    'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0_div/'
+    # 'sft/gemma_naive_bsz256'
+    # 'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.5_div'                          
+    # 'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.8_div'                          
+    # 'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha1_div'
+    # 'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0.1_div/'
+    # 'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0.2_div/'
+    # 'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0_div/'
+    'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0.5'
+    'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha1'
+    'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0'
 )
 
 # models=(
@@ -46,15 +49,15 @@ timestamp=$(date +"%Y%m%d_%H%M%S")
 # 定义任务列表和对应的 num_fewshot
 tasks=(
     "ifeval 0"
-    # "triviaqa 5"
-    # "agieval 0"
-    # "truthfulqa_mc2 0"
-    # "bbh_cot_fewshot 3"
-    # "arc_challenge 0"
-    # "winogrande 5"
-    # "sciq 0"
+    "triviaqa 5"
+    "agieval 0"
+    "truthfulqa_mc2 0"
+    "bbh_cot_fewshot 3"
+    "arc_challenge 0"
+    "winogrande 5"
+    "sciq 0"
 )
-#  CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 0 --shot --dp --dataset mmlu,gsm8k,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+ CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 0 --shot --dp --dataset mmlu,gsm8k,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 # 遍历每个模型和任务并执行命令
 for model in "${models[@]}"; do
     for task in "${tasks[@]}"; do
@@ -69,19 +72,8 @@ for model in "${models[@]}"; do
             --batch_size 8 \
             --num_fewshot "$num_fewshot" \
             --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
-
-
-    
-        
+      
     done
 done
 
-# 代码测试应该如何进行？
-# Human-Eval
-
-# accelerate launch --config_file lm_eval.yaml -m lm_eval --model hf \
-#             --model_args pretrained='/niutrans/NEUNLP/rjh/models/gemma-2b-it' \
-#             --tasks winogrande \
-#             --batch_size 8 \
-#             --num_fewshot 5
 
