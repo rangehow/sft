@@ -1,0 +1,1 @@
+accelerate launch --config_file my.yaml special_train.py  --model llama3_8b --gradient_accumulation_steps 32 --total_bsz 256 --zero_prob 0 --alpha 1 --div_mode False &

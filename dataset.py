@@ -17,37 +17,34 @@ def transform_to_log_prob(
         # return torch.zeros((vocab_size))
         return None
     else:
-        # 不需要拟合温度的情况。
-        if zero_prob == 0:
-            knn_temperature = 1e-6  # 要放大，才能压低概率
-        else:
 
-            # 预先计算,免得在多次fun的迭代里都要重算
-            zero_count_per_tensor = torch.sum(knns == 0, dim=-1)
-            # 分母
-            bsz = knns.size(0)
 
-            def fun(x):
-                if x <= 0:
-                    return 10000
+        # 预先计算,免得在多次fun的迭代里都要重算
+        zero_count_per_tensor = torch.sum(knns == 0, dim=-1)
+        # 分母
+        bsz = knns.size(0)
 
-                # tensor_with_temperature = knns / x
-                # exp_tensor = torch.exp(tensor_with_temperature)
-                # sum_exp = torch.sum(exp_tensor, dim=-1)
-                # result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
-                
-                x = knns / x
-                x = torch.exp(x)
-                x = torch.sum(x, dim=-1)
-                result = torch.sum(zero_count_per_tensor / x) - bsz * zero_prob
-                
-                return result.item()
+        def fun(x):
+            if x <= 0:
+                return 10000
 
-            # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
-            result = root_scalar(fun, bracket=[0.01, 50], method="toms748")
-            knn_temperature = result.root
+            # tensor_with_temperature = knns / x
+            # exp_tensor = torch.exp(tensor_with_temperature)
+            # sum_exp = torch.sum(exp_tensor, dim=-1)
+            # result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
+            
+            x = knns / x
+            x = torch.exp(x)
+            x = torch.sum(x, dim=-1)
+            result = torch.sum(zero_count_per_tensor / x) - bsz * zero_prob
+            
+            return result.item()
 
-        probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
+        # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
+        result = root_scalar(fun, bracket=[0.01, 50], method="toms748")
+        knn_temperature = result.root
+
+    probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
 
     return probs
 

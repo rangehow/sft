@@ -74,7 +74,7 @@ def main():
     dataset_name_list=args.dataset.split(',')
     dataset_list=[]
     for dname in dataset_name_list:
-        train_dataset = dname2load[dname]()
+        train_dataset = dname2load[dname](dataset_dir.get(args.dataset, None))
         # train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
         #     "train"
         # ]

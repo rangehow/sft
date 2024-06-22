@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
     parser.add_argument("--total_bsz", default=128, type=int)
     parser.add_argument(
-        "--weighted", action="store_true", help="decide to use token level freq weight"
+        "--weighted",default=True, type=ast.literal_eval, help="decide to use token level freq weight"
     )
     return parser.parse_args()
 
