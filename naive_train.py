@@ -76,7 +76,7 @@ model_type = config.model_type
 template = modelType2Template[model_type](tokenizer)
 my_collator = MyCollator(tokenizer)
 # 读取数据集
-train_dataset = dname2load[args.dataset]()
+train_dataset = dname2load[args.dataset](dataset_dir.get(args.dataset, None))
 # logger.debug(train_dataset)
 
 # 这个地方略有一点复杂，上面的train_dataset是原始的存储格式，在这一步，我们利用dname2func和template来把数据集转换成input_ids和labels
