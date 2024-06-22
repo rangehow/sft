@@ -9,7 +9,7 @@ models=(
     # '/niutrans/NEUNLP/rjh/models/gemma-2b'
     # '/niutrans/NEUNLP/rjh/models/gemma-2b-it'
     # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m9d_ls0.1'
-    # 'sft/gemma_naive_bsz256'
+    'sft/gemma_naive_bsz256'
     # 'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.5_div'                          
     # 'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.8_div'                          
     # 'sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha1_div'
