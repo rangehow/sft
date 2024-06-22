@@ -89,7 +89,7 @@ for dname in dataset_name_list:
         partial(dname2func[dname], template=template,mode=1,test=False),
         batched=True,
         num_proc=30,
-        # remove_columns=train_dataset.features.keys(),
+        remove_columns=train_dataset.features.keys(),
         load_from_cache_file=False,
         desc="tokenize",
     )
@@ -100,13 +100,13 @@ train_dataset=datasets.concatenate_datasets(dataset_list)
 
 # 这个地方略有一点复杂，上面的train_dataset是原始的存储格式，在这一步，我们利用dname2func和template来把数据集转换成input_ids和labels
 # 其中dname2func主要负责把原始数据集的格式重组成messages形式（即{'role':xxx , 'content':xxx}），template则负责把messages转成input_ids和labels
-train_dataset = train_dataset.map(
-    partial(dname2func[args.dataset], template=template),
-    batched=True,
-    num_proc=50,
-    remove_columns=train_dataset.features.keys(),
-    desc="tokenize",
-)
+# train_dataset = train_dataset.map(
+#     partial(dname2func[args.dataset], template=template),
+#     batched=True,
+#     num_proc=50,
+#     remove_columns=train_dataset.features.keys(),
+#     desc="tokenize",
+# )
 
 
 if args.lora:
