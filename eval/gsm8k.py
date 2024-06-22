@@ -21,6 +21,8 @@ from torch.utils.data import DataLoader
 from .load_func import dname2load
 from .samplingparam import dname2samplingparams
 from vllm import LLM
+from config import *
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -82,7 +84,7 @@ def main():
         record_list=[]
         for d in dataset_list:
             
-            dataset = dname2load[d]()
+            dataset = dname2load[d](dataset_dir.get(d, None))
             test_dataset = dataset.map(
                 partial(
                     dname2func[d],
