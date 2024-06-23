@@ -97,14 +97,14 @@ def mmlu(prediciton, reference, vllm):
         # pdb.set_trace()
         if all_responses == idx2char[r]:
             correct += 1
-        else:
-            print("-" * 40)
-            print(f"generated answer:\n{generated_text}")
-            print(f"Short generated answer:{all_responses}")
-            print(f"ground truth answer: {idx2char[r]}")
-            print(f"Correct: {correct} out of {idx+1}")
-            print("=" * 40)
-        idx += 1
+        # else:
+        #     print("-" * 40)
+        #     print(f"generated answer:\n{generated_text}")
+        #     print(f"Short generated answer:{all_responses}")
+        #     print(f"ground truth answer: {idx2char[r]}")
+        #     print(f"Correct: {correct} out of {idx+1}")
+        #     print("=" * 40)
+        # idx += 1
     print(f"total_data_: {len(reference)}")
     return correct / len(reference) * 100
 
