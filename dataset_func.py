@@ -257,7 +257,6 @@ def code(
     template,
     **kwargs,
 ):
-
     real_input, label = (
         instances["query"],
         instances["answer"],
@@ -268,7 +267,7 @@ def code(
     for i, o in zip(real_input, label):
 
         input_ids.append(i)
-        labels.append(eval(o)[0])
+        labels.append(o)
 
     return _process(input_ids, labels,template=template, **kwargs)
 
