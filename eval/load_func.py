@@ -28,8 +28,15 @@ def bbh(local_dir):
     return datasets.load_dataset("huanmit/flan-t5-boosting-bbh_cot")["validation"]
 
 
+@register2dict(name="code")
+def code(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    return datasets.load_dataset("m-a-p/CodeFeedback-Filtered-Instruction")["train"]
+
 @register2dict(name="apps")
 def apps(local_dir):
+    exit() # '***数据集，不许用'
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "all")["train"]
     return datasets.load_dataset("codeparrot/apps", "all")["train"]
@@ -76,8 +83,12 @@ def truthfulqa(local_dir):
 @register2dict(name="math")
 def math(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir,'all')['train']
-    return datasets.load_dataset('lighteval/MATH','all')['train']
+        a= datasets.load_dataset(local_dir,'all')['train']
+        b=datasets.load_dataset(local_dir,'all')['test']
+    else:
+        a=datasets.load_dataset('lighteval/MATH','all')['train'] # 7.5k
+        b=datasets.load_dataset('lighteval/MATH','all')['test']  # 5k
+    return datasets.concatenate_datasets([a,b])
 
 if __name__ == "__main__":
     humaneval()

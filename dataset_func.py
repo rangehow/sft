@@ -249,6 +249,31 @@ def apps(
     return _process(input_ids, labels,template=template, **kwargs)
 
 
+
+
+@register2dict(name="code")
+def code(
+    instances,
+    template,
+    **kwargs,
+):
+
+    real_input, label = (
+        instances["query"],
+        instances["answer"],
+    )
+
+    input_ids, labels = [], []
+
+    for i, o in zip(real_input, label):
+
+        input_ids.append(i)
+        labels.append(eval(o)[0])
+
+    return _process(input_ids, labels,template=template, **kwargs)
+
+
+
 @register2dict(name="math")
 def math(
     instances,

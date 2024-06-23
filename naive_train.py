@@ -88,13 +88,16 @@ for dname in dataset_name_list:
     train_dataset = train_dataset.map(
         partial(dname2func[dname], template=template,mode=1,test=False),
         batched=True,
-        num_proc=30,
-        remove_columns=train_dataset.features.keys(),
+        num_proc=1,
+        # remove_columns=train_dataset.features.keys(),
         load_from_cache_file=False,
         desc="tokenize",
     )
     dataset_list.append(train_dataset)
 train_dataset=datasets.concatenate_datasets(dataset_list)
+import pdb
+pdb.set_trace()
+print(max(len(train_dataset['input_ids'])))
 # train_dataset = dname2load[args.dataset](dataset_dir.get(args.dataset, None))
 # logger.debug(train_dataset)
 
