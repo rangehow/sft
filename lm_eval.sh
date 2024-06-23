@@ -16,9 +16,11 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0.1_div/'
     # 'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0.2_div/'
     # 'sft/gemma_2b_alpaca_gpt4_6m16d_0_bsz256_alpha0_div/'
-    'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0.5'
-    'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha1'
-    'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0'
+    # 'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0.5'
+    # 'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha1'
+    # 'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0'
+    'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha1_weighted/'
+    'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha0.8_weighted/'
 )
 
 # models=(
@@ -48,14 +50,14 @@ timestamp=$(date +"%Y%m%d_%H%M%S")
 #    "mmlu 0"
 # 定义任务列表和对应的 num_fewshot
 tasks=(
-    "ifeval 0"
-    "triviaqa 5"
-    "agieval 0"
     "truthfulqa_mc2 0"
     "bbh_cot_fewshot 3"
     "arc_challenge 0"
-    "winogrande 5"
+    "triviaqa 5"
+    "ifeval 0"
     "sciq 0"
+    "winogrande 5"
+    "agieval 0"
 )
  CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 0 --shot --dp --dataset mmlu,gsm8k,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 # 遍历每个模型和任务并执行命令
