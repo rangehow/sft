@@ -321,6 +321,12 @@ if __name__ == "__main__":
             action="store_true",
             help="decide to use token level freq weight",
         )
+        parser.add_argument(
+        "--mix",default=False, type=ast.literal_eval, help="decide to use token level freq weight"
+        )
+        parser.add_argument(
+            "--mix_ratio",default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
+        )
         return parser.parse_args()
 
     args = parse_args()
@@ -347,7 +353,10 @@ if __name__ == "__main__":
         zero_prob=args.zero_prob,
         embedding_size=embedding_size,
         div_mode=args.div_mode,
+        mix=args.mix,
+        mix_ratio=args.mix_ratio,
     )
+
 
     @logger.catch
     def load_dataset():
@@ -386,6 +395,8 @@ if __name__ == "__main__":
     # all_prob_supervised=
     # all_prob_clm=[]
     for d in tqdm(dataloader):
+        import pdb
+        pdb.set_trace()
         # print(d['all_prob_supervised'].shape)
         # all_prob_supervised.append()
         continue
