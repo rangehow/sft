@@ -6,7 +6,7 @@ models=(
     # '/niutrans/NEUNLP/rjh/sft/gemma_2b_alpaca_gpt4_5m30d_0_weighted_div'
     # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m2d'
     # '/niutrans/NEUNLP/rjh/models/gemma-1.1-2b-it'
-    # '/niutrans/NEUNLP/rjh/models/gemma-2b'
+    '/niutrans/NEUNLP/rjh/models/gemma-2b'
     # '/niutrans/NEUNLP/rjh/models/gemma-2b-it'
     # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m9d_ls0.1'
     # 'sft/gemma_naive_bsz256'
@@ -19,8 +19,10 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0.5'
     # 'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha1'
     # 'sft/gemma_2b_alpaca_gpt4_6m21d_0_bsz256_alpha0'
-    'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha1_weighted/'
-    'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha0.8_weighted/'
+    # 'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha1_weighted/'
+    # 'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha0.8_weighted/'
+    # 'sft/gemma_naive_bsz512_mix'
+
 )
 
 # models=(
@@ -54,10 +56,10 @@ tasks=(
     "bbh_cot_fewshot 3"
     "arc_challenge 0"
     "triviaqa 5"
-    "ifeval 0"
+    "agieval 0"
     "sciq 0"
     "winogrande 5"
-    "agieval 0"
+    "ifeval 0"
 )
  CUDA_VISIBLE_DEVICES=1,2,3  python -m sft.eval.gsm8k  --reuse --mode 0 --shot --dp --dataset mmlu,gsm8k,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 # 遍历每个模型和任务并执行命令
@@ -71,7 +73,7 @@ for model in "${models[@]}"; do
         accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
             --model_args pretrained="$model" \
             --tasks "$task_name" \
-            --batch_size 8 \
+            --batch_size 12 \
             --num_fewshot "$num_fewshot" \
             --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
       

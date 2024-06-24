@@ -38,6 +38,12 @@ def parse_args():
     parser.add_argument(
         "--weighted",default=True, type=ast.literal_eval, help="decide to use token level freq weight"
     )
+    parser.add_argument(
+        "--mix",default=False, type=ast.literal_eval, help="decide to use token level freq weight"
+    )
+    parser.add_argument(
+        "--mix_ratio",default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
+    )
     return parser.parse_args()
 
 
@@ -55,6 +61,8 @@ if args.output_dir is None:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
         args.output_dir = args.output_dir + "_div"
+    if args.mix:
+        args.output_dir = args.output_dir + f"_mix{args.mix_ratio}"
     if args.lora:
         args.output_dir = args.output_dir + "_lora"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
@@ -83,6 +91,8 @@ collator = SpecialDataCollator(
     zero_prob=args.zero_prob,
     embedding_size=embedding_size,
     div_mode=args.div_mode,
+    mix=args.mix,
+    mix_ratio=args.mix_ratio,
 )
 
 
@@ -110,6 +120,7 @@ def load_dataset():
 
 
 train_dataset = load_dataset()
+
 # 检查数据的调试代码----------------------------------
 # dataloader = DataLoader(
 #     dataset=train_dataset, batch_size=8, collate_fn=collator, num_workers=16,pin_memory=True
@@ -149,6 +160,7 @@ if args.lora:
 # torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(
     weight_mode=args.weighted,
+    mix_mode=args.mix,
     alpha=args.alpha,
     model=model,
     train_dataset=train_dataset,
@@ -161,7 +173,7 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="no",
         dataloader_pin_memory=True,
-        dataloader_num_workers=0,
+        dataloader_num_workers=16,
         num_train_epochs=3,
         per_device_train_batch_size=real_bsz,
         bf16=True,

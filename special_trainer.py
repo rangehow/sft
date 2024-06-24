@@ -8,9 +8,10 @@ import time
 
 class KLTrainer(Trainer):
 
-    def __init__(self, weight_mode=False,alpha=1, **kwargs):
+    def __init__(self, weight_mode=False,mix_mode=False,alpha=1, **kwargs):
         self.weight_mode = weight_mode
         self.alpha = alpha
+        self.mix_mode=mix_mode
         super().__init__(**kwargs)
 
     def compute_loss(self, model, inputs, return_outputs=False):
@@ -23,9 +24,12 @@ class KLTrainer(Trainer):
         )  # 3dim list -> (batch_size, turn , 2) 只有turn才会产生一个起止下标
 
         all_prob_supervised = inputs.pop("all_prob_supervised")
-        all_prob_clm = inputs.pop("all_prob_clm")
+        
         supervised_cnt = inputs.pop("supervised_cnt")
-        clm_cnt = inputs.pop("clm_cnt")
+        
+        if not self.mix_mode:
+            all_prob_clm = inputs.pop("all_prob_clm")
+            clm_cnt = inputs.pop("clm_cnt")
 
         # print(clm_cnt.dtype)
         result = model(
@@ -43,16 +47,17 @@ class KLTrainer(Trainer):
             ]
         ).to(model_logits.device)
         all_prob_supervised = all_prob_supervised.to(model_logits.device)
-        all_prob_clm = all_prob_clm.to(model_logits.device)
+        if not self.mix_mode:
+            all_prob_clm = all_prob_clm.to(model_logits.device)
 
         if not self.weight_mode:
             try:
                 ce_loss = CrossEntropyLoss(ignore_index=-100)
                 supervised_loss = ce_loss(last_logits, all_prob_supervised)
-                clm_loss = ce_loss(last_logits, all_prob_clm)
+                if not self.mix_mode:
+                    clm_loss = ce_loss(last_logits, all_prob_clm)
             except:
                 import pdb
-
                 pdb.set_trace()
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")
@@ -64,12 +69,19 @@ class KLTrainer(Trainer):
             supervised_loss = supervised_cnt  @ ce_loss(
                 last_logits, all_prob_supervised
             )
-            clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
+            if not self.mix_mode:
+                clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
 
-        if not self.weight_mode:
-            loss = self.alpha* supervised_loss + (1-self.alpha) * clm_loss
+        if not self.mix_mode:
+            if not self.weight_mode:
+                loss = self.alpha* supervised_loss + (1-self.alpha) * clm_loss
+            else:
+                loss = (self.alpha* supervised_loss + (1-self.alpha) * clm_loss) / last_logits.size()[0]
         else:
-            loss = (self.alpha* supervised_loss + (1-self.alpha) * clm_loss) / last_logits.size()[0]
+            if not self.weight_mode:
+                loss =   supervised_loss  
+            else:
+                loss =  supervised_loss   / last_logits.size()[0]
         # print('valid_label_index_list',valid_label_index_list)
         # print("supervised_loss", supervised_loss)
         # print("clm_loss", clm_loss)

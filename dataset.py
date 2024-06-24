@@ -83,7 +83,7 @@ def directly_softmax(supervised, embedding_size):
     # Iterate through the Counters and directly update the tensor
     for i, counter in enumerate(supervised):
         
-        temp_values=torch.nn.functional.softmax(torch.tensor(list(counter.values()),dtype=float))
+        temp_values=torch.nn.functional.softmax(torch.tensor(list(counter.values()),dtype=float),dim=-1)
         # if len(counter.values())>1:
         #     import pdb
         #     pdb.set_trace()
@@ -146,11 +146,13 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 class SpecialDataCollator:
-    def __init__(self, tokenizer, zero_prob, embedding_size, div_mode) -> None:
+    def __init__(self, tokenizer, zero_prob, embedding_size, div_mode,mix,mix_ratio) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
         self.embedding_size = embedding_size
         self.div_mode = div_mode
+        self.mix=mix
+        self.mix_ratio=mix_ratio
 
     def __call__(self, batch) -> torch.Any:
 
@@ -198,6 +200,11 @@ class SpecialDataCollator:
         # e-4 不算耗时
         # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
         supervised = [item for d in batch for item in d["supervised"]]
+        if not all(len(counter) == 1 for counter in supervised):
+            import pdb
+            pdb.set_trace()
+        else:
+            return {}
         clm = [item for d in batch for item in d["clm"]]
         # ----------------------------------------------------------------
 
@@ -245,11 +252,23 @@ class SpecialDataCollator:
                 x_clm = optimized_stack(clm, self.embedding_size)
                 all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
                 all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
-
+        
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         )
         clm_cnt = torch.tensor([frequency(sum(xx.values())) for xx in clm])
+        
+        if self.mix:
+            all_prob_supervised=self.mix_ratio*all_prob_supervised+(1-self.mix_ratio)*all_prob_clm
+            supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt
+            return {
+                "input_ids": input_ids.input_ids,
+                "attention_mask": input_ids.attention_mask,
+                "all_prob_supervised": all_prob_supervised,
+                "valid_label_index_list": valid_label_index_list,
+                "supervised_cnt": supervised_cnt,
+            }
+        
 
         return {
             "input_ids": input_ids.input_ids,
