@@ -200,11 +200,11 @@ class SpecialDataCollator:
         # e-4 不算耗时
         # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
         supervised = [item for d in batch for item in d["supervised"]]
-        if not all(len(counter) == 1 for counter in supervised):
-            import pdb
-            pdb.set_trace()
-        else:
-            return {}
+        # if not all(len(counter) == 1 for counter in supervised):
+        #     import pdb
+        #     pdb.set_trace()
+        # else:
+        #     return {}
         clm = [item for d in batch for item in d["clm"]]
         # ----------------------------------------------------------------
 
