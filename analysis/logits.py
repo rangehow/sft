@@ -173,40 +173,13 @@ def main():
                         aaaa=find_non_one_hot_rows(all_prob_supervised)
                         bbbb=find_non_one_hot_rows(all_prob_clm)
                         
-                        print(supervised_similarity,clm_similarity,naive_label_similarity)
-                outputs = []
+                    print(supervised_similarity,clm_similarity,naive_label_similarity)
+
                 
 
-                logger.debug(f"response的长度:{len(response)}")
-                import pdb
-                pdb.set_trace()
-                # 不只保存文本是因为未来很可能有一些任务，是需要log prob的，所以没办法，最好整个保存。
-                os.makedirs(os.path.join(script_path, "generated"),exist_ok=True)
-                with open(target_file, "wb") as o:
-                    pickle.dump(response, o)
 
-            import pdb
-            pdb.set_trace()
 
-            score = dname2post[d](
-                prediciton=response,
-                reference=[t["answer"] for t in test_dataset],
-                vllm=True,
-            )
-            
-            logger.debug(f"task:{d},model:{m},score :{score}")
-            
-            record_list.append(f"task:{d},model:{m},score :{score}")
-            
-        
-        try:
-            with open(os.path.join(args.output_path, f'{m}.jsonl'), 'w', encoding='utf-8') as o:
-                json.dump(record_list,o,indent=2,ensure_ascii=False)
-        except FileNotFoundError as e:
-            print(f"Error: {e}")
-            os.makedirs(os.path.dirname(os.path.join(args.output_path, f'{m}.jsonl')), exist_ok=True)
-            with open(os.path.join(args.output_path, f'{m}.jsonl'), 'w', encoding='utf-8') as o: 
-                json.dump(record_list,o,indent=2,ensure_ascii=False)
+
             
         
 
