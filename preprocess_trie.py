@@ -221,7 +221,9 @@ def main():
                             # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
                             # clm_value = clm_dict.get(clm_key, supervised_value)
                             clm_value = clm_trie.search(label[regionBeginIdx + 1 : i + 1])
-                            if clm_value==None:
+                            import pdb
+                            pdb.set_trace()
+                            if clm_value==None or len(clm_value)==0: # trie的返回不稳定，现在是空counter
                                 clm_value = supervised_value
                         synthesis_dict[key].append([supervised_value, clm_value])
 
