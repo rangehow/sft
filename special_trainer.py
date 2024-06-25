@@ -69,8 +69,7 @@ class KLTrainer(Trainer):
             supervised_loss = supervised_cnt  @ ce_loss(last_logits, all_prob_supervised)
             if not self.mix_mode:
                 clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
-        import pdb
-        pdb.set_trace()
+
         if not self.mix_mode:
             if not self.weight_mode:
                 loss = self.alpha* supervised_loss + (1-self.alpha) * clm_loss
