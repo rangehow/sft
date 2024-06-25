@@ -66,9 +66,7 @@ class KLTrainer(Trainer):
             #     last_logits, all_prob_supervised
             # )
             # clm_loss = clm_cnt.to(torch.float32) @ ce_loss(last_logits, all_prob_clm)
-            supervised_loss = supervised_cnt  @ ce_loss(
-                last_logits, all_prob_supervised
-            )
+            supervised_loss = supervised_cnt  @ ce_loss(last_logits, all_prob_supervised)
             if not self.mix_mode:
                 clm_loss = clm_cnt  @ ce_loss(last_logits, all_prob_clm)
         import pdb

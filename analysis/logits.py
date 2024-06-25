@@ -44,6 +44,12 @@ def parse_args():
     )
     parser.add_argument("--zero_prob", default=0, type=ast.literal_eval)
     parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
+    parser.add_argument(
+        "--mix",default=False, type=ast.literal_eval, help="decide to use token level freq weight"
+    )
+    parser.add_argument(
+        "--mix_ratio",default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
+    )
     return parser.parse_args()
 
 

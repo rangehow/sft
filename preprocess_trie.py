@@ -23,18 +23,8 @@ class Trie:
                 return None
             node = node.children[key]
         return node.value
-# 创建一个 Trie 实例
-trie = Trie()
 
-# 插入具有公共前缀的列表
-trie.insert([1, 2, 3, 4, 5], 1)
-trie.insert([1, 2, 3, 4, 6], 2)
-
-# 搜索列表
-print(trie.search([1, 2, 3, 4, 5]))  # 输出: 1
-print(trie.search([1, 2, 3, 4, 6]))  # 输出: 2
-print(trie.search([1, 2, 1, 4]))     # 输出: None
-
+print('trie模式')
 from functools import partial
 import gc
 import os
