@@ -6,7 +6,7 @@ models=(
     # '/niutrans/NEUNLP/rjh/sft/gemma_2b_alpaca_gpt4_5m30d_0_weighted_div'
     # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m2d'
     # '/niutrans/NEUNLP/rjh/models/gemma-1.1-2b-it'
-    '/niutrans/NEUNLP/rjh/models/gemma-2b'
+    # '/niutrans/NEUNLP/rjh/models/gemma-2b'
     # '/niutrans/NEUNLP/rjh/models/gemma-2b-it'
     # '/niutrans/NEUNLP/rjh/sft/gemma_naive_6m9d_ls0.1'
     # 'sft/gemma_naive_bsz256'
@@ -22,6 +22,9 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha1_weighted/'
     # 'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha0.8_weighted/'
     # 'sft/gemma_naive_bsz512_mix'
+    'sft/gemma_2b_alpaca_gpt4_6m26d_0_bsz256_alpha0.8_weighted_div_mix0.8/'
+    'sft/gemma_2b_alpaca_gpt4_6m26d_0_bsz256_alpha0.8_weighted_mix0.8/'
+
 
 )
 
