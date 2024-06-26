@@ -52,7 +52,7 @@ def bbh():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        stop=["Q:"],
+        stop=["Q","\n\n","</s>"],
     )
 
 @register2dict(name="truthfulqa")
