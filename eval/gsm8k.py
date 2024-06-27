@@ -70,6 +70,7 @@ def main():
 
     # os.makedirs(args.output_path,exist_ok=True)
     script_path = os.path.dirname(os.path.abspath(__file__))
+    os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
     print("script_path", script_path)
     for m in model_list:
         model_type = AutoConfig.from_pretrained(
