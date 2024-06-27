@@ -22,8 +22,9 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha1_weighted/'
     # 'sft/gemma_2b_alpaca_gpt4_6m22d_0_bsz256_alpha0.8_weighted/'
     # 'sft/gemma_naive_bsz512_mix'
-    'sft/gemma_2b_alpaca_gpt4_6m26d_0_bsz256_alpha0.8_weighted_div_mix0.8/'
-    'sft/gemma_2b_alpaca_gpt4_6m26d_0_bsz256_alpha0.8_weighted_mix0.8/'
+    'sft/gemma_2b_alpaca_gpt4_6m26d_0_bsz256_alpha0.8_mix0.8'
+    'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_mix0.5'
+    'sft/qwen2_1.5B_naive_bsz512_mix_2card_acc256'
 
 
 )
