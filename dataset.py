@@ -245,8 +245,7 @@ class SpecialDataCollator:
             if self.zero_prob == 0:
                 all_prob_supervised=directly_softmax(supervised, self.embedding_size)
                 all_prob_clm=directly_softmax(clm, self.embedding_size)
-                # import pdb
-                # pdb.set_trace()
+
             else:
                 x_sup = optimized_stack(supervised, self.embedding_size)
                 x_clm = optimized_stack(clm, self.embedding_size)
@@ -260,7 +259,8 @@ class SpecialDataCollator:
         
         if self.mix:
             all_prob_supervised=self.mix_ratio*all_prob_supervised+(1-self.mix_ratio)*all_prob_clm
-            supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt
+            # supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt 627日晚上注释
+            supervised_cnt=supervised_cnt+clm_cnt
             return {
                 "input_ids": input_ids.input_ids,
                 "attention_mask": input_ids.attention_mask,
