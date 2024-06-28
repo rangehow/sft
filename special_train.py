@@ -113,7 +113,7 @@ def find_msgpack_chunk_files(
         for f in os.listdir(base_dir)
         if f.startswith(name) and f.endswith(".msgpack")
     ]
-    return chunk_files
+    return sorted(chunk_files)
 
 
 import concurrent.futures
