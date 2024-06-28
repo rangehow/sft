@@ -51,14 +51,10 @@ class KLTrainer(Trainer):
             all_prob_clm = all_prob_clm.to(model_logits.device)
 
         if not self.weight_mode:
-            try:
-                ce_loss = CrossEntropyLoss(ignore_index=-100)
-                supervised_loss = ce_loss(last_logits, all_prob_supervised)
-                if not self.mix_mode:
-                    clm_loss = ce_loss(last_logits, all_prob_clm)
-            except:
-                import pdb
-                pdb.set_trace()
+            ce_loss = CrossEntropyLoss(ignore_index=-100)
+            supervised_loss = ce_loss(last_logits, all_prob_supervised)
+            if not self.mix_mode:
+                clm_loss = ce_loss(last_logits, all_prob_clm)
         else:
             ce_loss = CrossEntropyLoss(ignore_index=-100, reduction="none")
             # print(supervised_cnt.dtype, ce_loss(last_logits, all_prob_supervised).dtype)
