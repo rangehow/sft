@@ -4,8 +4,10 @@ from torch.utils.data import Dataset
 import torch
 from scipy.optimize import root_scalar, fsolve
 import faulthandler
+
 # 在import之后直接添加以下启用代码即可
 faulthandler.enable()
+
 
 def transform_to_log_prob(
     knns,
@@ -17,7 +19,6 @@ def transform_to_log_prob(
         # return torch.zeros((vocab_size))
         return None
     else:
-
 
         # 预先计算,免得在多次fun的迭代里都要重算
         zero_count_per_tensor = torch.sum(knns == 0, dim=-1)
@@ -32,12 +33,12 @@ def transform_to_log_prob(
             # exp_tensor = torch.exp(tensor_with_temperature)
             # sum_exp = torch.sum(exp_tensor, dim=-1)
             # result = torch.sum(zero_count_per_tensor / sum_exp) - bsz * zero_prob
-            
+
             x = knns / x
             x = torch.exp(x)
             x = torch.sum(x, dim=-1)
             result = torch.sum(zero_count_per_tensor / x) - bsz * zero_prob
-            
+
             return result.item()
 
         # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
@@ -76,23 +77,41 @@ def optimized_stack(supervised, embedding_size):
 
     return x
 
-def directly_softmax(supervised, embedding_size):
 
+# def directly_softmax(supervised, embedding_size):
+
+#     x = torch.zeros(len(supervised), embedding_size)
+
+#     # Iterate through the Counters and directly update the tensor
+#     for i, counter in enumerate(supervised):
+
+#         temp_values=torch.nn.functional.softmax(torch.tensor(list(counter.values()),dtype=float),dim=-1)
+#         # if len(counter.values())>1:
+#         #     import pdb
+#         #     pdb.set_trace()
+#         for j,key in enumerate(counter.keys()):
+#             x[i][key]=temp_values[j]
+#         # print(x[0],x[1],temp_values)
+#     # import pdb
+#     # pdb.set_trace()
+#     return x
+
+
+# 6月28日下午的优化版本
+def directly_softmax(supervised, embedding_size):
     x = torch.zeros(len(supervised), embedding_size)
-    
-    # Iterate through the Counters and directly update the tensor
+
     for i, counter in enumerate(supervised):
-        
-        temp_values=torch.nn.functional.softmax(torch.tensor(list(counter.values()),dtype=float),dim=-1)
-        # if len(counter.values())>1:
-        #     import pdb
-        #     pdb.set_trace()
-        for j,key in enumerate(counter.keys()):
-            x[i][key]=temp_values[j] 
-        # print(x[0],x[1],temp_values)
-    # import pdb
-    # pdb.set_trace()
+        # Convert counter values to a tensor and compute softmax
+        values = torch.tensor(list(counter.values()), dtype=torch.float32)
+        temp_values = torch.nn.functional.softmax(values, dim=-1)
+
+        # Get the keys and update the result tensor
+        indices = torch.tensor(list(counter.keys()), dtype=torch.long)
+        x[i].scatter_(0, indices, temp_values)
+
     return x
+
 
 import torch
 from collections import Counter
@@ -118,7 +137,9 @@ class SpecialDataset(Dataset):
             [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
             for i in range(len(synthesis_dict))
         ]
-        self.input_ids = [list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))]
+        self.input_ids = [
+            list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
+        ]
 
         self.valid_label_index_list = cnt_list
 
@@ -146,13 +167,15 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 class SpecialDataCollator:
-    def __init__(self, tokenizer, zero_prob, embedding_size, div_mode,mix,mix_ratio) -> None:
+    def __init__(
+        self, tokenizer, zero_prob, embedding_size, div_mode, mix, mix_ratio
+    ) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
         self.embedding_size = embedding_size
         self.div_mode = div_mode
-        self.mix=mix
-        self.mix_ratio=mix_ratio
+        self.mix = mix
+        self.mix_ratio = mix_ratio
 
     def __call__(self, batch) -> torch.Any:
 
@@ -208,8 +231,6 @@ class SpecialDataCollator:
         clm = [item for d in batch for item in d["clm"]]
         # ----------------------------------------------------------------
 
-        
-
         if self.div_mode:
             x_sup = optimized_stack(supervised, self.embedding_size)
             x_clm = optimized_stack(clm, self.embedding_size)
@@ -241,26 +262,31 @@ class SpecialDataCollator:
                     all_prob_clm == 0, temp_zero_prob, all_prob_clm
                 )
         else:
-            
+
             if self.zero_prob == 0:
-                all_prob_supervised=directly_softmax(supervised, self.embedding_size)
-                all_prob_clm=directly_softmax(clm, self.embedding_size)
+                all_prob_supervised = directly_softmax(supervised, self.embedding_size)
+                all_prob_clm = directly_softmax(clm, self.embedding_size)
 
             else:
                 x_sup = optimized_stack(supervised, self.embedding_size)
                 x_clm = optimized_stack(clm, self.embedding_size)
-                all_prob_supervised = transform_to_log_prob(x_sup, zero_prob=self.zero_prob)
+                all_prob_supervised = transform_to_log_prob(
+                    x_sup, zero_prob=self.zero_prob
+                )
                 all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
-        
+
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         )
         clm_cnt = torch.tensor([frequency(sum(xx.values())) for xx in clm])
-        
+
         if self.mix:
-            all_prob_supervised=self.mix_ratio*all_prob_supervised+(1-self.mix_ratio)*all_prob_clm
+            all_prob_supervised = (
+                self.mix_ratio * all_prob_supervised
+                + (1 - self.mix_ratio) * all_prob_clm
+            )
             # supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt 627日晚上注释
-            supervised_cnt=supervised_cnt+clm_cnt
+            supervised_cnt = supervised_cnt + clm_cnt
             return {
                 "input_ids": input_ids.input_ids,
                 "attention_mask": input_ids.attention_mask,
@@ -268,7 +294,6 @@ class SpecialDataCollator:
                 "valid_label_index_list": valid_label_index_list,
                 "supervised_cnt": supervised_cnt,
             }
-        
 
         return {
             "input_ids": input_ids.input_ids,
@@ -279,7 +304,6 @@ class SpecialDataCollator:
             "supervised_cnt": supervised_cnt,
             "clm_cnt": clm_cnt,
         }
-
 
 
 if __name__ == "__main__":
@@ -322,10 +346,13 @@ if __name__ == "__main__":
             help="decide to use token level freq weight",
         )
         parser.add_argument(
-        "--mix",default=False, type=ast.literal_eval, help="decide to use token level freq weight"
+            "--mix",
+            default=False,
+            type=ast.literal_eval,
+            help="decide to use token level freq weight",
         )
         parser.add_argument(
-            "--mix_ratio",default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
+            "--mix_ratio", default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
         )
         return parser.parse_args()
 
@@ -356,7 +383,6 @@ if __name__ == "__main__":
         mix=args.mix,
         mix_ratio=args.mix_ratio,
     )
-
 
     @logger.catch
     def load_dataset():
@@ -391,11 +417,13 @@ if __name__ == "__main__":
     )
 
     from tqdm import tqdm
+
     # from sklearn import UMAP
     # all_prob_supervised=
     # all_prob_clm=[]
     for d in tqdm(dataloader):
         import pdb
+
         pdb.set_trace()
         # print(d['all_prob_supervised'].shape)
         # all_prob_supervised.append()
