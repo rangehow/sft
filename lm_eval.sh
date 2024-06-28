@@ -27,7 +27,7 @@ models=(
     # 'sft/qwen2_1.5B_naive_bsz512_mix_2card_acc256'
     'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_mix0.2'
     'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_weighted_mix0.8'
-    'sft/'
+    # 'sft/'
 
 
 

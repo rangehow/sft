@@ -1,8 +1,11 @@
 from collections import Counter, defaultdict
+
+
 class TrieNode:
     def __init__(self):
         self.children = {}
         self.value = Counter()
+
 
 class Trie:
     def __init__(self):
@@ -14,7 +17,7 @@ class Trie:
             if key not in node.children:
                 node.children[key] = TrieNode()
             node = node.children[key]
-        node.value[value]+=1
+        node.value[value] += 1
 
     def search(self, key_list):
         node = self.root
@@ -24,7 +27,8 @@ class Trie:
             node = node.children[key]
         return node.value
 
-print('trie模式')
+
+print("trie模式")
 from functools import partial
 import gc
 import os
@@ -32,7 +36,7 @@ import time
 import torch
 from collections import Counter, defaultdict
 
-
+import msgpack
 from transformers import AutoTokenizer, AutoConfig
 import json
 import pickle
@@ -89,26 +93,52 @@ def find_ranges(lst, target=-100):
     return ranges
 
 
+from itertools import islice
+
+
+def chunk_data(data, chunk_size):
+    """将大字典或大列表拆分成多个较小的部分，每个包含不超过 chunk_size 个元素。"""
+    if isinstance(data, dict):
+        it = iter(data)
+        for _ in range(0, len(data), chunk_size):
+            yield {k: data[k] for k in islice(it, chunk_size)}
+    elif isinstance(data, list):
+        for i in range(0, len(data), chunk_size):
+            yield data[i : i + chunk_size]
+    else:
+        raise TypeError("data must be a dictionary or a list")
+
+
+def save_chunks(data, chunk_size, base_dir, name):
+    """将大字典分块并保存到多个文件中。"""
+    for i, chunk in enumerate(chunk_data(data, chunk_size)):
+        filename = f"{name}_part{i}.msgpack"
+        with open(os.path.join(base_dir, filename), "wb") as f:
+            pickle.dump(chunk, f, protocol=5)
+        print(f"Saved chunk {i} to {filename}")
+
+
 @logger.catch
 def main():
     args = parse_args()
-    
+
     tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
     config = AutoConfig.from_pretrained(model_dir[args.model])
     model_type = config.model_type
     template = modelType2Template[model_type](tokenizer)
 
-    dataset_name_list=args.dataset.split(',')
-    dataset_list=[]
+    dataset_name_list = args.dataset.split(",")
+    dataset_list = []
     for dname in dataset_name_list:
-        train_dataset = dname2load[dname](dataset_dir.get(args.dataset, None))
+        train_dataset = dname2load[dname](dataset_dir.get(dname, None))
         # train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
         #     "train"
         # ]
-        
+
+        print("\n数据集", dname, "=")
         print(train_dataset)
         train_dataset = train_dataset.map(
-            partial(dname2func[dname], template=template,mode=1,test=False),
+            partial(dname2func[dname], template=template, mode=1, test=False),
             batched=True,
             num_proc=30,
             # remove_columns=train_dataset.features.keys(),
@@ -116,18 +146,18 @@ def main():
             desc="tokenize",
         )
         dataset_list.append(train_dataset)
-    train_dataset=datasets.concatenate_datasets(dataset_list)
+    train_dataset = datasets.concatenate_datasets(dataset_list)
     # train_dataset = train_dataset.sort('input_ids')
     import pdb
 
     # pdb.set_trace()
 
     def statistic():
-        
-        supervised_trie=Trie()
+
+        supervised_trie = Trie()
         # supervised_dict = defaultdict(Counter)
         if args.clm:
-            clm_trie=Trie()
+            clm_trie = Trie()
             # clm_dict = defaultdict(Counter)
 
         logger.debug(f"start to make statistic")
@@ -152,7 +182,7 @@ def main():
 
                     # supervised_key = tuple(input_id[: i + 1])
                     # supervised_dict[supervised_key].update([label[i + 1]])
-                    supervised_trie.insert(input_id[: i + 1],label[i + 1])
+                    supervised_trie.insert(input_id[: i + 1], label[i + 1])
 
                     if args.clm:
                         if flag4LossArea is False:
@@ -163,7 +193,9 @@ def main():
                         if i - regionBeginIdx >= args.ngram:
                             # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
                             # clm_dict[clm_key].update([label[i + 1]])
-                            clm_trie.insert(label[regionBeginIdx + 1 : i + 1],label[i + 1])
+                            clm_trie.insert(
+                                label[regionBeginIdx + 1 : i + 1], label[i + 1]
+                            )
                 elif args.clm and flag4LossArea:
                     flag4LossArea = False
 
@@ -211,7 +243,7 @@ def main():
                         # supervised_key = tuple(input_id[: i + 1])
                         # supervised_value = supervised_dict[supervised_key]
                         supervised_value = supervised_trie.search(input_id[: i + 1])
-                        
+
                         if args.clm:
                             if flag4LossArea is False:
                                 # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
@@ -220,9 +252,13 @@ def main():
 
                             # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
                             # clm_value = clm_dict.get(clm_key, supervised_value)
-                            clm_value = clm_trie.search(label[regionBeginIdx + 1 : i + 1])
-                            
-                            if clm_value==None or len(clm_value)==0: # trie的返回不稳定，现在是空counter
+                            clm_value = clm_trie.search(
+                                label[regionBeginIdx + 1 : i + 1]
+                            )
+
+                            if (
+                                clm_value == None or len(clm_value) == 0
+                            ):  # trie的返回不稳定，现在是空counter
                                 clm_value = supervised_value
                         synthesis_dict[key].append([supervised_value, clm_value])
 
@@ -236,22 +272,68 @@ def main():
     logger.debug(
         f"len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}"
     )
-    
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    os.makedirs(os.path.join(script_path, "train_dataset"),exist_ok=True)
-    with open(
-        f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl",
-        "wb",
-    ) as o:
-        pickle.dump(synthesis_dict, o, protocol=5)
 
-    # 这个写法其实还可以，麻烦之处在于不方便大规模开展ngram的搜索实验。
-    with open(
-        f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl",
-        "wb",
-    ) as o:
-        pickle.dump(cnt_list, o, protocol=5)
+    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+    os.makedirs(
+        os.path.join(script_path, "train_dataset", f"{model_type}_{args.dataset}"),
+        exist_ok=True,
+    )
+
+    save_chunks(
+        synthesis_dict,
+        chunk_size=500,
+        base_dir=f"{script_path}/train_dataset/{model_type}_{args.dataset}",
+        name="synthesis",
+    )
+    save_chunks(
+        cnt_list,
+        chunk_size=500,
+        base_dir=f"{script_path}/train_dataset/{model_type}_{args.dataset}",
+        name="index",
+    )
+
     logger.debug(f"整合文件被保存到train_dataset/{model_type}_{args.dataset}")
+
+
+def load_msgpack_file(filename):
+    with open(filename, "rb") as f:
+        return pickle.load(f)  # ,strict_map_key=False,strict_types =True
+
+
+def find_msgpack_chunk_files(
+    base_dir,
+    name,
+):
+    """查找与基准文件名匹配的所有 msgpack 分块文件。"""
+
+    chunk_files = [
+        os.path.join(base_dir, f)
+        for f in os.listdir(base_dir)
+        if f.startswith(name) and f.endswith(".msgpack")
+    ]
+    return chunk_files
+
+
+import concurrent.futures
+
+
+def load_msgpack_chunks(chunk_files):
+
+    print(chunk_files)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = list(executor.map(load_msgpack_file, chunk_files))
+    if isinstance(results[0], dict):
+        merged_data = {}
+        for chunk in results:
+            merged_data.update(chunk)
+        return merged_data
+    elif isinstance(results[0], list):
+        merged_data = []
+        for chunk in results:
+            merged_data.extend(chunk)
+        return merged_data
+    else:
+        raise TypeError("data must be a dictionary or a list")
 
 
 def test():
@@ -262,16 +344,17 @@ def test():
     model_type = config.model_type
     template = modelType2Template[model_type](tokenizer)
 
-    with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_index.pkl",
-        "rb",
-    ) as o:
-        cnt_list = pickle.load(o)
-    with open(
-        f"{dataset_dir[args.dataset]}/{model_type}_{args.dataset}_synthesis.pkl",
-        "rb",
-    ) as o:
-        synthesis_dict = pickle.load(o)
+    # 示例使用
+    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+    base_dir = f"{script_path}/train_dataset/{model_type}_{args.dataset}"
+    synthesis_dict = load_msgpack_chunks(
+        find_msgpack_chunk_files(base_dir, name="synthesis")
+    )
+    cnt_list = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
+
+    import pdb
+
+    pdb.set_trace()
 
     train_dataset = datasets.load_dataset(dataset_dir[args.dataset])["train"]
 
