@@ -96,18 +96,67 @@ collator = SpecialDataCollator(
 )
 
 
+
+def load_msgpack_file(filename):
+    with open(filename, "rb") as f:
+        return pickle.load(f)  # ,strict_map_key=False,strict_types =True
+
+
+def find_msgpack_chunk_files(
+    base_dir,
+    name,
+):
+    """查找与基准文件名匹配的所有 msgpack 分块文件。"""
+
+    chunk_files = [
+        os.path.join(base_dir, f)
+        for f in os.listdir(base_dir)
+        if f.startswith(name) and f.endswith(".msgpack")
+    ]
+    return chunk_files
+
+
+import concurrent.futures
+
+
+def load_msgpack_chunks(chunk_files):
+
+    print(chunk_files)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = list(executor.map(load_msgpack_file, chunk_files))
+    if isinstance(results[0], dict):
+        merged_data = {}
+        for chunk in results:
+            merged_data.update(chunk)
+        return merged_data
+    elif isinstance(results[0], list):
+        merged_data = []
+        for chunk in results:
+            merged_data.extend(chunk)
+        return merged_data
+    else:
+        raise TypeError("data must be a dictionary or a list")
+
 @logger.catch
 def load_dataset():
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    with open(
-        f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl", "rb"
-    ) as f:
-        synthesis = pickle.load(f)
+    # with open(
+    #     f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl", "rb"
+    # ) as f:
+    #     synthesis = pickle.load(f)
 
-    with open(
-        f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl", "rb"
-    ) as f:
-        index = pickle.load(f)
+    # with open(
+    #     f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl", "rb"
+    # ) as f:
+    #     index = pickle.load(f)
+
+    base_dir = f"{script_path}/train_dataset/{model_type}_{args.dataset}"
+
+    synthesis = load_msgpack_chunks(
+        find_msgpack_chunk_files(base_dir, name="synthesis")
+    )
+    index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
+
 
     train_dataset = SpecialDataset(
         synthesis,
