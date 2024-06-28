@@ -144,7 +144,7 @@ trainer = Trainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         bf16=True,
         remove_unused_columns=True,
-        save_strategy="no",
+        save_strategy="epoch",
         label_smoothing_factor =args.label_smoothing_factor,
     ),
     train_dataset=train_dataset,
