@@ -7,7 +7,7 @@ CUDA_VISIBLE_DEVICES=1 python naive_train.py \
     --model gemma_2b \
     --dataset alpaca_gpt4,code,math \
     --total_bsz 512 \
-    --gradient_accumulation_steps 128 \
+    --gradient_accumulation_steps 256 \
     --output_dir gemma_naive_bsz512_mix \
     # --label_smoothing_factor 0.1 \
 

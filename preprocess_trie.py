@@ -265,9 +265,18 @@ def main():
                     elif args.clm and flag4LossArea:
                         flag4LossArea = False
 
+                    if len(synthesis_dict) != len(cnt_list):
+                        import pdb
+
+                        pdb.set_trace()
+
         return synthesis_dict, cnt_list
 
     synthesis_dict, cnt_list = synthesis()
+
+    logger.debug(
+        f"length of synthesis_dict:{len(synthesis_dict)};length of cnt_list:{cnt_list}"
+    )
     assert len(synthesis_dict) == len(cnt_list)
     logger.debug(
         f"len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}"
