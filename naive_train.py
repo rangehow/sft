@@ -66,7 +66,7 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
-    torch_dtype='auto',
+    torch_dtype="auto",
     # device_map="auto",
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
     # attn_implementation="sdpa",
@@ -78,17 +78,17 @@ model_type = config.model_type
 template = modelType2Template[model_type](tokenizer)
 my_collator = MyCollator(tokenizer)
 # 读取数据集
-dataset_name_list=args.dataset.split(',')
-dataset_list=[]
+dataset_name_list = args.dataset.split(",")
+dataset_list = []
 for dname in dataset_name_list:
     train_dataset = dname2load[dname](dataset_dir.get(args.dataset, None))
     # train_dataset = datasets.load_dataset(dataset_dir.get(args.dataset, args.dataset))[
     #     "train"
     # ]
-    
+
     print(train_dataset)
     train_dataset = train_dataset.map(
-        partial(dname2func[dname], template=template,mode=1,test=False),
+        partial(dname2func[dname], template=template, mode=1, test=False),
         batched=True,
         num_proc=1,
         # remove_columns=train_dataset.features.keys(),
@@ -96,7 +96,7 @@ for dname in dataset_name_list:
         desc="tokenize",
     )
     dataset_list.append(train_dataset)
-train_dataset=datasets.concatenate_datasets(dataset_list)
+train_dataset = datasets.concatenate_datasets(dataset_list)
 # import pdb
 # pdb.set_trace()
 # print(max(len(train_dataset['input_ids'])))
@@ -122,12 +122,25 @@ if args.lora:
         r=8,
         lora_alpha=32,
         lora_dropout=0.1,
-        target_modules="all-linear",
+        target_modules=[
+            "embed_tokens",
+            "lm_head",
+            "layers.*.self_attn.q_proj",
+            "layers.*.self_attn.k_proj",
+            "layers.*.self_attn.v_proj",
+            "layers.*.self_attn.o_proj",
+            "layers.*.mlp.gate_proj",
+            "layers.*.mlp.up_proj",
+            "layers.*.mlp.down_proj",
+        ],
+        use_dora=True,
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-real_bsz = args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
+real_bsz = (
+    args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
+)
 logger.debug(
     f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
 )
@@ -145,7 +158,7 @@ trainer = Trainer(
         bf16=True,
         remove_unused_columns=True,
         save_strategy="epoch",
-        label_smoothing_factor =args.label_smoothing_factor,
+        label_smoothing_factor=args.label_smoothing_factor,
     ),
     train_dataset=train_dataset,
     tokenizer=tokenizer,
