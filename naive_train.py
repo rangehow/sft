@@ -69,7 +69,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype="auto",
     # device_map="auto",
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
-    # attn_implementation="sdpa",
+    attn_implementation="sdpa",
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
