@@ -28,3 +28,6 @@ CUDA_VISIBLE_DEVICES=3 python special_train.py --gradient_accumulation_steps 32 
 
 
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node 2 special_train.py --gradient_accumulation_steps 128 --total_bsz 512 --zero_prob 0 --div_mode False --weighted False --dataset alpaca_gpt4,math,code --mix True --mix_ratio 0.8
+
+
+CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node 2 special_train.py --model llama3_8b --lora --gradient_accumulation_steps 128 --total_bsz 512 --zero_prob 0 --div_mode False --weighted False --dataset alpaca_gpt4,math,code --mix True --mix_ratio 0.8

@@ -29,20 +29,26 @@ def parse_args():
     parser.add_argument("--dataset", default="alpaca_gpt4")
     parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
-    parser.add_argument("--alpha",default=0.8, type=ast.literal_eval)
+    parser.add_argument("--alpha", default=0.8, type=ast.literal_eval)
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
     parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
     parser.add_argument("--total_bsz", default=128, type=int)
     parser.add_argument(
-        "--weighted",default=True, type=ast.literal_eval, help="decide to use token level freq weight"
+        "--weighted",
+        default=True,
+        type=ast.literal_eval,
+        help="decide to use token level freq weight",
     )
     parser.add_argument(
-        "--mix",default=False, type=ast.literal_eval, help="decide to use token level freq weight"
+        "--mix",
+        default=False,
+        type=ast.literal_eval,
+        help="decide to use token level freq weight",
     )
     parser.add_argument(
-        "--mix_ratio",default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
+        "--mix_ratio", default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
     )
     return parser.parse_args()
 
@@ -96,7 +102,6 @@ collator = SpecialDataCollator(
 )
 
 
-
 def load_msgpack_file(filename):
     with open(filename, "rb") as f:
         return pickle.load(f)  # ,strict_map_key=False,strict_types =True
@@ -137,6 +142,7 @@ def load_msgpack_chunks(chunk_files):
     else:
         raise TypeError("data must be a dictionary or a list")
 
+
 @logger.catch
 def load_dataset():
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
@@ -156,7 +162,6 @@ def load_dataset():
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
     index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
-
 
     train_dataset = SpecialDataset(
         synthesis,
@@ -197,10 +202,21 @@ if args.lora:
 
     peft_config = LoraConfig(
         inference_mode=False,
-        r=64,
+        r=8,
         lora_alpha=32,
         lora_dropout=0.1,
-        target_modules="all-linear",
+        target_modules=[
+            "embed_tokens",
+            "lm_head",
+            "layers.*.self_attn.q_proj",
+            "layers.*.self_attn.k_proj",
+            "layers.*.self_attn.v_proj",
+            "layers.*.self_attn.o_proj",
+            "layers.*.mlp.gate_proj",
+            "layers.*.mlp.up_proj",
+            "layers.*.mlp.down_proj",
+        ],
+        use_dora=True,
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()

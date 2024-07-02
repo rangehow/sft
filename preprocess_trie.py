@@ -266,6 +266,7 @@ def main():
                         flag4LossArea = False
 
                     if len(synthesis_dict) != len(cnt_list):
+                        # llama3-base和it的eos token不一样
                         import pdb
 
                         pdb.set_trace()
