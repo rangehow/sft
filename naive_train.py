@@ -133,7 +133,6 @@ if args.lora:
             "layers.*.mlp.up_proj",
             "layers.*.mlp.down_proj",
         ],
-        use_dora=True,
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()

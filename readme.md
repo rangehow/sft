@@ -116,3 +116,8 @@ https://github.com/bigcode-project/bigcode-evaluation-harness.git
 ### MT-bench
 这个需要GPT4的key
 https://github.com/lm-sys/FastChat/blob/main/fastchat/llm_judge/README.md#mt-bench
+
+
+## 额外的tips
+
+LLAMA3-8B and llama3-8b-it have total different tokenizer config， i.e. different eos token， which will influence preprocess procedure. So you have to mannually replace them.
