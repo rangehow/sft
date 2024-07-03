@@ -29,11 +29,13 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_weighted_mix0.8'
     # 'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-407'
     'models/Llama-3-8B'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-431'
-    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-863'
-    'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-814'
-    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1293'
     'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-1221'
+    'sft/llama_naive_bsz512_mix/checkpoint-1293'
+    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
+    'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-814'
+    'sft/llama_naive_bsz512_mix/checkpoint-863'
+    'sft/llama_naive_bsz512_mix/checkpoint-431'
+    
     
     
       
@@ -73,7 +75,7 @@ tasks=(
     "winogrande 5"
     "ifeval 0"
 )
-python -m sft.eval.gsm8k  --reuse --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 # 遍历每个模型和任务并执行命令
 for model in "${models[@]}"; do
     for task in "${tasks[@]}"; do
@@ -85,7 +87,7 @@ for model in "${models[@]}"; do
         accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
             --model_args pretrained="$model" \
             --tasks "$task_name" \
-            --batch_size 12 \
+            --batch_size 'auto' \
             --num_fewshot "$num_fewshot" \
             --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
       
