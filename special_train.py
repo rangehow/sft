@@ -25,8 +25,8 @@ import os
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("--model", default="gemma_2b")
-    parser.add_argument("--dataset", default="alpaca_gpt4")
+    parser.add_argument("--model")
+    parser.add_argument("--dataset")
     parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--alpha", default=0.8, type=ast.literal_eval)
@@ -62,7 +62,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"{args.model}_{args.dataset}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}_alpha{args.alpha}"
+    args.output_dir = f"{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}_alpha{args.alpha}"
     if args.weighted:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
@@ -76,7 +76,7 @@ if args.output_dir is None:
 model_dir = model_dir.get(args.model, args.model)
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
-
+logger.debug(f"模型路径是:{model_dir}")
 
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token

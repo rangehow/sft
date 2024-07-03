@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from .load_func import dname2load
 from .samplingparam import dname2samplingparams
 from vllm import LLM
-from config import *
+from ..config import *
 
 
 def parse_args():
@@ -65,8 +65,8 @@ def parse_args():
 def main():
     args = parse_args()
 
-    model_list=args.model.split(',')
-    dataset_list=args.dataset.split(',')
+    model_list = args.model.split(",")
+    dataset_list = args.dataset.split(",")
 
     # os.makedirs(args.output_path,exist_ok=True)
     script_path = os.path.dirname(os.path.abspath(__file__))
@@ -74,17 +74,17 @@ def main():
     print("script_path", script_path)
     for m in model_list:
         model_type = AutoConfig.from_pretrained(
-                os.path.join(m, "config.json")
-            ).model_type
+            os.path.join(m, "config.json")
+        ).model_type
         tokenizer = AutoTokenizer.from_pretrained(m)
         tokenizer.padding_side = "left"
         template = modelType2Template[model_type](tokenizer)
         model_name = os.path.basename(
-                m.rstrip(os.sep)
-            )  # 不去掉sep，碰到 a/b/ 就会读到空。
-        record_list=[]
+            m.rstrip(os.sep)
+        )  # 不去掉sep，碰到 a/b/ 就会读到空。
+        record_list = []
         for d in dataset_list:
-            
+
             dataset = dname2load[d](dataset_dir.get(d, None))
             test_dataset = dataset.map(
                 partial(
@@ -116,7 +116,9 @@ def main():
             if not args.reuse:
                 if os.path.exists(target_file):
                     while True:
-                        i = input("本次任务似乎已经被完成过了~输入y可以复用，输入n则重新生成：")
+                        i = input(
+                            "本次任务似乎已经被完成过了~输入y可以复用，输入n则重新生成："
+                        )
                         if i == "y":
                             reuse_flag = True
                             break
@@ -135,7 +137,9 @@ def main():
 
                     def split_list(lst, n=torch.cuda.device_count()):
                         avg = len(lst) / float(n)
-                        return [lst[int(avg * i) : int(avg * (i + 1))] for i in range(n)]
+                        return [
+                            lst[int(avg * i) : int(avg * (i + 1))] for i in range(n)
+                        ]
 
                     all_prompt = split_list(all_prompt)
 
@@ -143,7 +147,22 @@ def main():
 
                     @ray.remote(num_gpus=1)
                     def run(prompts):
-                        model = LLM(model=m)
+                        def available_memory_ratio():
+                            import pynvml
+
+                            pynvml.nvmlInit()
+                            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                            info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                            total = info.total
+                            free = info.free
+                            return free / total
+
+                        print("可用的内存：", available_memory_ratio())
+                        model = LLM(
+                            model=m,
+                            gpu_memory_utilization=0.9 * available_memory_ratio(),
+                        )
+
                         response = model.generate(prompts, samplingParams)
                         return response
 
@@ -184,39 +203,42 @@ def main():
                     #         response.append(res)
 
                     # else:
-                    max_len=0
+                    max_len = 0
                     for p in all_prompt:
-                        max_len=max(max_len,len(p))
+                        max_len = max(max_len, len(p))
                     print(max_len)
                     response = model.generate(all_prompt, samplingParams)
 
                 logger.debug(f"response的长度:{len(response)}")
                 # 不只保存文本是因为未来很可能有一些任务，是需要log prob的，所以没办法，最好整个保存。
-                os.makedirs(os.path.join(script_path, "generated"),exist_ok=True)
+                os.makedirs(os.path.join(script_path, "generated"), exist_ok=True)
                 with open(target_file, "wb") as o:
                     pickle.dump(response, o)
-
-
 
             score = dname2post[d](
                 prediciton=response,
                 reference=[t["answer"] for t in test_dataset],
                 vllm=True,
             )
-            
+
             logger.debug(f"task:{d},model:{m},score :{score}")
-            
+
             record_list.append(f"task:{d},model:{m},score :{score}")
         try:
-            with open(os.path.join(args.output_path, f'{m}.jsonl'), 'w', encoding='utf-8') as o:
-                json.dump(record_list,o,indent=2,ensure_ascii=False)
+            with open(
+                os.path.join(args.output_path, f"{m}.jsonl"), "w", encoding="utf-8"
+            ) as o:
+                json.dump(record_list, o, indent=2, ensure_ascii=False)
         except FileNotFoundError as e:
             print(f"Error: {e}")
-            os.makedirs(os.path.dirname(os.path.join(args.output_path, f'{m}.jsonl')), exist_ok=True)
-            with open(os.path.join(args.output_path, f'{m}.jsonl'), 'w', encoding='utf-8') as o: 
-                json.dump(record_list,o,indent=2,ensure_ascii=False)
-            
-        
+            os.makedirs(
+                os.path.dirname(os.path.join(args.output_path, f"{m}.jsonl")),
+                exist_ok=True,
+            )
+            with open(
+                os.path.join(args.output_path, f"{m}.jsonl"), "w", encoding="utf-8"
+            ) as o:
+                json.dump(record_list, o, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
