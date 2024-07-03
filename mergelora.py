@@ -1,25 +1,10 @@
-import ast
 import json
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    Seq2SeqTrainer,
-    DataCollatorForSeq2Seq,
-    BartTokenizerFast,
-    TrainingArguments,
-    Seq2SeqTrainingArguments,
-    BartTokenizer,
 )
-from torch.utils.data import Dataset, DataLoader
-import datasets
-from dataset import SpecialDataset, SpecialDataCollator
-from special_trainer import KLTrainer
-import pickle
-from config import model_dir, dataset_dir
-import torch
 from argparse import ArgumentParser
-from loguru import logger
-import warnings
+from peft import PeftModelForCausalLM
 import os
 
 
@@ -30,7 +15,7 @@ def parse_args():
 
 
 args = parse_args()
-from transformers import AutoModelForCausalLM, AutoConfig
+
 
 
 # model1 = AutoModelForCausalLM.from_pretrained(args.model)
@@ -60,7 +45,7 @@ from transformers import AutoModelForCausalLM, AutoConfig
 
 # compare_models(state_dict1, state_dict2)
 # exit()
-from peft import PeftModelForCausalLM
+
 
 with open(os.path.join(args.model, "adapter_config.json")) as o:
     base_model = json.load(o)["base_model_name_or_path"]
