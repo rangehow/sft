@@ -225,9 +225,9 @@ def main():
             # 这个地方和encoder-decoder模型还不一样，不需要特地区分编解码的输入，所以只需要一个input_id即可，input_id最后的EOS不需要送给模型
             key = tuple(input_id[:-1])
             length = len(input_id)
-            if (
-                synthesis_dict[key] == []
-                or tokenizer.eos_token_id not in synthesis_dict[key][-1][0]
+            if synthesis_dict[key] == [] or (
+                tokenizer.eos_token_id not in synthesis_dict[key][-1][0]
+                and tokenizer.eos_token_id not in synthesis_dict[key][-2][0] # qwen的template结尾是\n，我无语了。。
             ):  # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
                 # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
                 cnt_list.append(find_ranges(label))

@@ -144,7 +144,7 @@ if __name__ == "__main__":
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "Qwen/Qwen2-1.5B-Instruct", token=access_token
+        "Qwen/Qwen1.5-14B-Chat", token=access_token
     )
     print(tokenizer)
     g = modelType2Template["qwen2"](tokenizer)
