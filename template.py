@@ -28,10 +28,10 @@ class Template:
         self.efficient_eos = efficient_eos
         self.start_token_id = start_token_id if start_token_id else None
         self.end_token_id = end_token_id if end_token_id else None
-        self.default_system= default_system if default_system else None
+        self.default_system = default_system if default_system else None
+
     def apply(self, messages: list[dict[str, str]]):
-        
-        
+
         if self.start_token_id:
             input_id = [self.start_token_id]
             label = [-100]
@@ -41,16 +41,16 @@ class Template:
         start_idx = 0
         first_user_flag_for_efficient_eos = True
         if messages[0]["role"] == "system":
-            exit() # 还没实现
-        elif  self.default_system:
+            exit()  # 还没实现
+        elif self.default_system:
             system_token = self.tokenizer.encode(
-                    self.system_token.format_map({"content": self.default_system}),
-                    add_special_tokens=False,
+                self.system_token.format_map({"content": self.default_system}),
+                add_special_tokens=False,
             )
-            input_id+=system_token
+            input_id += system_token
             label += [-100] * len(system_token)
         for i in range(start_idx, len(messages)):
-            
+
             if messages[i]["role"] == "user":
                 user_token = self.tokenizer.encode(
                     self.user_token.format_map({"content": messages[i]["content"]}),
@@ -76,13 +76,12 @@ class Template:
             else:
                 error_role = messages[i]["role"]
                 logger.error(f"未经定义的template类型{error_role}")
-            
-            
+
             # print(input_id)
             # print(label)
             # import pdb
             # pdb.set_trace()
-            
+
         if self.efficient_eos:
             if self.end_token_id:
                 input_id += [self.end_token_id]
@@ -105,6 +104,7 @@ class GemmaTemplate(Template):
             efficient_eos=True,
         )
 
+
 @register_template
 class Qwen2Template(Template):
     model_type = "qwen2"
@@ -119,7 +119,7 @@ class Qwen2Template(Template):
             end_token_id=tokenizer.eos_token_id,
             efficient_eos=False,
             system_token="<|im_start|>system\n{content}<|im_end|>\n",
-            default_system="You are a helpful assistant."
+            default_system="You are a helpful assistant.",
         )
 
 
@@ -156,10 +156,10 @@ if __name__ == "__main__":
     ]
     c = tokenizer.apply_chat_template(message, tokenize=True)
     print(c)
-    print('---------')
+    print("---------")
     a, b = g.apply(message)
     print(tokenizer.decode(a))
     print(b)
-    print(list(zip(a,b)))
-    print([tokenizer.convert_ids_to_tokens(bb) for bb in b if bb!=-100 ])
-    assert a==c
+    print(list(zip(a, b)))
+    print([tokenizer.convert_ids_to_tokens(bb) for bb in b if bb != -100])
+    assert a == c

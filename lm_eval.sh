@@ -27,14 +27,15 @@ models=(
     # 'sft/qwen2_1.5B_naive_bsz512_mix_2card_acc256'
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_mix0.2'
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_weighted_mix0.8'
-    # 'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-407'
-    'models/Llama-3-8B'
-    'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-1221'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
+    
+    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221'
     'sft/llama_naive_bsz512_mix/checkpoint-1293'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
-    'sft/gemma_2b_alpaca_gpt4_math_code_6m29d_0_bsz512_alpha0.8_mix0.8/checkpoint-814'
+    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
     'sft/llama_naive_bsz512_mix/checkpoint-863'
     'sft/llama_naive_bsz512_mix/checkpoint-431'
+    'models/Llama-3-8B'
     
     
     
@@ -95,3 +96,8 @@ for model in "${models[@]}"; do
 done
 
 
+# accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
+#             --model_args pretrained="models/Llama-3-8B" \
+#             --tasks "truthfulqa_mc2" \
+#             --batch_size 'auto' \
+#             --num_fewshot 0 \
