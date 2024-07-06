@@ -23,9 +23,9 @@ def gsm8k(local_dir):
 @register2dict(name="bbh")
 def bbh(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir)["validation"]
+        return datasets.load_dataset(local_dir)["train"]
 
-    return datasets.load_dataset("JesusCrist/bbh_cot_fewshot")["validation"]
+    return datasets.load_dataset("JesusCrist/bbh_cot_fewshot")["train"]
 
 
 @register2dict(name="code")
