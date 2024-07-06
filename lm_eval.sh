@@ -28,17 +28,19 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_mix0.2'
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_weighted_mix0.8'
     
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221'
-    'sft/llama_naive_bsz512_mix/checkpoint-1293'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
-    'sft/llama_naive_bsz512_mix/checkpoint-863'
-    'sft/llama_naive_bsz512_mix/checkpoint-431'
-    'models/Llama-3-8B'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221'
+    # 'sft/llama_naive_bsz512_mix/checkpoint-1293'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
+    # 'sft/llama_naive_bsz512_mix/checkpoint-863'
+    # 'sft/llama_naive_bsz512_mix/checkpoint-431'
+    # 'models/Llama-3-8B'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-1221'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-814'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-407'
-
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1293'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-863'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-431'
 )
 
 model_string=""
@@ -71,7 +73,7 @@ tasks=(
     "winogrande 5"
     "ifeval 0"
 )
-python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval,bbh --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 # 遍历每个模型和任务并执行命令
 for model in "${models[@]}"; do
     for task in "${tasks[@]}"; do
