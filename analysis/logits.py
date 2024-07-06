@@ -33,6 +33,7 @@ from ..dataset import SpecialDataset, SpecialDataCollator
 import torch.nn.functional as F
 import time
 
+
 def parse_args():
     parser = ArgumentParser()
 
@@ -55,9 +56,11 @@ def parse_args():
     )
     return parser.parse_args()
 
+
 def load_msgpack_file(filename):
-    with open(filename, 'rb') as f:
-        return pickle.load(f) #,strict_map_key=False,strict_types =True
+    with open(filename, "rb") as f:
+        return pickle.load(f)  # ,strict_map_key=False,strict_types =True
+
 
 @logger.catch
 def main():
@@ -68,10 +71,11 @@ def main():
     # os.makedirs(args.output_path,exist_ok=True)
     script_path = os.path.dirname(os.path.abspath(__file__))
     print("script_path", script_path)
-    
+
     import time
+
     for m in model_list:
-        
+
         model_type = AutoConfig.from_pretrained(
             os.path.join(m, "config.json")
         ).model_type
@@ -84,29 +88,43 @@ def main():
         )  # 不去掉sep，碰到 a/b/ 就会读到空。
         record_list = []
 
-
-
         @logger.catch
         def load_dataset():
 
             data_folder_path = os.path.dirname(
-                os.path.dirname(
-                    os.path.abspath(__file__).rstrip(os.sep)
-                ).rstrip(os.sep)
+                os.path.dirname(os.path.abspath(__file__).rstrip(os.sep)).rstrip(os.sep)
             )
-  
-            
-            
 
-            def find_msgpack_chunk_files(base_dir,name,):
+            def find_msgpack_chunk_files(
+                base_dir,
+                name,
+            ):
                 """查找与基准文件名匹配的所有 msgpack 分块文件。"""
-                
-                chunk_files = [os.path.join(base_dir, f) for f in os.listdir(base_dir) if f.startswith(name) and f.endswith('.msgpack')]
+
+                chunk_files = [
+                    os.path.join(base_dir, f)
+                    for f in os.listdir(base_dir)
+                    if f.startswith(name)
+                    and (
+                        f.endswith("part0.msgpack")
+                        or f.endswith("part1.msgpack")
+                        or f.endswith("part3.msgpack")
+                        or f.endswith("part206.msgpack")
+                        or f.endswith("part207.msgpack")
+                        or f.endswith("part130.msgpack")
+                        or f.endswith("part131.msgpack")
+                        or f.endswith("part132.msgpack")
+                        or f.endswith("part133.msgpack")
+                        or f.endswith("part134.msgpack")
+                    )
+                ]
+
                 return sorted(chunk_files)
 
             import concurrent.futures
+
             def load_msgpack_chunks(chunk_files):
-                
+
                 print(chunk_files)
                 with concurrent.futures.ProcessPoolExecutor() as executor:
                     results = list(executor.map(load_msgpack_file, chunk_files))
@@ -122,11 +140,20 @@ def main():
                     return merged_data
                 else:
                     raise TypeError("data must be a dictionary or a list")
-            
-            synthesis = load_msgpack_chunks(find_msgpack_chunk_files(f'{data_folder_path}/train_dataset/{model_type}_{args.dataset}',name='synthesis'))    
-            index=load_msgpack_chunks(find_msgpack_chunk_files(f'{data_folder_path}/train_dataset/{model_type}_{args.dataset}',name='index'))
-            
-            
+
+            synthesis = load_msgpack_chunks(
+                find_msgpack_chunk_files(
+                    f"{data_folder_path}/train_dataset/{model_type}_{args.dataset}",
+                    name="synthesis",
+                )
+            )
+            index = load_msgpack_chunks(
+                find_msgpack_chunk_files(
+                    f"{data_folder_path}/train_dataset/{model_type}_{args.dataset}",
+                    name="index",
+                )
+            )
+
             train_dataset = SpecialDataset(
                 synthesis,
                 index,
@@ -135,19 +162,19 @@ def main():
                 div_mode=args.div_mode,
             )
             return train_dataset
+
         print("开始加载数据\n")
         start_time = time.time()
         train_dataset = load_dataset()
-        import pdb
-        pdb.set_trace()
-        end_time=time.time()
-        print("数据加载时间为=",end_time-start_time,"\n")
+
+        end_time = time.time()
+        print("数据加载时间为=", end_time - start_time, "\n")
         with torch.inference_mode():
             model = AutoModelForCausalLM.from_pretrained(
                 m,
                 attn_implementation="flash_attention_2",
                 torch_dtype="auto",
-                device_map='auto',
+                device_map="auto",
             )
             tokenizer = AutoTokenizer.from_pretrained(m, padding_side="left")
 
@@ -163,32 +190,33 @@ def main():
             )
             dataloader = DataLoader(
                 dataset=train_dataset,
-                batch_size=8,
+                batch_size=4,
                 collate_fn=collator,
-                num_workers=8,
-                pin_memory=True,
+                num_workers=16,
+                pin_memory=False,
             )
-            supervised_similarity, clm_similarity, naive_label_similarity ,mix_similarity= (
+            (
+                supervised_similarity,
+                clm_similarity,
+                naive_label_similarity,
+                mix_similarity,
+            ) = (
                 0,
                 0,
                 0,
                 0,
             )
             for d in tqdm(dataloader):
-                import pdb
-                pdb.set_trace()
-                a= time.time()
+
                 response = model(
                     input_ids=d["input_ids"],
                     attention_mask=d["attention_mask"],
                 ).logits
-                b=time.time()
+
                 last_logits = torch.cat(
                     [
                         row[start:end]
-                        for row, turn in zip(
-                            response, d["valid_label_index_list"]
-                        )
+                        for row, turn in zip(response, d["valid_label_index_list"])
                         for start, end in turn
                     ]
                 )
@@ -206,9 +234,7 @@ def main():
                         for start, end in turn
                     ]
                 )
-                label_tensor = F.one_hot(
-                    real_label, model.lm_head.weight.size()[0]
-                )
+                label_tensor = F.one_hot(real_label, model.lm_head.weight.size()[0])
 
                 all_prob_supervised = d["all_prob_supervised"].to(last_logits.device)
                 all_prob_clm = d["all_prob_clm"].to(last_logits.device)
@@ -221,23 +247,15 @@ def main():
                     F.cosine_similarity(last_logits, all_prob_supervised),
                     F.cosine_similarity(last_logits, all_prob_clm),
                 )
-                temp_label_similarity = F.cosine_similarity(
-                    last_logits, label_tensor
-                )
-                temp_mix_similarity = F.cosine_similarity(
-                    last_logits, all_prob_mix
-                )
+                temp_label_similarity = F.cosine_similarity(last_logits, label_tensor)
+                temp_mix_similarity = F.cosine_similarity(last_logits, all_prob_mix)
 
-                supervised_similarity += torch.sum(
-                    temp_supervised_similarity
-                ).item()
+                supervised_similarity += torch.sum(temp_supervised_similarity).item()
                 clm_similarity += torch.sum(temp_clm_similarity).item()
-                naive_label_similarity += torch.sum(
-                    temp_label_similarity
-                ).item()
+                naive_label_similarity += torch.sum(temp_label_similarity).item()
                 mix_similarity += torch.sum(temp_mix_similarity).item()
-                c=time.time()
-                print('forward',b-a,'post',c-b)
+                c = time.time()
+                # print('forward',b-a,'post',c-b)
             print(
                 supervised_similarity,
                 clm_similarity,
@@ -247,9 +265,8 @@ def main():
             supervised_ratio_naive_label_similarity = (
                 supervised_similarity / naive_label_similarity
             )
-            clm_ratio_naive_label_similarity = (
-                clm_similarity / naive_label_similarity
-            )
+            clm_ratio_naive_label_similarity = clm_similarity / naive_label_similarity
+            mix_ratio_naive_label_similarity = mix_similarity / naive_label_similarity
 
             config_str = f"{args.model}---dm_{args.div_mode}---zp_{args.zero_prob}---mr_{args.mix_ratio}"
             result = {
@@ -257,8 +274,9 @@ def main():
                 "clm_similarity": clm_similarity,
                 "naive_label_similarity": naive_label_similarity,
                 "mix_similarity": mix_similarity,
-                "supervised-ratio-naive_label_similarity": supervised_ratio_naive_label_similarity,
-                "clm-ratio-naive_label_similarity": clm_ratio_naive_label_similarity,
+                "supervised_similarity-ratio-naive_label_similarity": supervised_ratio_naive_label_similarity,
+                "clm_similarity-ratio-naive_label_similarity": clm_ratio_naive_label_similarity,
+                "mix_similarity-ratio-naive_label_similarity": mix_ratio_naive_label_similarity,
             }
 
             print("\nConfiguration:", config_str, "\n")
