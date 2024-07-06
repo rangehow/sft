@@ -75,7 +75,7 @@ def _process(real_input, output, template, test=False, vllm=True, chat=False, mo
 
 
 @register2dict(name="alpaca_cleaned")
-def alpaca_cleaned(instances, template, test=False,**kwargs):
+def alpaca_cleaned(instances, template, test=False, **kwargs):
 
     instruction, input, output = (
         instances["instruction"],
@@ -105,7 +105,7 @@ dname2func["alpaca_gpt4"] = alpaca_cleaned
 
 
 @register2dict(name="gsm8k")
-def gsm8k(instances, shot=False,  **kwargs):
+def gsm8k(instances, shot=False, **kwargs):
     INSTURCTION = """As an expert problem solver solve step by step the following mathematical questions."""
 
     # The default gsm8k prompt from the CoT paper
@@ -154,7 +154,7 @@ A:"""
 
 
 @register2dict(name="mmlu")
-def mmlu(instances, shot=False,  **kwargs):
+def mmlu(instances, shot=False, **kwargs):
 
     PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
@@ -204,14 +204,10 @@ def bbh(instances, shot=True, **kwargs):
     if not shot:
         logger.warning("bbh只支持shot，自动转成shot")
 
-    
-    real_input=instances['inputs']
-    target=instances['targets']
+    real_input = instances["inputs"]
+    target = instances["target"]
 
     return _process(real_input, target, **kwargs)
-
-
-
 
 
 @register2dict(name="humaneval")
@@ -246,9 +242,7 @@ def apps(
         input_ids.append(i)
         labels.append(eval(o)[0])
 
-    return _process(input_ids, labels,template=template, **kwargs)
-
-
+    return _process(input_ids, labels, template=template, **kwargs)
 
 
 @register2dict(name="code")
@@ -269,8 +263,7 @@ def code(
         input_ids.append(i)
         labels.append(o)
 
-    return _process(input_ids, labels,template=template, **kwargs)
-
+    return _process(input_ids, labels, template=template, **kwargs)
 
 
 @register2dict(name="math")
@@ -285,9 +278,7 @@ def math(
         instances["solution"],
     )
 
-
-    return _process(real_input, label,template=template, **kwargs)
-
+    return _process(real_input, label, template=template, **kwargs)
 
 
 @register2dict(name="truthfulqa")
