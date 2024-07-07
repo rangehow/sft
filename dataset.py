@@ -44,7 +44,6 @@ def transform_to_log_prob(
         # 区间大1-100的时候很适合Ridder，区间小1-10/1-50的时候toms748更好
         result = root_scalar(fun, bracket=[0.01, 50], method="toms748")
         knn_temperature = result.root
-
     probs = torch.nn.functional.softmax(knns / knn_temperature, dim=-1)
 
     return probs
@@ -97,19 +96,45 @@ def optimized_stack(supervised, embedding_size):
 #     return x
 
 
+def find_temperature(x, target_index, zero_prob=0.05, tol=1e-6, max_iter=100):
+    low, high = 1e-7, 100  # 初始搜索范围
+    for _ in range(max_iter):
+        T = (low + high) / 2.0
+        softmax_x = torch.nn.functional.softmax(x / T, dim=-1)
+        if abs(softmax_x[target_index] - zero_prob) < tol:
+            return T
+        if softmax_x[target_index] < zero_prob:
+            low = T
+        else:
+            high = T
+    return T
+
+
 # 6月28日下午的优化版本
-def directly_softmax(supervised, embedding_size):
+def directly_softmax(supervised, embedding_size, div=False, zero_prob=0):
     x = torch.zeros(len(supervised), embedding_size)
 
     for i, counter in enumerate(supervised):
         # Convert counter values to a tensor and compute softmax
-        values = torch.tensor(list(counter.values()), dtype=torch.float32)
-        temp_values = torch.nn.functional.softmax(values, dim=-1)
-
-        # Get the keys and update the result tensor
         indices = torch.tensor(list(counter.keys()), dtype=torch.long)
-        x[i].scatter_(0, indices, temp_values)
-
+        if zero_prob == 0:
+            values = torch.tensor(list(counter.values()), dtype=torch.float32)
+            if div:
+                temp_values = torch.div(values, torch.sum(values))
+            else:
+                temp_values = torch.nn.functional.softmax(values, dim=-1)
+            x[i].scatter_(0, indices, temp_values)
+        else:
+            values = torch.tensor(list(counter.values()) + [0], dtype=torch.float32)
+            if div:
+                pass
+            else:
+                T = find_temperature(values, target_index=-1, zero_prob=zero_prob)
+                temp_result = torch.nn.functional.softmax(values / T, dim=-1)
+                temp_values, zero_values = temp_result[:-1], temp_result[-1].item()
+                zero_values /= embedding_size - len(counter.values())
+                x[i] = torch.full_like(x[i], zero_values)            
+                x[i][indices] = temp_values
     return x
 
 
@@ -235,7 +260,15 @@ class SpecialDataCollator:
             x_sup = optimized_stack(supervised, self.embedding_size)
             x_clm = optimized_stack(clm, self.embedding_size)
             if self.zero_prob == 0:
-                all_prob_supervised = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
+
+                all_prob_supervised = directly_softmax(
+                    supervised, self.embedding_size, div=True
+                )
+                all_prob_clm = directly_softmax(clm, self.embedding_size, div=True)
+
+                all_prob_supervised1 = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
+                all_prob_clm1 = x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
+
             else:
                 all_prob_supervised = (
                     (1 - self.zero_prob)
@@ -248,9 +281,6 @@ class SpecialDataCollator:
                     all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
                 )
 
-            if self.zero_prob == 0:
-                all_prob_clm = x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
-            else:
                 all_prob_clm = (
                     (1 - self.zero_prob)
                     * x_clm
@@ -264,16 +294,37 @@ class SpecialDataCollator:
         else:
 
             if self.zero_prob == 0:
-                all_prob_supervised = directly_softmax(supervised, self.embedding_size)
-                all_prob_clm = directly_softmax(clm, self.embedding_size)
+                all_prob_supervised = directly_softmax(
+                    supervised, self.embedding_size, zero_prob=self.zero_prob
+                )
+                all_prob_clm = directly_softmax(
+                    clm, self.embedding_size, zero_prob=self.zero_prob
+                )
 
             else:
-                x_sup = optimized_stack(supervised, self.embedding_size)
-                x_clm = optimized_stack(clm, self.embedding_size)
-                all_prob_supervised = transform_to_log_prob(
-                    x_sup, zero_prob=self.zero_prob
+                # import time
+
+                # aaa = time.time()
+                # 余留行为
+                all_prob_supervised = directly_softmax(
+                    supervised, self.embedding_size, zero_prob=self.zero_prob
                 )
-                all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
+                all_prob_clm = directly_softmax(
+                    clm, self.embedding_size, zero_prob=self.zero_prob
+                )
+
+                # 下面是数值解，batch模式
+                # bbb = time.time()
+                # x_sup = optimized_stack(supervised, self.embedding_size)
+                # x_clm = optimized_stack(clm, self.embedding_size)
+                # all_prob_supervised1 = transform_to_log_prob(
+                #     x_sup, zero_prob=self.zero_prob
+                # )
+                # all_prob_clm = transform_to_log_prob(x_clm, zero_prob=self.zero_prob)
+                # print(time.time() - bbb, bbb - aaa)
+                # print(torch.allclose(all_prob_supervised, all_prob_supervised1))
+                # import pdb
+                # pdb.set_trace()
 
         supervised_cnt = torch.tensor(
             [frequency(sum(xx.values()), xmax=10) for xx in supervised]
@@ -384,19 +435,62 @@ if __name__ == "__main__":
         mix_ratio=args.mix_ratio,
     )
 
+    def load_msgpack_file(filename):
+        with open(filename, "rb") as f:
+            return pickle.load(f)  # ,strict_map_key=False,strict_types =True
+
+    def find_msgpack_chunk_files(
+        base_dir,
+        name,
+    ):
+        """查找与基准文件名匹配的所有 msgpack 分块文件。"""
+
+        chunk_files = [
+            os.path.join(base_dir, f)
+            for f in os.listdir(base_dir)
+            if f.startswith(name) and f.endswith(".msgpack")
+        ]
+        return sorted(chunk_files)
+
+    import concurrent.futures
+
+    def load_msgpack_chunks(chunk_files):
+
+        print(chunk_files)
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            results = list(executor.map(load_msgpack_file, chunk_files))
+        if isinstance(results[0], dict):
+            merged_data = {}
+            for chunk in results:
+                merged_data.update(chunk)
+            return merged_data
+        elif isinstance(results[0], list):
+            merged_data = []
+            for chunk in results:
+                merged_data.extend(chunk)
+            return merged_data
+        else:
+            raise TypeError("data must be a dictionary or a list")
+
     @logger.catch
     def load_dataset():
         script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-        with open(
-            f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl",
-            "rb",
-        ) as f:
-            synthesis = pickle.load(f)
+        # with open(
+        #     f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl", "rb"
+        # ) as f:
+        #     synthesis = pickle.load(f)
 
-        with open(
-            f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl", "rb"
-        ) as f:
-            index = pickle.load(f)
+        # with open(
+        #     f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl", "rb"
+        # ) as f:
+        #     index = pickle.load(f)
+
+        base_dir = f"{script_path}/train_dataset/{model_type}_{args.dataset}"
+
+        synthesis = load_msgpack_chunks(
+            find_msgpack_chunk_files(base_dir, name="synthesis")
+        )
+        index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
 
         train_dataset = SpecialDataset(
             synthesis,
@@ -412,7 +506,7 @@ if __name__ == "__main__":
         dataset=train_dataset,
         batch_size=8,
         collate_fn=collator,
-        num_workers=0,
+        num_workers=8,
         pin_memory=True,
     )
 
@@ -422,9 +516,9 @@ if __name__ == "__main__":
     # all_prob_supervised=
     # all_prob_clm=[]
     for d in tqdm(dataloader):
-        import pdb
+        # import pdb
 
-        pdb.set_trace()
+        # pdb.set_trace()
         # print(d['all_prob_supervised'].shape)
         # all_prob_supervised.append()
         continue

@@ -227,7 +227,10 @@ def main():
             length = len(input_id)
             if synthesis_dict[key] == [] or (
                 tokenizer.eos_token_id not in synthesis_dict[key][-1][0]
-                and tokenizer.eos_token_id not in synthesis_dict[key][-2][0] # qwen的template结尾是\n，我无语了。。
+                and tokenizer.eos_token_id
+                not in synthesis_dict[key][-2][
+                    0
+                ]  # qwen的template结尾是\n，我无语了。。
             ):  # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
                 # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
                 cnt_list.append(find_ranges(label))
@@ -276,12 +279,9 @@ def main():
     synthesis_dict, cnt_list = synthesis()
 
     logger.debug(
-        f"length of synthesis_dict:{len(synthesis_dict)};length of cnt_list:{cnt_list}"
+        f"length of synthesis_dict:{len(synthesis_dict)};length of cnt_list:{len(cnt_list)}"
     )
     assert len(synthesis_dict) == len(cnt_list)
-    logger.debug(
-        f"len(synthesis_dict)={len(synthesis_dict)},len(cnt_list)={len(cnt_list)}"
-    )
 
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
     os.makedirs(
