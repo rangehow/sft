@@ -159,6 +159,9 @@ def main():
                     model = LLM(
                         model=m,
                         gpu_memory_utilization=0.9 * available_memory_ratio(),
+                        enable_prefix_caching=True,
+                        enable_chunked_prefill=True,
+                        max_num_batched_tokens=8192,
                     )
 
                     response = model.generate(prompts, samplingParams)

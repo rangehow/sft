@@ -64,7 +64,7 @@ def parse_args():
     parser.add_argument("--clm", default=True, type=ast.literal_eval)
     parser.add_argument("--ngram", default=4)
     parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
-    parser.add_argument("--template", type=ast.literal_eval)
+    parser.add_argument("--template", type=str)
     return parser.parse_args()
 
 
