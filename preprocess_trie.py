@@ -64,6 +64,7 @@ def parse_args():
     parser.add_argument("--clm", default=True, type=ast.literal_eval)
     parser.add_argument("--ngram", default=4)
     parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
+    parser.add_argument("--template", type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -123,10 +124,10 @@ def main():
     args = parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
-    config = AutoConfig.from_pretrained(model_dir[args.model])
-    model_type = config.model_type
-    template = modelType2Template[model_type](tokenizer)
-
+    # config = AutoConfig.from_pretrained(model_dir[args.model])
+    # model_type = config.model_type
+    # template = modelType2Template[model_type](tokenizer)
+    template = modelType2Template[args.template](tokenizer)
     dataset_name_list = args.dataset.split(",")
     dataset_list = []
     for dname in dataset_name_list:
