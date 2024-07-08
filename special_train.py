@@ -238,7 +238,7 @@ trainer = KLTrainer(
         save_strategy="epoch",
         dataloader_pin_memory=True,
         dataloader_num_workers=2,
-        num_train_epochs=3,
+        num_train_epochs=9,
         per_device_train_batch_size=real_bsz,
         bf16=True,
     ),
