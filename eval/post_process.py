@@ -125,25 +125,20 @@ def humaneval(prediciton, reference, vllm):
 
     if match:
         dict_str = match.group()
-        result_dict = eval(dict_str)  
-        return result_dict["pass@1"]*100
+        result_dict = eval(dict_str)
+        return result_dict["pass@1"] * 100
     else:
         print("No dictionary found")
-    
-
-
 
 
 @register2dict(name="bbh")
 def bbh(prediciton, reference, vllm):
 
-    
-    correct=0
+    correct = 0
     for p, r in zip(prediciton, reference):
 
-        
         generated_text = p.outputs[0].text
-        
+
         # all_responses = generated_text.split("Q:")[0].split('the answer is ')[-1].strip().lower().replace('.','')
         all_responses = generated_text.split("Q:")[0].lower()
         pattern = r"(?<=the answer is )(.*?)(?=\.)"
@@ -155,17 +150,17 @@ def bbh(prediciton, reference, vllm):
             result = match.group(1)
 
         if result == r.lower():
-            correct+=1
-        
-        else:
-            print("-" * 40)
-            print(f"origin answer: {generated_text}")
-            print(f"generated answer: {all_responses}")
-            print(f"Short ground truth answer: {r.lower()}")
-            print(f"correct {correct}")
-            # print(f"Correct: {correct} out of {idx+1}")
-            print("=" * 40)
-        
+            correct += 1
+
+        # else:
+        #     print("-" * 40)
+        #     print(f"origin answer: {generated_text}")
+        #     print(f"generated answer: {all_responses}")
+        #     print(f"Short ground truth answer: {r.lower()}")
+        #     print(f"correct {correct}")
+        #     # print(f"Correct: {correct} out of {idx+1}")
+        #     print("=" * 40)
+
     return correct / len(reference) * 100
 
 

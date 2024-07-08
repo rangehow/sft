@@ -286,24 +286,24 @@ def main():
 
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
     os.makedirs(
-        os.path.join(script_path, "train_dataset", f"{model_type}_{args.dataset}"),
+        os.path.join(script_path, "train_dataset", f"{args.template}_{args.dataset}"),
         exist_ok=True,
     )
 
     save_chunks(
         synthesis_dict,
         chunk_size=500,
-        base_dir=f"{script_path}/train_dataset/{model_type}_{args.dataset}",
+        base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}",
         name="synthesis",
     )
     save_chunks(
         cnt_list,
         chunk_size=500,
-        base_dir=f"{script_path}/train_dataset/{model_type}_{args.dataset}",
+        base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}",
         name="index",
     )
 
-    logger.debug(f"整合文件被保存到train_dataset/{model_type}_{args.dataset}")
+    logger.debug(f"整合文件被保存到train_dataset/{args.template}_{args.dataset}")
 
 
 def load_msgpack_file(filename):

@@ -54,6 +54,7 @@ def parse_args():
     parser.add_argument(
         "--mix_ratio", default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
     )
+    parser.add_argument("--template", type=str)
     return parser.parse_args()
 
 
@@ -76,13 +77,9 @@ def main():
 
     for m in model_list:
 
-        model_type = AutoConfig.from_pretrained(
-            os.path.join(m, "config.json")
-        ).model_type
-
         tokenizer = AutoTokenizer.from_pretrained(m)
         tokenizer.padding_side = "left"
-        template = modelType2Template[model_type](tokenizer)
+        template = modelType2Template[args.template](tokenizer)
         model_name = os.path.basename(
             m.rstrip(os.sep)
         )  # 不去掉sep，碰到 a/b/ 就会读到空。
@@ -143,13 +140,13 @@ def main():
 
             synthesis = load_msgpack_chunks(
                 find_msgpack_chunk_files(
-                    f"{data_folder_path}/train_dataset/{model_type}_{args.dataset}",
+                    f"{data_folder_path}/train_dataset/{args.template}_{args.dataset}",
                     name="synthesis",
                 )
             )
             index = load_msgpack_chunks(
                 find_msgpack_chunk_files(
-                    f"{data_folder_path}/train_dataset/{model_type}_{args.dataset}",
+                    f"{data_folder_path}/train_dataset/{args.template}_{args.dataset}",
                     name="index",
                 )
             )
