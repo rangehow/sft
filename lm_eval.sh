@@ -28,19 +28,19 @@ models=(
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_mix0.2'
     # 'sft/gemma_2b_alpaca_gpt4_6m27d_0_bsz256_alpha0.8_weighted_mix0.8'
     
-    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221'
-    # 'sft/llama_naive_bsz512_mix/checkpoint-1293'
-    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
-    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
-    # 'sft/llama_naive_bsz512_mix/checkpoint-863'
-    # 'sft/llama_naive_bsz512_mix/checkpoint-431'
-    # 'models/Llama-3-8B'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-1221'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-814'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-407'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1293'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-863'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-431'
+    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221'
+    'sft/llama_naive_bsz512_mix/checkpoint-1293'
+    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
+    'sft/llama3_8b_alpaca_gpt4_math_code_7m2d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
+    'sft/llama_naive_bsz512_mix/checkpoint-863'
+    'sft/llama_naive_bsz512_mix/checkpoint-431'
+    'models/Llama-3-8B'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-1221'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-814'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m5d_0_bsz512_alpha0.8_mix0.5_lora/checkpoint-407'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-1293'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-863'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-431'
 )
 
 model_string=""
@@ -59,38 +59,38 @@ echo "$model_string"
 
 
 timestamp=$(date +"%Y%m%d_%H%M%S")
+# gsm8k,mmlu,humaneval,
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset bbh --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 
-#     "drop 0"
-#    "mmlu 0"
 # 定义任务列表和对应的 num_fewshot
-tasks=(
-    "truthfulqa_mc2 0"
-    "bbh_cot_fewshot 3"
-    "arc_challenge 0"
-    "triviaqa 5"
-    "agieval 0"
-    "sciq 0"
-    "winogrande 5"
-    "ifeval 0"
-)
-python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval,bbh --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
-# 遍历每个模型和任务并执行命令
-for model in "${models[@]}"; do
-    for task in "${tasks[@]}"; do
-        # 解析任务和 num_fewshot
-        IFS=' ' read -r task_name num_fewshot <<< "$task"
-        echo "$task_name"
+# tasks=(
+#     "truthfulqa_mc2 0"
+#     "bbh_cot_fewshot 3"
+#     "arc_challenge 0"
+#     "triviaqa 5"
+#     "agieval 0"
+#     "sciq 0"
+#     "winogrande 5"
+#     "ifeval 0"
+# )
+
+# # 遍历每个模型和任务并执行命令
+# for model in "${models[@]}"; do
+#     for task in "${tasks[@]}"; do
+#         # 解析任务和 num_fewshot
+#         IFS=' ' read -r task_name num_fewshot <<< "$task"
+#         echo "$task_name"
         
-        # 执行命令
-        accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
-            --model_args pretrained="$model" \
-            --tasks "$task_name" \
-            --batch_size 'auto' \
-            --num_fewshot "$num_fewshot" \
-            --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
+#         # 执行命令
+#         accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
+#             --model_args pretrained="$model" \
+#             --tasks "$task_name" \
+#             --batch_size 'auto' \
+#             --num_fewshot "$num_fewshot" \
+#             --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
       
-    done
-done
+#     done
+# done
 
 
 # accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \

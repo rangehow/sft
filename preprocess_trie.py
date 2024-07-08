@@ -1,4 +1,20 @@
+
+from functools import partial
+import os
 from collections import Counter, defaultdict
+from transformers import AutoTokenizer, AutoConfig
+import pickle
+import warnings
+import datasets
+import ast
+from config import model_dir, dataset_dir
+from dataset_func import dname2func
+from template import modelType2Template
+from eval.load_func import dname2load
+from tqdm import tqdm
+from loguru import logger
+import argparse
+warnings.filterwarnings("ignore", "The iteration is not making good progress")
 
 
 class TrieNode:
@@ -26,35 +42,6 @@ class Trie:
                 return None
             node = node.children[key]
         return node.value
-
-
-print("trie模式")
-from functools import partial
-import gc
-import os
-import time
-import torch
-from collections import Counter, defaultdict
-
-import msgpack
-from transformers import AutoTokenizer, AutoConfig
-import json
-import pickle
-import pdb
-import warnings
-import datasets
-import ast
-from config import model_dir, dataset_dir
-from dataset_func import dname2func
-from template import modelType2Template
-from eval.load_func import dname2load
-from tqdm import tqdm
-from loguru import logger
-
-warnings.filterwarnings("ignore", "The iteration is not making good progress")
-
-
-import argparse
 
 
 def parse_args():
@@ -347,17 +334,17 @@ def load_msgpack_chunks(chunk_files):
         raise TypeError("data must be a dictionary or a list")
 
 
+
 def test():
     args = parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
-    config = AutoConfig.from_pretrained(model_dir[args.model])
-    model_type = config.model_type
-    template = modelType2Template[model_type](tokenizer)
+
+    template = modelType2Template[args.template](tokenizer)
 
     # 示例使用
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    base_dir = f"{script_path}/train_dataset/{model_type}_{args.dataset}"
+    base_dir = f"{script_path}/train_dataset/{args.template}_{args.dataset}"
     synthesis_dict = load_msgpack_chunks(
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )

@@ -9,8 +9,10 @@ CUDA_VISIBLE_DEVICES=1 python naive_train.py \
     --total_bsz 512 \
     --gradient_accumulation_steps 512 \
     --output_dir llama_naive_bsz512_mix_ls01 \
-    --label_smoothing_factor 0.1 \
+    --num_train_epochs 9\
     --lora
+    # --label_smoothing_factor 0.1 \
+    # --lora
 
 
 
