@@ -1,4 +1,3 @@
-
 from functools import partial
 import os
 from collections import Counter, defaultdict
@@ -14,6 +13,7 @@ from eval.load_func import dname2load
 from tqdm import tqdm
 from loguru import logger
 import argparse
+
 warnings.filterwarnings("ignore", "The iteration is not making good progress")
 
 
@@ -43,6 +43,19 @@ class Trie:
             node = node.children[key]
         return node.value
 
+    def merge(self, other):
+        def _merge_nodes(node1, node2):
+            # Merge the values
+            node1.value.update(node2.value)
+            # Merge the children
+            for key, child_node2 in node2.children.items():
+                if key in node1.children:
+                    _merge_nodes(node1.children[key], child_node2)
+                else:
+                    node1.children[key] = child_node2
+
+        _merge_nodes(self.root, other.root)
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -52,6 +65,7 @@ def parse_args():
     parser.add_argument("--ngram", default=4)
     parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
     parser.add_argument("--template", type=str)
+
     return parser.parse_args()
 
 
@@ -136,9 +150,7 @@ def main():
         dataset_list.append(train_dataset)
     train_dataset = datasets.concatenate_datasets(dataset_list)
     # train_dataset = train_dataset.sort('input_ids')
-    import pdb
 
-    # pdb.set_trace()
 
     def statistic():
 
@@ -334,7 +346,6 @@ def load_msgpack_chunks(chunk_files):
         raise TypeError("data must be a dictionary or a list")
 
 
-
 def test():
     args = parse_args()
 
@@ -350,8 +361,8 @@ def test():
     )
     cnt_list = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
 
+    
     import pdb
-
     pdb.set_trace()
 
     train_dataset = datasets.load_dataset(dataset_dir[args.dataset])["train"]
@@ -381,5 +392,4 @@ def test():
 
 
 if __name__ == "__main__":
-    # test()
     main()

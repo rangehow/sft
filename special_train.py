@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument("--zero_prob", default=0.1, type=ast.literal_eval)
     parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
     parser.add_argument("--total_bsz", default=128, type=int)
+    parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument(
         "--weighted",
         default=True,
@@ -237,8 +238,8 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
         dataloader_pin_memory=True,
-        dataloader_num_workers=2,
-        num_train_epochs=9,
+        dataloader_num_workers=0,
+        num_train_epochs=args.num_train_epochs,
         per_device_train_batch_size=real_bsz,
         bf16=True,
     ),
