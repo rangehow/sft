@@ -14,7 +14,7 @@ python preprocess_trie.py --model llama3_8b --dataset magpie --template llama
 
 
 # 3.开始训练，先训练我们的方法，然后是原始NTP
-accelerate launch --config_file my.yaml special_train.py --model llama3_8b --gradient_accumulation_steps 32 --total_bsz 512 --zero_prob 0 --div_mode False --weighted False --dataset magpie --mix True --mix_ratio 0.8
+accelerate launch --config_file my.yaml special_train.py --model llama3_8b --gradient_accumulation_steps 32 --total_bsz 512 --zero_prob 0 --div_mode False --weighted False --dataset magpie --mix True --mix_ratio 0.8 --num_train_epochs 9
 
 accelerate launch --config_file my.yaml special_train.py --model llama3_8b --dataset magpie --total_bsz 512  --gradient_accumulation_steps 32 --output_dir llama_naive_bsz512_mix  --num_train_epochs 9
 
