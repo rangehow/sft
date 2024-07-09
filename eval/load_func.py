@@ -28,10 +28,6 @@ def bbh(local_dir):
     return datasets.load_dataset("JesusCrist/bbh_cot_fewshot")["train"]
 
 
-
-
-
-
 @register2dict(name="code")
 def code(local_dir):
     if local_dir is not None:
@@ -104,6 +100,16 @@ def magpie(local_dir):
         return datasets.load_dataset(local_dir)["train"]
     else:
         return datasets.load_dataset("Magpie-Align/Magpie-Pro-300K-Filtered")["train"]
+
+
+@register2dict(name="redpajama")
+def redpajama(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("togethercomputer/RedPajama-Data-1T-Sample")[
+            "train"
+        ]
 
 
 if __name__ == "__main__":

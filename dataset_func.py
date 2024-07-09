@@ -315,7 +315,7 @@ def magpie(instances, template, test=False, **kwargs):
     input_ids = []
     labels = []
     for conv in conversations:
-        
+
         human, assistant = conv[0]["value"], conv[1]["value"]
 
         input_id, label = template.apply(reformate(human, assistant))
@@ -325,6 +325,18 @@ def magpie(instances, template, test=False, **kwargs):
         return {"input_ids": input_ids, "labels": labels}
     else:
         return {"input_ids": input_ids}
+
+
+@register2dict(name="redpajama")
+def redpajama(instances, template, test=False, **kwargs):
+    labels=[]
+    for text in instances["text"]:
+        text_id=template.tokenizer.encode(
+                text+template.tokenizer.eos_token,
+                add_special_tokens=False,
+            )
+        labels.append(text_id)
+    return {"input_ids": None, "labels": labels}
 
 
 if __name__ == "__main__":
