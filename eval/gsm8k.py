@@ -159,7 +159,7 @@ def main():
                     model = LLM(
                         model=m,
                         gpu_memory_utilization=0.9 * available_memory_ratio(),
-                        enable_prefix_caching=True,
+                        # enable_prefix_caching=True,
                     )
 
                     response = model.generate(prompts, samplingParams)

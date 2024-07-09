@@ -21,7 +21,7 @@ def register2dict(name):
     return decorator
 
 
-def reformate(i, o, template):
+def reformate(i, o):
 
     if o is not None:
         chat_dict = [
@@ -42,19 +42,19 @@ def _process(real_input, output, template, test=False, vllm=True, chat=False, mo
             if test:
                 if vllm:
                     # vllm只需要自然文本输入，不需要自己tokenize，只需要封成template后的格式
-                    chat_dict = reformate(i, None, template)
+                    chat_dict = reformate(i, None)
                     input_id = template.tokenizer.apply_chat_template(
                         chat_dict, tokenize=False, add_generation_prompt=True
                     )
 
                 elif not vllm:
-                    chat_dict = reformate(i, None, template)
+                    chat_dict = reformate(i, None)
                     input_id = template.tokenizer.apply_chat_template(
                         chat_dict, tokenize=True, add_generation_prompt=True
                     )
                 input_ids.append(input_id)
             else:
-                input_id, label = template.apply(reformate(i, o, template))
+                input_id, label = template.apply(reformate(i, o))
                 input_ids.append(input_id)
                 labels.append(label)
         else:
@@ -90,7 +90,7 @@ def alpaca_cleaned(instances, template, test=False, **kwargs):
     for i, o in zip(real_input, output):
         if test:
             exit()
-        input_id, label = template.apply(reformate(i, o, template))
+        input_id, label = template.apply(reformate(i, o))
         input_ids.append(input_id)
         labels.append(label)
     if not test:
@@ -307,6 +307,24 @@ def truthfulqa(instances, template, shot=False, mode=0, **kwargs):
             output.append(mc2_target)
         # results.append(res)
     return {"input_ids": real_input, "answer": output}
+
+
+@register2dict(name="magpie")
+def magpie(instances, template, test=False, **kwargs):
+    conversations = instances["conversations"]
+    input_ids = []
+    labels = []
+    for conv in conversations:
+        
+        human, assistant = conv[0]["value"], conv[1]["value"]
+
+        input_id, label = template.apply(reformate(human, assistant))
+        input_ids.append(input_id)
+        labels.append(label)
+    if not test:
+        return {"input_ids": input_ids, "labels": labels}
+    else:
+        return {"input_ids": input_ids}
 
 
 if __name__ == "__main__":
