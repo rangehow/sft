@@ -6,10 +6,10 @@ import pickle
 import warnings
 import datasets
 import ast
-from config import model_dir, dataset_dir
-from dataset_func import dname2func
-from template import modelType2Template
-from eval.load_func import dname2load
+from ..config import model_dir, dataset_dir
+from ..dataset_func import dname2func
+from ..template import modelType2Template
+from ..eval.load_func import dname2load
 from tqdm import tqdm
 from loguru import logger
 import argparse
@@ -193,7 +193,7 @@ def main():
     )
     assert len(synthesis_dict) == len(cnt_list)
 
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+    script_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__).rstrip(os.sep)))
     os.makedirs(
         os.path.join(script_path, "train_dataset", f"{args.template}_{args.dataset}"),
         exist_ok=True,

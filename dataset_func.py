@@ -336,8 +336,19 @@ def redpajama(instances, template, test=False, **kwargs):
                 add_special_tokens=False,
             )
         labels.append(text_id)
-    return {"input_ids": None, "labels": labels}
+    return {"labels": labels}
 
+
+@register2dict(name="test")
+def test(instances, template, test=False, **kwargs):
+    labels=[]
+    for text in instances["text"]:
+        text_id=template.tokenizer.encode(
+                text+template.tokenizer.eos_token,
+                add_special_tokens=False,
+            )
+        labels.append(text_id)
+    return { "labels": labels}
 
 if __name__ == "__main__":
     pass

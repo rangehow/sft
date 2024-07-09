@@ -112,5 +112,24 @@ def redpajama(local_dir):
         ]
 
 
+@register2dict(name="slimpajama")
+def slimpajama(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("DKYoon/SlimPajama-6B")[
+            "train"
+        ]
+
+@register2dict(name="test")
+def slimpajama(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("JesusCrist/SimpleData")[
+            "train"
+        ]
+
+
 if __name__ == "__main__":
     humaneval()

@@ -51,6 +51,12 @@ def parse_args():
     parser.add_argument(
         "--mix_ratio", default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
     )
+    parser.add_argument(
+        "--pt",
+        default=False,
+        type=ast.literal_eval,
+        help="pt mode or not?",
+    )
     return parser.parse_args()
 
 
@@ -85,7 +91,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    # device_map="auto",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
+    device_map="auto",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 model_type = model.config.model_type
@@ -100,6 +106,7 @@ collator = SpecialDataCollator(
     div_mode=args.div_mode,
     mix=args.mix,
     mix_ratio=args.mix_ratio,
+    pt=args.pt,
 )
 
 
@@ -163,13 +170,14 @@ def load_dataset():
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
     index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
-
+    print(args.pt)
     train_dataset = SpecialDataset(
         synthesis,
         index,
         embedding_size,
         zero_prob=args.zero_prob,
         div_mode=args.div_mode,
+        pt=args.pt,
     )
     return train_dataset
 
@@ -224,6 +232,7 @@ if args.lora:
 
 # torch.backends.cudnn.benchmark = False
 trainer = KLTrainer(
+    pt_mode=args.pt,
     weight_mode=args.weighted,
     mix_mode=args.mix,
     alpha=args.alpha,

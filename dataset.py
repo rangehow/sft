@@ -150,22 +150,30 @@ class SpecialDataset(Dataset):
         embedding_size,
         zero_prob,
         div_mode=False,
+        pt=False,
     ):
-
+        self.pt=pt
         synthesis_dict = [data_sample for data_sample in synthesis_dict.items()]
-        self.supervised = [
-            [synthesis_dict[i][1][j][0] for j in range(len(synthesis_dict[i][1]))]
-            for i in range(len(synthesis_dict))
-        ]
-        # self.supervised = [synthesis_dict[i][1][j][0]  for i in range(len(synthesis_dict))  for j in range(len(synthesis_dict[i]))]
-        self.clm = [
-            [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
-            for i in range(len(synthesis_dict))
-        ]
         self.input_ids = [
-            list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
-        ]
-
+                list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
+            ]
+        if not pt:
+            
+            self.supervised = [
+                [synthesis_dict[i][1][j][0] for j in range(len(synthesis_dict[i][1]))]
+                for i in range(len(synthesis_dict))
+            ]
+            # self.supervised = [synthesis_dict[i][1][j][0]  for i in range(len(synthesis_dict))  for j in range(len(synthesis_dict[i]))]
+            self.clm = [
+                [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
+                for i in range(len(synthesis_dict))
+            ]
+            
+        else:
+            self.clm = [
+                [synthesis_dict[i][1][j][0] for j in range(len(synthesis_dict[i][1]))]
+                for i in range(len(synthesis_dict))
+            ]
         self.valid_label_index_list = cnt_list
 
         self.embedding_size = embedding_size
@@ -174,15 +182,24 @@ class SpecialDataset(Dataset):
 
     def __getitem__(self, index):
 
-        # 很不耗时，e-6
-        return {
-            "input_ids": self.input_ids[index],
-            "supervised": self.supervised[index],
-            "clm": self.clm[index],
-            "embedding_size": self.embedding_size,
-            "div_mode": self.div_mode,
-            "valid_label_index_list": self.valid_label_index_list[index],
-        }
+        if not self.pt:
+            # 很不耗时，e-6
+            return {
+                "input_ids": self.input_ids[index],
+                "supervised": self.supervised[index],
+                "clm": self.clm[index],
+                "embedding_size": self.embedding_size,
+                "div_mode": self.div_mode,
+                "valid_label_index_list": self.valid_label_index_list[index],
+            }
+        else:
+            return {
+                "input_ids": self.input_ids[index],
+                "clm": self.clm[index],
+                "embedding_size": self.embedding_size,
+                "div_mode": self.div_mode,
+                "valid_label_index_list": self.valid_label_index_list[index],
+            }
 
     def __len__(self):
         return len(self.input_ids)
@@ -193,7 +210,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 class SpecialDataCollator:
     def __init__(
-        self, tokenizer, zero_prob, embedding_size, div_mode, mix, mix_ratio
+        self, tokenizer, zero_prob, embedding_size, div_mode, mix, mix_ratio,pt
     ) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
@@ -201,6 +218,7 @@ class SpecialDataCollator:
         self.div_mode = div_mode
         self.mix = mix
         self.mix_ratio = mix_ratio
+        self.pt=pt
 
     def __call__(self, batch) -> torch.Any:
 
@@ -218,7 +236,7 @@ class SpecialDataCollator:
         # print(input_ids_max_len, input_ids_len)
         valid_label_index_list = []
         # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
-        # 千万不要改动原batch的内容，不然会与auto_find_bsz冲突。
+        # 不要就地改动原batch的内容，不然会与auto_find_bsz冲突。
 
         # 不耗时。e-5
         for i, d in enumerate(batch):
@@ -246,8 +264,9 @@ class SpecialDataCollator:
 
         # TIME --------------------------------------------------------------
         # e-4 不算耗时
+        if not self.pt:
         # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
-        supervised = [item for d in batch for item in d["supervised"]]
+            supervised = [item for d in batch for item in d["supervised"]]
         # if not all(len(counter) == 1 for counter in supervised):
         #     import pdb
         #     pdb.set_trace()
@@ -257,29 +276,29 @@ class SpecialDataCollator:
         # ----------------------------------------------------------------
 
         if self.div_mode:
-            x_sup = optimized_stack(supervised, self.embedding_size)
+            if not self.pt:
+                x_sup = optimized_stack(supervised, self.embedding_size)
             x_clm = optimized_stack(clm, self.embedding_size)
             if self.zero_prob == 0:
-
-                all_prob_supervised = directly_softmax(
-                    supervised, self.embedding_size, div=True
-                )
+                if not self.pt:
+                    all_prob_supervised = directly_softmax(
+                        supervised, self.embedding_size, div=True
+                    )
                 all_prob_clm = directly_softmax(clm, self.embedding_size, div=True)
 
-                all_prob_supervised1 = x_sup / torch.sum(x_sup, dim=-1, keepdim=True)
-                all_prob_clm1 = x_clm / torch.sum(x_clm, dim=-1, keepdim=True)
 
             else:
-                all_prob_supervised = (
-                    (1 - self.zero_prob)
-                    * x_sup
-                    / torch.sum(x_sup, dim=-1, keepdim=True)
-                )
-                non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
-                temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
-                all_prob_supervised = torch.where(
-                    all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
-                )
+                if not self.pt:
+                    all_prob_supervised = (
+                        (1 - self.zero_prob)
+                        * x_sup
+                        / torch.sum(x_sup, dim=-1, keepdim=True)
+                    )
+                    non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
+                    temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
+                    all_prob_supervised = torch.where(
+                        all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
+                    )
 
                 all_prob_clm = (
                     (1 - self.zero_prob)
@@ -294,9 +313,10 @@ class SpecialDataCollator:
         else:
 
             if self.zero_prob == 0:
-                all_prob_supervised = directly_softmax(
-                    supervised, self.embedding_size, zero_prob=self.zero_prob
-                )
+                if not self.pt:
+                    all_prob_supervised = directly_softmax(
+                        supervised, self.embedding_size, zero_prob=self.zero_prob
+                    )
                 all_prob_clm = directly_softmax(
                     clm, self.embedding_size, zero_prob=self.zero_prob
                 )
@@ -306,9 +326,10 @@ class SpecialDataCollator:
 
                 # aaa = time.time()
                 # 余留行为
-                all_prob_supervised = directly_softmax(
-                    supervised, self.embedding_size, zero_prob=self.zero_prob
-                )
+                if not self.pt:
+                    all_prob_supervised = directly_softmax(
+                        supervised, self.embedding_size, zero_prob=self.zero_prob
+                    )
                 all_prob_clm = directly_softmax(
                     clm, self.embedding_size, zero_prob=self.zero_prob
                 )
@@ -325,36 +346,48 @@ class SpecialDataCollator:
                 # print(torch.allclose(all_prob_supervised, all_prob_supervised1))
                 # import pdb
                 # pdb.set_trace()
-
-        supervised_cnt = torch.tensor(
-            [frequency(sum(xx.values()), xmax=10) for xx in supervised]
-        )
+        if not self.pt:
+            supervised_cnt = torch.tensor(
+                [frequency(sum(xx.values()), xmax=10) for xx in supervised]
+            )
         clm_cnt = torch.tensor([frequency(sum(xx.values())) for xx in clm])
 
         if self.mix:
+            if self.pt:
+                logger.debug('不允许结合mix和预训练')
+                exit()
             all_prob_supervised = (
                 self.mix_ratio * all_prob_supervised
                 + (1 - self.mix_ratio) * all_prob_clm
             )
             # supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt 627日晚上注释
             supervised_cnt = supervised_cnt + clm_cnt
+            
+            return {
+                "input_ids": input_ids.input_ids,
+                "attention_mask": input_ids.attention_mask,
+                "all_prob_mix": all_prob_supervised,
+                "valid_label_index_list": valid_label_index_list,
+                "mix_cnt": supervised_cnt,
+            }
+        if not self.pt:
             return {
                 "input_ids": input_ids.input_ids,
                 "attention_mask": input_ids.attention_mask,
                 "all_prob_supervised": all_prob_supervised,
+                "all_prob_clm": all_prob_clm,
                 "valid_label_index_list": valid_label_index_list,
                 "supervised_cnt": supervised_cnt,
+                "clm_cnt": clm_cnt,
             }
-
-        return {
-            "input_ids": input_ids.input_ids,
-            "attention_mask": input_ids.attention_mask,
-            "all_prob_supervised": all_prob_supervised,
-            "all_prob_clm": all_prob_clm,
-            "valid_label_index_list": valid_label_index_list,
-            "supervised_cnt": supervised_cnt,
-            "clm_cnt": clm_cnt,
-        }
+        else:
+            return {
+                "input_ids": input_ids.input_ids,
+                "attention_mask": input_ids.attention_mask,
+                "all_prob_clm": all_prob_clm,
+                "valid_label_index_list": valid_label_index_list,
+                "clm_cnt": clm_cnt,
+            }
 
 
 if __name__ == "__main__":
