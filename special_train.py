@@ -21,6 +21,7 @@ from argparse import ArgumentParser
 from loguru import logger
 import warnings
 import os
+import multiprocessing
 
 
 def parse_args():
@@ -135,7 +136,9 @@ import concurrent.futures
 def load_msgpack_chunks(chunk_files):
 
     print(chunk_files)
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    cpu_count = multiprocessing.cpu_count()
+    logger.debug(f"加载数据集使用CPU 核心数：{cpu_count//2}")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_count // 2) as executor:
         results = list(executor.map(load_msgpack_file, chunk_files))
     if isinstance(results[0], dict):
         merged_data = {}
@@ -199,9 +202,10 @@ train_dataset = load_dataset()
 logger.debug(f"训练集大小：{len(train_dataset)}")
 logger.debug(args)
 
-real_bsz = (
-    args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
-)
+# real_bsz = (
+#     args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
+# )
+real_bsz = args.total_bsz // args.gradient_accumulation_steps
 logger.debug(
     f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
 )
