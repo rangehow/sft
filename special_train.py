@@ -22,6 +22,7 @@ from loguru import logger
 import warnings
 import os
 import multiprocessing
+from tqdm import tqdm
 
 
 def parse_args():
@@ -136,10 +137,16 @@ import concurrent.futures
 def load_msgpack_chunks(chunk_files):
 
     print(chunk_files)
-    cpu_count = multiprocessing.cpu_count()
-    logger.debug(f"加载数据集使用CPU 核心数：{cpu_count//2}")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_count // 2) as executor:
-        results = list(executor.map(load_msgpack_file, chunk_files))
+    # cpu_count = multiprocessing.cpu_count()
+    # logger.debug(f"加载数据集使用CPU 核心数：{cpu_count//2}")  cpu_count // 2
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = list(
+            tqdm(
+                executor.map(load_msgpack_file, chunk_files),
+                total=len(chunk_files),
+                desc="loading files",
+            )
+        )
     if isinstance(results[0], dict):
         merged_data = {}
         for chunk in results:
