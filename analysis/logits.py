@@ -38,11 +38,6 @@ def parse_args():
     parser = ArgumentParser()
 
     parser.add_argument(
-        "--reuse",
-        action="store_true",
-        help="在批量测试时自动开reuse",
-    )
-    parser.add_argument(
         "--dataset",
     )
     parser.add_argument("--model")
@@ -165,6 +160,7 @@ def main():
         train_dataset = load_dataset()
 
         end_time = time.time()
+        print("数据集长度是=", len(train_dataset))
         print("数据加载时间为=", end_time - start_time, "\n")
         with torch.inference_mode():
             model = AutoModelForCausalLM.from_pretrained(
@@ -184,6 +180,7 @@ def main():
                 div_mode=args.div_mode,
                 mix=False,
                 mix_ratio=args.mix_ratio,
+                pt=False,
             )
             dataloader = DataLoader(
                 dataset=train_dataset,
@@ -206,17 +203,22 @@ def main():
             for d in tqdm(dataloader):
 
                 response = model(
-                    input_ids=d["input_ids"],
-                    attention_mask=d["attention_mask"],
+                    input_ids=d["input_ids"].to(model.device),
+                    attention_mask=d["attention_mask"].to(model.device),
                 ).logits
 
-                last_logits = torch.cat(
-                    [
-                        row[start:end]
-                        for row, turn in zip(response, d["valid_label_index_list"])
-                        for start, end in turn
-                    ]
+                last_logits = torch.nn.functional.softmax(
+                    torch.cat(
+                        [
+                            row[start:end]
+                            for row, turn in zip(response, d["valid_label_index_list"])
+                            for start, end in turn
+                        ]
+                    ),
+                    dim=-1,
                 )
+                import pdb
+                pdb.set_trace()
                 real_label = torch.cat(
                     [
                         torch.cat(

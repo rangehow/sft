@@ -133,7 +133,7 @@ def directly_softmax(supervised, embedding_size, div=False, zero_prob=0):
                 temp_result = torch.nn.functional.softmax(values / T, dim=-1)
                 temp_values, zero_values = temp_result[:-1], temp_result[-1].item()
                 zero_values /= embedding_size - len(counter.values())
-                x[i] = torch.full_like(x[i], zero_values)            
+                x[i] = torch.full_like(x[i], zero_values)
                 x[i][indices] = temp_values
     return x
 
@@ -152,13 +152,13 @@ class SpecialDataset(Dataset):
         div_mode=False,
         pt=False,
     ):
-        self.pt=pt
+        self.pt = pt
         synthesis_dict = [data_sample for data_sample in synthesis_dict.items()]
         self.input_ids = [
-                list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
-            ]
+            list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
+        ]
         if not pt:
-            
+
             self.supervised = [
                 [synthesis_dict[i][1][j][0] for j in range(len(synthesis_dict[i][1]))]
                 for i in range(len(synthesis_dict))
@@ -168,7 +168,7 @@ class SpecialDataset(Dataset):
                 [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
                 for i in range(len(synthesis_dict))
             ]
-            
+
         else:
             self.clm = [
                 [synthesis_dict[i][1][j][0] for j in range(len(synthesis_dict[i][1]))]
@@ -205,12 +205,33 @@ class SpecialDataset(Dataset):
         return len(self.input_ids)
 
 
-from torch.nn.utils.rnn import pad_sequence
+class OfflineDataset(Dataset):
+    def __init__(
+        self,
+        synthesis_list,
+    ):
+
+        self.synthesis_list = synthesis_list
+
+    def __getitem__(self, index):
+
+        return self.synthesis_list[index]
+
+    def __len__(self):
+        return len(self.synthesis_list)
 
 
 class SpecialDataCollator:
     def __init__(
-        self, tokenizer, zero_prob, embedding_size, div_mode, mix, mix_ratio,pt
+        self,
+        tokenizer,
+        zero_prob,
+        embedding_size,
+        div_mode,
+        mix,
+        mix_ratio,
+        pt,
+        offline,
     ) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
@@ -218,7 +239,8 @@ class SpecialDataCollator:
         self.div_mode = div_mode
         self.mix = mix
         self.mix_ratio = mix_ratio
-        self.pt=pt
+        self.pt = pt
+        self.offline = offline  # this flag only useful for data loading, don't set it to true while offline process
 
     def __call__(self, batch) -> torch.Any:
 
@@ -251,21 +273,52 @@ class SpecialDataCollator:
                 )
             valid_label_index_list.append(temp_index_list)
 
-        # if valid_label_index_list==[[[711, 719]], [[503, 675]], [[20, 375]], [[551, 577]], [[486, 611]], [[117, 472]], [[626, 740]], [[831, 847]]]:
-        #     import pdb
-        #     pdb.set_trace()
-        # print(valid_label_index_list)
-        # print("-----------------------------")
+  
 
-        # all_prob_supervised = [d["all_prob_supervised"] for d in batch]
-        # all_prob_clm = [d["all_prob_clm"] for d in batch]
-        # supervised_cnt = [d["supervised_cnt"] for d in batch]
-        # clm_cnt = [d["clm_cnt"] for d in batch]
+        if self.offline:
+
+            if self.mix:
+                all_prob_mix = torch.cat([d["all_prob_mix"] for d in batch], dim=0)
+                mix_cnt = torch.cat([d["mix_cnt"] for d in batch], dim=0)
+                return {
+                    "input_ids": input_ids.input_ids,
+                    "attention_mask": input_ids.attention_mask,
+                    "all_prob_mix": all_prob_supervised,
+                    "valid_label_index_list": valid_label_index_list,
+                    "mix_cnt": supervised_cnt,
+                }
+            else:
+                all_prob_clm = torch.cat([d["all_prob_clm"] for d in batch], dim=0)
+                clm_cnt = torch.cat([d["clm_cnt"] for d in batch], dim=0)
+                if not self.pt:
+                    all_prob_supervised = torch.cat(
+                        [d["all_prob_supervised"] for d in batch], dim=0
+                    )
+                    supervised_cnt = torch.cat(
+                        [d["supervised_cnt"] for d in batch], dim=0
+                    )
+                    return {
+                        "input_ids": input_ids.input_ids,
+                        "attention_mask": input_ids.attention_mask,
+                        "all_prob_supervised": all_prob_supervised,
+                        "all_prob_clm": all_prob_clm,
+                        "valid_label_index_list": valid_label_index_list,
+                        "supervised_cnt": supervised_cnt,
+                        "clm_cnt": clm_cnt,
+                    }
+
+                return {
+                    "input_ids": input_ids.input_ids,
+                    "attention_mask": input_ids.attention_mask,
+                    "all_prob_clm": all_prob_clm,
+                    "valid_label_index_list": valid_label_index_list,
+                    "clm_cnt": clm_cnt,
+                }
 
         # TIME --------------------------------------------------------------
         # e-4 不算耗时
         if not self.pt:
-        # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
+            # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
             supervised = [item for d in batch for item in d["supervised"]]
         # if not all(len(counter) == 1 for counter in supervised):
         #     import pdb
@@ -286,7 +339,6 @@ class SpecialDataCollator:
                     )
                 all_prob_clm = directly_softmax(clm, self.embedding_size, div=True)
 
-
             else:
                 if not self.pt:
                     all_prob_supervised = (
@@ -295,7 +347,9 @@ class SpecialDataCollator:
                         / torch.sum(x_sup, dim=-1, keepdim=True)
                     )
                     non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
-                    temp_zero_prob = self.zero_prob / (self.embedding_size - non_zero_cnt)
+                    temp_zero_prob = self.zero_prob / (
+                        self.embedding_size - non_zero_cnt
+                    )
                     all_prob_supervised = torch.where(
                         all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
                     )
@@ -354,7 +408,7 @@ class SpecialDataCollator:
 
         if self.mix:
             if self.pt:
-                logger.debug('不允许结合mix和预训练')
+                logger.debug("不允许结合mix和预训练")
                 exit()
             all_prob_supervised = (
                 self.mix_ratio * all_prob_supervised
@@ -362,7 +416,7 @@ class SpecialDataCollator:
             )
             # supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt 627日晚上注释
             supervised_cnt = supervised_cnt + clm_cnt
-            
+
             return {
                 "input_ids": input_ids.input_ids,
                 "attention_mask": input_ids.attention_mask,

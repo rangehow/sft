@@ -12,7 +12,7 @@ from transformers import (
 )
 from torch.utils.data import Dataset, DataLoader
 import datasets
-from dataset import SpecialDataset, SpecialDataCollator, OfflineDataset
+from dataset import SpecialDataset, SpecialDataCollator
 from special_trainer import KLTrainer
 import pickle
 from config import model_dir, dataset_dir
@@ -23,6 +23,8 @@ import warnings
 import os
 import multiprocessing
 from tqdm import tqdm
+from dataset import directly_softmax
+from preprocess_trie import save_chunks
 
 
 def parse_args():
@@ -38,9 +40,6 @@ def parse_args():
     parser.add_argument("--gradient_accumulation_steps", default=16, type=int)
     parser.add_argument("--total_bsz", default=128, type=int)
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument(
-        "--template",
-    )
     parser.add_argument(
         "--weighted",
         default=True,
@@ -63,10 +62,7 @@ def parse_args():
         help="pt mode or not?",
     )
     parser.add_argument(
-        "--offline",
-        default=False,
-        type=ast.literal_eval,
-        help="offline mode or not?",
+        "--template",
     )
     return parser.parse_args()
 
@@ -102,13 +98,24 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="balanced_low_0",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
-    attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
+    low_cpu_mem_usage=True,
+    # device_map="balanced_low_0",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
 )
 
 embedding_size = model.lm_head.weight.size()[
     0
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
+
+collator = SpecialDataCollator(
+    tokenizer,
+    zero_prob=args.zero_prob,
+    embedding_size=embedding_size,
+    div_mode=args.div_mode,
+    mix=args.mix,
+    mix_ratio=args.mix_ratio,
+    pt=args.pt,
+    offline=False,
+)
 
 
 def load_msgpack_file(filename):
@@ -174,133 +181,91 @@ def load_dataset():
     #     index = pickle.load(f)
 
     base_dir = f"{script_path}/train_dataset/{args.template}_{args.dataset}"
-    if args.offline:
-        base_dir = base_dir + "_offline"
+
     synthesis = load_msgpack_chunks(
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
-    if not args.offline:
-        index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
-
-    if args.offline:
-        train_dataset = OfflineDataset(synthesis)
-    else:
-        train_dataset = SpecialDataset(
-            synthesis,
-            index,
-            embedding_size,
-            zero_prob=args.zero_prob,
-            div_mode=args.div_mode,
-            pt=args.pt,
-        )
+    index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
+    train_dataset = SpecialDataset(
+        synthesis,
+        index,
+        embedding_size,
+        zero_prob=args.zero_prob,
+        div_mode=args.div_mode,
+        pt=args.pt,
+    )
     return train_dataset
 
 
 train_dataset = load_dataset()
 
-collator = SpecialDataCollator(
-    tokenizer,
-    zero_prob=args.zero_prob,
-    embedding_size=embedding_size,
-    div_mode=args.div_mode,
-    mix=args.mix,
-    mix_ratio=args.mix_ratio,
-    pt=args.pt,
-    offline=args.offline,
-)
-
-
-# 检查数据的调试代码----------------------------------
 dataloader = DataLoader(
     dataset=train_dataset,
-    batch_size=8,
+    batch_size=1,  # 必须是1,不然要从pad里解离出各种东西太麻烦。
     collate_fn=collator,
-    num_workers=0,
+    num_workers=16,
     pin_memory=False,
 )
 
 from tqdm import tqdm
 
-
+total_data = []
+idx = 0
+script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+os.makedirs(
+    os.path.join(
+        script_path, "train_dataset", f"{args.template}_{args.dataset}_offline"
+    ),
+    exist_ok=True,
+)
+chunk_size = 256
 for d in tqdm(dataloader):
-    continue
+
+    # 1.只有input_ids需要还原成list，因为不同话的不齐，但是其他都是在time上拼接的
+    if args.mix:
+        result = {
+            "input_ids": d["input_ids"].tolist()[0],
+            "all_prob_mix": d["all_prob_mix"],
+            "mix_cnt": d["mix_cnt"],
+            "valid_label_index_list": d["valid_label_index_list"][0],
+        }
+    elif args.pt:
+        result = {
+            "input_ids": d["input_ids"].tolist()[0],
+            "all_prob_clm": d["all_prob_clm"],
+            "clm_cnt": d["clm_cnt"],
+            "valid_label_index_list": d["valid_label_index_list"][0],
+        }
+    else:
+        result = {
+            "input_ids": d["input_ids"].tolist()[0],
+            "all_prob_supervised": d["all_prob_supervised"],
+            "all_prob_clm": d["all_prob_clm"],
+            "supervised_cnt": d["supervised_cnt"],
+            "clm_cnt": d["clm_cnt"],
+            "valid_label_index_list": d["valid_label_index_list"][0],
+        }
+
+    total_data.append(result)
+    if len(total_data) == chunk_size:
+        save_chunks(
+            total_data,
+            chunk_size=chunk_size,
+            base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}_offline",
+            name="synthesis",
+            start_idx=idx,
+        )
+        idx += 1
+        total_data = []
+
+
+save_chunks(
+    total_data,
+    chunk_size=chunk_size,
+    base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}_offline",
+    name="synthesis",
+    start_idx=idx,
+)
+
 
 # ------------------------------------------------------
-logger.debug(f"训练集大小：{len(train_dataset)}")
-logger.debug(args)
-
-# real_bsz = (
-#     args.total_bsz // torch.cuda.device_count() // args.gradient_accumulation_steps
-# )
-real_bsz = args.total_bsz // args.gradient_accumulation_steps
-logger.debug(
-    f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}x卡的数量{torch.cuda.device_count()}={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
-)
-
-if args.lora:
-    from peft import LoraConfig, TaskType, get_peft_model
-
-    peft_config = LoraConfig(
-        inference_mode=False,
-        r=8,
-        lora_alpha=32,
-        lora_dropout=0.1,
-        target_modules=[
-            "embed_tokens",
-            "lm_head",
-            "layers.*.self_attn.q_proj",
-            "layers.*.self_attn.k_proj",
-            "layers.*.self_attn.v_proj",
-            "layers.*.self_attn.o_proj",
-            "layers.*.mlp.gate_proj",
-            "layers.*.mlp.up_proj",
-            "layers.*.mlp.down_proj",
-        ],
-    )
-    model = get_peft_model(model, peft_config)
-    model.print_trainable_parameters()
-
-
-# torch.backends.cudnn.benchmark = False
-trainer = KLTrainer(
-    pt_mode=args.pt,
-    weight_mode=args.weighted,
-    mix_mode=args.mix,
-    alpha=args.alpha,
-    model=model,
-    train_dataset=train_dataset,
-    tokenizer=tokenizer,
-    args=TrainingArguments(
-        overwrite_output_dir=True,
-        output_dir=args.output_dir,
-        logging_steps=1,
-        remove_unused_columns=False,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
-        save_strategy="epoch",
-        dataloader_pin_memory=True,
-        dataloader_num_workers=0,
-        num_train_epochs=args.num_train_epochs,
-        per_device_train_batch_size=real_bsz,
-        bf16=True,
-    ),
-    data_collator=collator,
-)
-
-# from tqdm import tqdm
-
-# d = trainer.get_train_dataloader()
-# for dd in tqdm(d):
-#     continue
-
-
-trainer.train()
-trainer.save_model(args.output_dir)
-
-
-saved_args_dict = vars(args)
-saved_args_dict["实际的总batch_size"] = (
-    args.gradient_accumulation_steps * real_bsz * torch.cuda.device_count()
-)
-logger.info(f"模型被保存至{args.output_dir}")
-with open(os.path.join(args.output_dir, "args.json"), "w", encoding="utf-8") as o:
-    json.dump(saved_args_dict, o, ensure_ascii=False, indent=4)

@@ -111,10 +111,10 @@ def chunk_data(data, chunk_size):
         raise TypeError("data must be a dictionary or a list")
 
 
-def save_chunks(data, chunk_size, base_dir, name):
+def save_chunks(data, chunk_size, base_dir, name,start_idx):
     """将大字典分块并保存到多个文件中。"""
-    for i, chunk in enumerate(chunk_data(data, chunk_size)):
-        filename = f"{name}_part{i}.msgpack"
+    for i, chunk in tqdm(enumerate(chunk_data(data, chunk_size))):
+        filename = f"{name}_part{i+start_idx}.msgpack"
         with open(os.path.join(base_dir, filename), "wb") as f:
             pickle.dump(chunk, f, protocol=5)
         print(f"Saved chunk {i} to {filename}")
@@ -150,7 +150,6 @@ def main():
         dataset_list.append(train_dataset)
     train_dataset = datasets.concatenate_datasets(dataset_list)
     # train_dataset = train_dataset.sort('input_ids')
-
 
     def statistic():
 
@@ -291,13 +290,13 @@ def main():
 
     save_chunks(
         synthesis_dict,
-        chunk_size=500,
+        chunk_size=1024,
         base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}",
         name="synthesis",
     )
     save_chunks(
         cnt_list,
-        chunk_size=500,
+        chunk_size=1024,
         base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}",
         name="index",
     )
@@ -360,9 +359,6 @@ def test():
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
     cnt_list = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
-
-    
-
 
     train_dataset = datasets.load_dataset(dataset_dir[args.dataset])["train"]
 

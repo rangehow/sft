@@ -208,10 +208,11 @@ def test(tokenizer_name, template):
 
 if __name__ == "__main__":
     test_list = [
-        ("google/gemma-2-27b-it", "gemma"),
-        ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
-        ("01-ai/Yi-1.5-34B-Chat", "yi"),
-        ("Qwen/Qwen2-72B-Instruct", "qwen2"),
+        ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
+        # ("google/gemma-2-27b-it", "gemma"),
+        # ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
+        # ("01-ai/Yi-1.5-34B-Chat", "yi"),
+        # ("Qwen/Qwen2-72B-Instruct", "qwen2"),
     ]
     for instance in test_list:
         if not test(instance[0],instance[1]):
