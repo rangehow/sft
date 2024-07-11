@@ -26,6 +26,7 @@ config = LlamaConfig(
     num_attention_heads=12,
     num_hidden_layers=12,
 )
+from ..special_trainer import KLTrainer
 from torch.utils.data import DataLoader, Dataset
 import os
 
@@ -214,7 +215,8 @@ def compute_metrics(eval):
 
 
 # Trainer
-trainer = Trainer(
+trainer = KLTrainer(
+    pt_mode=True,
     model=model,
     args=training_args,
     train_dataset=dataset,
