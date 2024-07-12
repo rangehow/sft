@@ -88,34 +88,34 @@ timestamp=$(date +"%Y%m%d_%H%M%S")
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset bbh --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 
 # 定义任务列表和对应的 num_fewshot
-# tasks=(
-#     "truthfulqa_mc2 0"
-#     "bbh_cot_fewshot 3"
-#     "arc_challenge 0"
-#     "triviaqa 5"
-#     "agieval 0"
-#     "sciq 0"
-#     "winogrande 5"
-#     "ifeval 0"
-# )
+tasks=(
+    "truthfulqa_mc2 0"
+    "bbh_cot_fewshot 3"
+    "arc_challenge 0"
+    "triviaqa 5"
+    "agieval 0"
+    "sciq 0"
+    "winogrande 5"
+    "ifeval 0"
+)
 
-# # 遍历每个模型和任务并执行命令
-# for model in "${models[@]}"; do
-#     for task in "${tasks[@]}"; do
-#         # 解析任务和 num_fewshot
-#         IFS=' ' read -r task_name num_fewshot <<< "$task"
-#         echo "$task_name"
+# 遍历每个模型和任务并执行命令
+for model in "${models[@]}"; do
+    for task in "${tasks[@]}"; do
+        # 解析任务和 num_fewshot
+        IFS=' ' read -r task_name num_fewshot <<< "$task"
+        echo "$task_name"
         
-#         # 执行命令
-#         accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
-#             --model_args pretrained="$model" \
-#             --tasks "$task_name" \
-#             --batch_size 'auto' \
-#             --num_fewshot "$num_fewshot" \
-#             --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
+        # 执行命令
+        accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
+            --model_args pretrained="$model" \
+            --tasks "$task_name" \
+            --batch_size 'auto' \
+            --num_fewshot "$num_fewshot" \
+            --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/${model}"
       
-#     done
-# done
+    done
+done
 
 
 # accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
