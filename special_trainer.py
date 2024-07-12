@@ -41,7 +41,7 @@ class KLTrainer(Trainer):
             attention_mask=attention_mask,
         )
         model_logits = result.logits  # bsz x seqlen x dim
-
+        # 
         # NOTE 正确性检查见本文件底部test code 1
         last_logits = torch.cat(
             [
@@ -50,6 +50,8 @@ class KLTrainer(Trainer):
                 for start, end in turn
             ]
         ).to(model_logits.device)
+        # import pdb
+        # pdb.set_trace()    torch.topk(last_logits,dim=-1,k=5)
         if not self.mix_mode:
             if not self.pt_mode:
                 all_prob_supervised = all_prob_supervised.to(model_logits.device)
@@ -119,7 +121,7 @@ class KLTrainer(Trainer):
                 loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
                 loss = loss.mean().detach()
 
-        return (loss, None, None)
+        return (loss, outputs['logits'], torch.tensor([1]))
 
 
 # test code 1:

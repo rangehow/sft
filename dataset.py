@@ -115,6 +115,7 @@ def directly_softmax(supervised, embedding_size, div=False, zero_prob=0):
     x = torch.zeros(len(supervised), embedding_size)
 
     for i, counter in enumerate(supervised):
+
         # Convert counter values to a tensor and compute softmax
         indices = torch.tensor(list(counter.keys()), dtype=torch.long)
         if zero_prob == 0:

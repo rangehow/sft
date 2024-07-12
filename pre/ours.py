@@ -10,6 +10,7 @@
 # print(f"Total number of parameters: {total_params_million:.2f}M")
 # print(f"LM head parameters: {lm_head_params_million:.2f}M")
 
+from collections import Counter
 import torch.utils
 from transformers import (
     LlamaConfig,
@@ -39,6 +40,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 tokenizer.pad_token = tokenizer.eos_token
 model = LlamaForCausalLM(config)
+embedding_size = model.lm_head.weight.size()[0]
 
 
 class CustomDataset(Dataset):
@@ -52,88 +54,48 @@ class CustomDataset(Dataset):
         return self.data[idx]
 
 
+from ..dataset import directly_softmax
+
 dataset = CustomDataset(
-    # 目标1----------------------
     [
+        # 目标1----------------------
         {
             "input_ids": [128, 129, 130],
-            "labels": [-100, -100, 200],
-        }
-        for _ in range(2)
-    ]
-    + [
-        {
-            "input_ids": [128, 129, 130],
-            "labels": [-100, -100, 201],
-        }
-        for _ in range(1)
-    ]
-    + [
-        {
-            "input_ids": [128, 129, 130],
-            "labels": [-100, -100, 202],
-        }
-        for _ in range(1)
-    ]
-    # 干扰项1 局部相同前缀，且target里包含/不包含目标-------------------------------------------
-    + [
+            "labels": Counter({200: 2, 201: 1, 202: 1}),
+        },
         {
             "input_ids": [128, 129, 131],
-            "labels": [-100, -100, 205],
-        }
-        for _ in range(1)
-    ]
-    + [
+            "labels": Counter({205: 1}),
+        },
         {
             "input_ids": [128, 129, 132],
-            "labels": [-100, -100, 202],
-        }
-        for _ in range(1)
-    ]
-    # 目标2
-    + [
+            "labels": Counter({202: 1}),
+        },
+        # 目标2
         {
             "input_ids": [1280, 1290, 1300],
-            "labels": [-100, -100, 2000],
-        }
-        for _ in range(2)
-    ]
-    + [
+            "labels": Counter({2000: 2}),
+        },
         {
             "input_ids": [1280, 1290, 1300],
-            "labels": [-100, -100, 2001],
-        }
-        for _ in range(1)
-    ]
-    + [
+            "labels": Counter({2001: 1}),
+        },
         {
             "input_ids": [1280, 1290, 1300],
-            "labels": [-100, -100, 2002],
-        }
-        for _ in range(1)
-    ]
-    # 干扰项
-    + [
+            "labels": Counter({2002: 1}),
+        },
         {
             "input_ids": [1280, 1290, 1301],
-            "labels": [-100, -100, 2003],
-        }
-        for _ in range(1)
-    ]
-    + [
+            "labels": Counter({2003: 1}),
+        },
         {
             "input_ids": [1280, 1290, 1302],
-            "labels": [-100, -100, 2000],
-        }
-        for _ in range(1)
-    ]
-    # 杂项---------------------------------------------------
-    + [
+            "labels": Counter({2002: 1}),
+        },
         {
             "input_ids": [256, 257, 259],
-            "labels": [-100, -100, 203],
-        }
-        for _ in range(40)
+            "labels": Counter(list(range(5000, 5040))),
+        },
     ]
 )
 import torch
@@ -142,21 +104,37 @@ import torch
 def collate_fn(batch):
 
     input_ids = [b["input_ids"] for b in batch]
+
     labels = [b["labels"] for b in batch]
-    return {"input_ids": torch.tensor(input_ids), "labels": torch.tensor(labels)}
+    labels = directly_softmax(labels, embedding_size,div=True)
+    valid_label_index_list =  [[(2, 3)] for _ in range(len(input_ids))]
+
+    return {
+        "input_ids": torch.tensor(input_ids),
+        "all_prob_clm":labels,
+        "attention_mask": None,
+        "clm_cnt": None,
+        "valid_label_index_list": valid_label_index_list,
+    }
 
 
 evaluate_dataset = CustomDataset(
     [
         {
             "input_ids": [128, 129, 130],
-            "labels": [-100, -100, 200],
+            "labels": Counter({2002: 1}),
         }
     ]
     + [
         {
             "input_ids": [1280, 1290, 1300],
-            "labels": [-100, -100, 2000],
+            "labels":Counter({2002: 1}),
+        }
+    ]
+    + [
+        {
+            "input_ids": [256, 257, 259],
+            "labels":Counter({2002: 1}),
         }
     ]
 )
@@ -169,10 +147,10 @@ training_args = TrainingArguments(
     output_dir="./results",
     evaluation_strategy="epoch",
     per_device_train_batch_size=32,
-    num_train_epochs=400,
+    num_train_epochs=10000,
     bf16=True,
     report_to="wandb",
-    run_name="naive",
+    run_name="statistic_div",
     save_strategy="no",
 )
 
@@ -211,7 +189,7 @@ def compute_metrics(eval):
     target[2002] = 1 / 4
     sim2 = torch.nn.functional.cosine_similarity(pred.unsqueeze(0), target.unsqueeze(0))
 
-    return {"similarity": (sim1+sim2)/2}
+    return {"sim1": sim1, "sim2": sim2, "similarity": (sim1 + sim2) / 2}
 
 
 # Trainer

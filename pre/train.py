@@ -122,7 +122,7 @@ dataset = CustomDataset(
     + [
         {
             "input_ids": [1280, 1290, 1302],
-            "labels": [-100, -100, 2000],
+            "labels": [-100, -100, 2002],
         }
         for _ in range(1)
     ]
@@ -130,9 +130,9 @@ dataset = CustomDataset(
     + [
         {
             "input_ids": [256, 257, 259],
-            "labels": [-100, -100, 203],
+            "labels": [-100, -100, i],
         }
-        for _ in range(40)
+        for i in range(5000, 5040)
     ]
 )
 import torch
@@ -167,8 +167,8 @@ evaluate_dataset = CustomDataset(
 training_args = TrainingArguments(
     output_dir="./results",
     evaluation_strategy="epoch",
-    per_device_train_batch_size=32,
-    num_train_epochs=400,
+    per_device_train_batch_size=100,
+    num_train_epochs=10000,
     bf16=True,
     report_to="wandb",
     run_name="naive",
@@ -210,7 +210,7 @@ def compute_metrics(eval):
     target[2002] = 1 / 4
     sim2 = torch.nn.functional.cosine_similarity(pred.unsqueeze(0), target.unsqueeze(0))
 
-    return {"similarity": (sim1+sim2)/2}
+    return {"sim1":sim1,"sim2":sim2,"similarity": (sim1 + sim2) / 2}
 
 
 # Trainer

@@ -148,6 +148,7 @@ trainer = Trainer(
     args=TrainingArguments(
         # optim="adamw_apex_fused",
         output_dir=args.output_dir,
+        overwrite_output_dir=True,
         # learning_rate=args.learning_rate,  # 学习率
         per_device_train_batch_size=real_bsz,  # 每个设备的训练批量大小
         num_train_epochs=args.num_train_epochs,  # 训练的轮次
