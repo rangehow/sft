@@ -158,6 +158,13 @@ evaluate_dataset = CustomDataset(
             "labels": [-100, -100, 2000],
         }
     ]
+    + [
+        {
+            "input_ids": [256, 257, 259],
+            "labels": [-100, -100, -100],
+        }
+        
+    ]
 )
 
 
@@ -210,7 +217,27 @@ def compute_metrics(eval):
     target[2002] = 1 / 4
     sim2 = torch.nn.functional.cosine_similarity(pred.unsqueeze(0), target.unsqueeze(0))
 
-    return {"sim1":sim1,"sim2":sim2,"similarity": (sim1 + sim2) / 2}
+    target = torch.zeros_like(pred)
+    target[5000:5040] = 1 / 40
+    pred = torch.nn.functional.softmax(
+        torch.tensor(
+            eval.predictions[
+                :,
+                -1,
+            ][2]
+        ),
+        dim=-1,
+    )
+    irrlevant_sim = torch.nn.functional.cosine_similarity(
+        pred.unsqueeze(0), target.unsqueeze(0)
+    )
+
+    return {
+        "sim1": sim1,
+        "sim2": sim2,
+        "similarity": (sim1 + sim2) / 2,
+        "irrlevant_sim": irrlevant_sim,
+    }
 
 
 # Trainer

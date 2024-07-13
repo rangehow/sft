@@ -20,7 +20,7 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
-
+import ast
 config = LlamaConfig(
     hidden_size=1536,
     intermediate_size=4096,
@@ -33,6 +33,16 @@ import os
 
 os.environ["WANDB_PROJECT"] = "<my-amazing-project>"  # name your W&B project
 os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
+
+from argparse import ArgumentParser
+def parse_args():
+    parser = ArgumentParser()
+    parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
+    return parser.parse_args()
+
+
+args = parse_args()
+
 
 
 tokenizer = AutoTokenizer.from_pretrained(
@@ -106,7 +116,7 @@ def collate_fn(batch):
     input_ids = [b["input_ids"] for b in batch]
 
     labels = [b["labels"] for b in batch]
-    labels = directly_softmax(labels, embedding_size,div=True)
+    labels = directly_softmax(labels, embedding_size,div=args.div_mode)
     valid_label_index_list =  [[(2, 3)] for _ in range(len(input_ids))]
 
     return {
@@ -150,7 +160,7 @@ training_args = TrainingArguments(
     num_train_epochs=10000,
     bf16=True,
     report_to="wandb",
-    run_name="statistic_div",
+    run_name="statistic_div" if args.div_mode else "statistic",
     save_strategy="no",
 )
 
@@ -188,8 +198,26 @@ def compute_metrics(eval):
     target[2001] = 1 / 4
     target[2002] = 1 / 4
     sim2 = torch.nn.functional.cosine_similarity(pred.unsqueeze(0), target.unsqueeze(0))
+    
+    
+    target = torch.zeros_like(pred)
+    target[5000:5040] = 1 / 40
+    pred = torch.nn.functional.softmax(
+        torch.tensor(
+            eval.predictions[
+                :,
+                -1,
+            ][2]
+        ),
+        dim=-1,
+    )
+    irrlevant_sim = torch.nn.functional.cosine_similarity(
+        pred.unsqueeze(0), target.unsqueeze(0)
+    )
 
-    return {"sim1": sim1, "sim2": sim2, "similarity": (sim1 + sim2) / 2}
+    irrlevant_sim= torch.nn.functional.cosine_similarity(pred.unsqueeze(0), target.unsqueeze(0))
+
+    return {"sim1": sim1, "sim2": sim2, "similarity": (sim1 + sim2) / 2,'irrlevant_sim':irrlevant_sim}
 
 
 # Trainer

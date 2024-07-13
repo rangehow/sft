@@ -1,3 +1,4 @@
+import re
 import ast
 import json
 from transformers import (
@@ -106,6 +107,8 @@ embedding_size = model.lm_head.weight.size()[
     0
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
 
+del model
+
 collator = SpecialDataCollator(
     tokenizer,
     zero_prob=args.zero_prob,
@@ -197,7 +200,38 @@ def load_dataset():
     return train_dataset
 
 
+script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+os.makedirs(
+    os.path.join(
+        script_path, "train_dataset", f"{args.template}_{args.dataset}_offline"
+    ),
+    exist_ok=True,
+)
+
+
+def find_max_idx(directory):
+    # 定义正则表达式来匹配文件名
+    pattern = re.compile(r"synthesis_part_(\d+)\.msgpack")
+
+    max_idx = -1
+
+    # 遍历目录中的文件
+    for filename in os.listdir(directory):
+        match = pattern.match(filename)
+        if match:
+            idx = int(match.group(1))
+            if idx > max_idx:
+                max_idx = idx
+
+    return max_idx
+
+
+chunk_size = 256
+start_idx = find_max_idx(f"{script_path}/train_dataset")
+logger.debug(f"检测到已完成{start_idx+1}个文件，继续往后生成")
+
 train_dataset = load_dataset()
+
 
 dataloader = DataLoader(
     dataset=train_dataset,
@@ -210,17 +244,13 @@ dataloader = DataLoader(
 from tqdm import tqdm
 
 total_data = []
-idx = 0
-script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-os.makedirs(
-    os.path.join(
-        script_path, "train_dataset", f"{args.template}_{args.dataset}_offline"
-    ),
-    exist_ok=True,
-)
-chunk_size = 256
+idx = start_idx + 1
+cnt = 0
+
 for d in tqdm(dataloader):
 
+    if cnt < (start_idx + 1) * chunk_size:
+        continue
     # 1.只有input_ids需要还原成list，因为不同话的不齐，但是其他都是在time上拼接的
     if args.mix:
         result = {
@@ -257,7 +287,7 @@ for d in tqdm(dataloader):
         )
         idx += 1
         total_data = []
-
+    cnt += 1
 
 save_chunks(
     total_data,

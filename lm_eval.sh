@@ -41,6 +41,13 @@ models=(
     # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-1293'
     # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-863'
     # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-431'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1295'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1726'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-2158'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-2590'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3021'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3453'
+    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3879'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-3663'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2443'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2850'
@@ -50,20 +57,8 @@ models=(
     'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221 '
     'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1629'
     'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2036'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1295'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1726'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-2158'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-2590'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3021'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3453'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3879'
-)
-
-
-
-         
     
-
+)
 
 
 
@@ -80,14 +75,16 @@ done
 
 # 输出结果
 echo "$model_string"
-
-
-
 timestamp=$(date +"%Y%m%d_%H%M%S")
-# gsm8k,mmlu,humaneval,
-python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset bbh --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 
-# 定义任务列表和对应的 num_fewshot
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
+
+
+
+
+# gsm8k,mmlu,humaneval,
+
+
 tasks=(
     "truthfulqa_mc2 0"
     "bbh_cot_fewshot 3"
@@ -116,6 +113,12 @@ for model in "${models[@]}"; do
       
     done
 done
+
+
+
+
+# 定义任务列表和对应的 num_fewshot
+
 
 
 # accelerate launch --config_file sft/lm_eval.yaml -m lm_eval --model hf \
