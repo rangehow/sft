@@ -145,7 +145,7 @@ import concurrent.futures
 
 def load_msgpack_chunks(chunk_files):
 
-    print(chunk_files)
+    # print(chunk_files)
     # cpu_count = multiprocessing.cpu_count()
     # logger.debug(f"加载数据集使用CPU 核心数：{cpu_count//2}")  cpu_count // 2
     with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -211,7 +211,7 @@ os.makedirs(
 
 def find_max_idx(directory):
     # 定义正则表达式来匹配文件名
-    pattern = re.compile(r"synthesis_part_(\d+)\.msgpack")
+    pattern = re.compile(r"synthesis_part(\d+)\.msgpack")
 
     max_idx = -1
 
@@ -227,7 +227,7 @@ def find_max_idx(directory):
 
 
 chunk_size = 256
-start_idx = find_max_idx(f"{script_path}/train_dataset")
+start_idx = find_max_idx(f"{script_path}/train_dataset/{args.template}_{args.dataset}_offline")
 logger.debug(f"检测到已完成{start_idx+1}个文件，继续往后生成")
 
 train_dataset = load_dataset()

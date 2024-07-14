@@ -23,4 +23,5 @@ python special_train.py --model llama3_8b --gradient_accumulation_steps 128 --to
 # accelerate launch --config_file my.yaml naive_train.py --model llama3_8b --dataset magpie --total_bsz 512  --gradient_accumulation_steps 32 --output_dir llama_naive_bsz512_mix  --num_train_epochs 9
 
 
-CUDA_VISIBLE_DEVICES=4,5,6,7 python naive_train.py --model llama3_8b --dataset magpie --total_bsz 512  --gradient_accumulation_steps 256 --output_dir llama_naive_bsz512_mix  --num_train_epochs 3
+
+python naive_train.py --model llama3_8b --dataset magpie --total_bsz 512  --gradient_accumulation_steps 64 --output_dir llama_naive_bsz512_mix  --num_train_epochs 3
