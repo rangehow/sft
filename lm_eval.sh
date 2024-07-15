@@ -41,24 +41,41 @@ models=(
     # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-1293'
     # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-863'
     # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-431'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1295'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-1726'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-2158'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-2590'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3021'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3453'
-    'sft/llama_naive_bsz512_mix_ls01/checkpoint-3879'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-3663'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2443'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2850'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-3258'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221 '
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1629'
-    'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2036'
-    
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-1295'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-1726'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-2158'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-2590'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-3021'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-3453'
+    # 'sft/llama_naive_bsz512_mix_ls01/checkpoint-3879'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-3663'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2443'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2850'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-407'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-814'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-3258'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221 '
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1629'
+    # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2036'
+
+    sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221 
+    sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1629
+    sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2036
+    sft/llama_naive_bsz512_mix/checkpoint-431
+    sft/llama_naive_bsz512_mix/checkpoint-863
+    sft/llama_naive_bsz512_mix/checkpoint-1293
 )
+
+
+
+
+
+    
+
+    
+
+
+
 
 
 
