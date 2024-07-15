@@ -10,3 +10,4 @@ eval/result/
 train_dataset/
 wandb
 data
+results
