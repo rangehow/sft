@@ -29,7 +29,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model")
     parser.add_argument("--dataset")
-    parser.add_argument("--div_mode", default=True, type=ast.literal_eval)
+    parser.add_argument("--div_mode", default=False, type=ast.literal_eval)
     parser.add_argument("--output_dir")
     parser.add_argument("--alpha", default=0.8, type=ast.literal_eval)
     parser.add_argument("--fa2", action="store_true", help="decide to use fa2 or not")
@@ -211,19 +211,19 @@ collator = SpecialDataCollator(
 
 
 # 检查数据的调试代码----------------------------------
-dataloader = DataLoader(
-    dataset=train_dataset,
-    batch_size=8,
-    collate_fn=collator,
-    num_workers=0,
-    pin_memory=False,
-)
+# dataloader = DataLoader(
+#     dataset=train_dataset,
+#     batch_size=8,
+#     collate_fn=collator,
+#     num_workers=0,
+#     pin_memory=False,
+# )
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
 
-for d in tqdm(dataloader):
-    continue
+# for d in tqdm(dataloader):
+#     continue
 
 # ------------------------------------------------------
 logger.debug(f"训练集大小：{len(train_dataset)}")

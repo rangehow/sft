@@ -274,8 +274,6 @@ class SpecialDataCollator:
                 )
             valid_label_index_list.append(temp_index_list)
 
-  
-
         if self.offline:
 
             if self.mix:
