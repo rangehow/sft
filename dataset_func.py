@@ -25,7 +25,7 @@ def reformate(i, o):
 
     if o is not None:
         chat_dict = [
-            {"role": "user", "content": i},
+            {"role": "user", "content": i + " "}, # 不给i加空格可能会黏连？
             {"role": "assistant", "content": o},
         ]
     else:
@@ -34,48 +34,50 @@ def reformate(i, o):
     return chat_dict
 
 
-def _process(real_input, output, template, test=False, vllm=True, chat=False, mode=0):
+def _process(real_input, output, template, test=False, mode=0, pt=False):
 
     input_ids, labels = [], []
-    for i, o in zip(real_input, output):
-        if mode == 1:
-            if test:
-                if vllm:
-                    # vllm只需要自然文本输入，不需要自己tokenize，只需要封成template后的格式
+    if pt:
+
+        return {}
+    else:
+        for i, o in zip(real_input, output):
+            if mode == 1:
+                if test:
                     chat_dict = reformate(i, None)
                     input_id = template.tokenizer.apply_chat_template(
                         chat_dict, tokenize=False, add_generation_prompt=True
                     )
-
-                elif not vllm:
-                    chat_dict = reformate(i, None)
-                    input_id = template.tokenizer.apply_chat_template(
-                        chat_dict, tokenize=True, add_generation_prompt=True
+                    input_ids.append(input_id)
+                else:
+                    input_id, label = template.apply(reformate(i, o))
+                    input_ids.append(input_id)
+                    labels.append(label)
+            else:
+                if test:
+                    return {"input_ids": real_input, "answer": output}
+                else:
+                    input_id = template.tokenizer.encode(
+                        i + " ",
+                        add_special_tokens=False,
                     )
-                input_ids.append(input_id)
-            else:
-                input_id, label = template.apply(reformate(i, o))
-                input_ids.append(input_id)
-                labels.append(label)
+                    label = template.tokenizer.encode(
+                        o + template.tokenizer.eos_token,
+                        add_special_tokens=False,
+                    )
+
+                    input_ids.append(input_id + label)
+                    labels.append([-100 for _ in range(len(input_id))] + label)
+
+        if not test:
+            return {"input_ids": input_ids, "labels": labels}
         else:
-            if test:
-
-                return {"input_ids": real_input, "answer": output}
-
-            else:
-                # 不允许base模式进入训练
-                exit()
-
-    if not test:
-        return {"input_ids": input_ids, "labels": labels}
-    else:
-        # 返回dict是dataset map的要求，这倒是没办法。
-        # print(input_ids)
-        return {"input_ids": input_ids, "answer": output}
+            # 返回dict是dataset map的要求，这倒是没办法。
+            return {"input_ids": input_ids, "answer": output}
 
 
 @register2dict(name="alpaca_cleaned")
-def alpaca_cleaned(instances, template, test=False, **kwargs):
+def alpaca_cleaned(instances, template, test=False, mode=0):
 
     instruction, input, output = (
         instances["instruction"],
@@ -84,6 +86,10 @@ def alpaca_cleaned(instances, template, test=False, **kwargs):
     )
 
     real_input = [ins + inp for ins, inp in zip(instruction, input)]
+
+    return _process(
+        real_input=real_input, output=output, template=template, mode=mode, test=test
+    )
 
     input_ids, labels = [], []
 
@@ -329,26 +335,53 @@ def magpie(instances, template, test=False, **kwargs):
 
 @register2dict(name="redpajama")
 def redpajama(instances, template, test=False, **kwargs):
-    labels=[]
+    labels = []
     for text in instances["text"]:
-        text_id=template.tokenizer.encode(
-                text+template.tokenizer.eos_token,
-                add_special_tokens=False,
-            )
+        text_id = template.tokenizer.encode(
+            text + template.tokenizer.eos_token,
+            add_special_tokens=False,
+        )
         labels.append(text_id)
     return {"labels": labels}
 
 
 @register2dict(name="test")
 def test(instances, template, test=False, **kwargs):
-    labels=[]
+    labels = []
     for text in instances["text"]:
-        text_id=template.tokenizer.encode(
-                text+template.tokenizer.eos_token,
-                add_special_tokens=False,
-            )
+        text_id = template.tokenizer.encode(
+            text + template.tokenizer.eos_token,
+            add_special_tokens=False,
+        )
         labels.append(text_id)
-    return { "labels": labels}
+    return {"labels": labels}
+
+
+@register2dict(name="wiki_medical")
+def wiki_medical(instances, template, test=False, **kwargs):
+    labels = []
+    for text in instances["page_text"]:
+        text_id = template.tokenizer.encode(
+            text + template.tokenizer.eos_token,
+            add_special_tokens=False,
+        )
+        labels.append(text_id)
+    return {"labels": labels}
+
+
+@register2dict(name="medpt")
+def medpt(instances, template, test=False, **kwargs):
+    labels = []
+    for ins in instances:
+        q, a = ins["question"], ins["answer"]
+
+        text_id = template.tokenizer.encode(
+            q + a + template.tokenizer.eos_token,
+            add_special_tokens=False,
+        )
+        labels.append(text_id)
+    return {"labels": labels}
+
 
 if __name__ == "__main__":
     pass

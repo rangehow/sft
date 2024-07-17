@@ -131,5 +131,26 @@ def slimpajama(local_dir):
         ]
 
 
+@register2dict(name="medpt")
+def medpt(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("FreedomIntelligence/huatuo_encyclopedia_qa")[
+            "train"
+        ]
+
+
+@register2dict(name="medqa")
+def medqa(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("bigbio/med_qa")[
+            "train"
+        ]
+
 if __name__ == "__main__":
-    humaneval()
+    d=datasets.load_dataset("medpt")
+    import pdb
+    pdb.set_trace()

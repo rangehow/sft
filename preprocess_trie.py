@@ -60,12 +60,16 @@ class Trie:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
-    parser.add_argument("--dataset", default="alpaca_cleaned")
+    parser.add_argument(
+        "--dataset",
+    )
     parser.add_argument("--clm", default=True, type=ast.literal_eval)
     parser.add_argument("--ngram", default=4)
     parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
     parser.add_argument("--template", type=str)
-
+    parser.add_argument("--mono", default=False, type=ast.literal_eval)
+    parser.add_argument("--mono_dataset", default="wiki_medical")
+    parser.add_argument("--w_template", default=False, type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -111,7 +115,7 @@ def chunk_data(data, chunk_size):
         raise TypeError("data must be a dictionary or a list")
 
 
-def save_chunks(data, chunk_size, base_dir, name,start_idx):
+def save_chunks(data, chunk_size, base_dir, name, start_idx):
     """将大字典分块并保存到多个文件中。"""
     for i, chunk in tqdm(enumerate(chunk_data(data, chunk_size))):
         filename = f"{name}_part{i+start_idx}.msgpack"
@@ -140,7 +144,12 @@ def main():
         print("\n数据集", dname, "=")
         print(train_dataset)
         train_dataset = train_dataset.map(
-            partial(dname2func[dname], template=template, mode=1, test=False),
+            partial(
+                dname2func[dname],
+                template=template,
+                mode=1 if args.w_template else 0,
+                test=False,
+            ),
             batched=True,
             num_proc=30,
             # remove_columns=train_dataset.features.keys(),
@@ -150,7 +159,8 @@ def main():
         dataset_list.append(train_dataset)
     train_dataset = datasets.concatenate_datasets(dataset_list)
     # train_dataset = train_dataset.sort('input_ids')
-
+    import pdb
+    pdb.set_trace()
     def statistic():
 
         supervised_trie = Trie()
@@ -198,6 +208,23 @@ def main():
                 elif args.clm and flag4LossArea:
                     flag4LossArea = False
 
+        if args.mono and args.clm:
+            mono_dataset = dname2load[args.mono_dataset](
+                dataset_dir.get(args.mono_dataset, None)
+            )
+            mono_dataset = mono_dataset.map(
+                partial(
+                    dname2func[args.mono_dataset],
+                    template=template,
+                    mode=1 if args.w_template else 0,
+                    test=False,
+                ),
+                batched=True,
+                num_proc=30,
+                # remove_columns=train_dataset.features.keys(),
+                load_from_cache_file=False,
+                desc="mono_tokenize",
+            )
         # logger.debug(f"supervised_dict,{len(supervised_dict)}")
         # if args.clm:
         #     logger.debug(f"clm_dict,{len(clm_dict)}")
