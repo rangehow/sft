@@ -25,7 +25,10 @@ def reformate(i, o):
 
     if o is not None:
         chat_dict = [
-            {"role": "user", "content": i + " "}, # 不给i加空格可能会黏连？
+            {
+                "role": "user",
+                "content": i,
+            },  # 不要在这里加空格，因为他有role token隔开的
             {"role": "assistant", "content": o},
         ]
     else:
