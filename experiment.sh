@@ -25,3 +25,9 @@ python special_train.py --model llama3_8b --gradient_accumulation_steps 128 --to
 
 
 python naive_train.py --model llama3_8b --dataset magpie --total_bsz 512  --gradient_accumulation_steps 64 --output_dir llama_naive_bsz512_mix  --num_train_epochs 3
+
+
+# pretrain
+python naive_train.py --model llama3_8b --dataset wiki_medical --total_bsz 512  --gradient_accumulation_steps 64 --output_dir llama_med_pt  --num_train_epochs 1 --w_template False
+# sft
+python naive_train.py --model llama3_8b --dataset medquad --total_bsz 512  --gradient_accumulation_steps 64 --output_dir llama_med_sft  --num_train_epochs 3 --w_template False
