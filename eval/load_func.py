@@ -162,6 +162,14 @@ def medquad(local_dir):
         return datasets.load_dataset("keivalya/MedQuad-MedicalQnADataset")["train"]
 
 
+@register2dict(name="medmcqa")
+def medmcqa(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["test"]
+    else:
+        return datasets.load_dataset("openlifescienceai/medmcqa")["test"]
+
+
 if __name__ == "__main__":
     d = datasets.load_dataset("medpt")
     import pdb

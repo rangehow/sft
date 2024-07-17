@@ -406,6 +406,61 @@ def medquad(instances, template, test=False, mode=0):
     return _process(
         real_input=instances["Question"], output=instances["Answer"], template=template, test=test, mode=mode, pt=1
     )
+    
+
+@register2dict(name="medquad")
+def medquad(instances, template, test=False, mode=0):
+
+
+    return _process(
+        real_input=instances["Question"], output=instances["Answer"], template=template, test=test, mode=mode, pt=1
+    )
+
+@register2dict(name="medmcqa")
+def medmcqa(instances, template, test=False, mode=0):
+
+    PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
+    # INSTRUCTION = "The following are multiple choice questions (with answers) about "
+
+    shot_data_path = "sft/eval/mmlu_few_shot_promot.json"
+    with open(shot_data_path, "r") as file:
+        cot_prompts = json.load(file)
+
+    real_input = []
+    output = []
+
+    # 遍历input_列表中的每个元素，并匹配cot_prompts中的前缀
+    length = len(instances["question"])
+    for i in range(length):
+
+        question, answer, subject, choices = (
+            instances["question"][i],
+            instances["answer"][i],
+            instances["subject"][i],
+            instances["choices"][i],
+        )
+
+        if shot:
+            # 如果shot为真，使用cot_prompts中的值
+            real_input.append(
+                cot_prompts[subject]
+                + PROMPT.format(
+                    question=question.strip(),
+                    A=choices[0],
+                    B=choices[1],
+                    C=choices[2],
+                    D=choices[3],
+                )
+            )
+
+        else:
+            raise RuntimeError("不允许MMLU-cot采用非shot模式")
+
+        output.append(answer)
+
+    return _process(real_input, output, **kwargs)
+
+
 
 
 if __name__ == "__main__":
