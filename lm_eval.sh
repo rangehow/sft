@@ -58,12 +58,12 @@ models=(
     # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1629'
     # 'sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2036'
 
-    sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1221 
-    sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-1629
-    sft/llama3_8b_alpaca_gpt4_math_code_7m8d_0_bsz512_alpha0.8_mix0.8_lora/checkpoint-2036
-    sft/llama_naive_bsz512_mix/checkpoint-431
-    sft/llama_naive_bsz512_mix/checkpoint-863
-    sft/llama_naive_bsz512_mix/checkpoint-1293
+    sft/llama3_8b_alpaca_gpt4_math_code_7m16d_0.1_bsz256_alpha0.8_mix0.7_lora/checkpoint-407 
+    sft/llama3_8b_alpaca_gpt4_math_code_7m16d_0.1_bsz256_alpha0.8_mix0.7_lora/checkpoint-814
+    sft/llama3_8b_alpaca_gpt4_math_code_7m16d_0.1_bsz256_alpha0.8_mix0.7_lora/checkpoint-1221
+    # sft/llama_naive_bsz512_mix/checkpoint-431
+    # sft/llama_naive_bsz512_mix/checkpoint-863
+    # sft/llama_naive_bsz512_mix/checkpoint-1293
 )
 
 

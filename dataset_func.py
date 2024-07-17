@@ -42,7 +42,15 @@ def _process(real_input, output, template, test=False, mode=0, pt=False):
     input_ids, labels = [], []
     if pt:
 
-        return {}
+        for text in output:
+            labels.append(
+                template.tokenizer.encode(
+                    text + template.tokenizer.eos_token,
+                    add_special_tokens=False,
+                )
+            )
+
+        return {"input_ids": labels, "labels": labels}
     else:
         for i, o in zip(real_input, output):
             if mode == 1:
@@ -361,29 +369,43 @@ def test(instances, template, test=False, **kwargs):
 
 
 @register2dict(name="wiki_medical")
-def wiki_medical(instances, template, test=False, **kwargs):
-    labels = []
-    for text in instances["page_text"]:
-        text_id = template.tokenizer.encode(
-            text + template.tokenizer.eos_token,
-            add_special_tokens=False,
-        )
-        labels.append(text_id)
-    return {"labels": labels}
+def wiki_medical(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["page_text"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=1,
+    )
 
 
 @register2dict(name="medpt")
-def medpt(instances, template, test=False, **kwargs):
-    labels = []
-    for ins in instances:
-        q, a = ins["question"], ins["answer"]
+def medpt(instances, template, test=False, mode=0):
 
-        text_id = template.tokenizer.encode(
-            q + a + template.tokenizer.eos_token,
-            add_special_tokens=False,
-        )
-        labels.append(text_id)
-    return {"labels": labels}
+    output = []
+
+    for q, a in zip(instances["questions"], instances["answers"]):
+        q_str = q[0][0].replace("?", "？")
+        a_str = a[0].replace(".", "。").replace("?", "？")
+        if not q_str.endswith("？"):
+            q_str += "？"
+
+        output.append(q_str + " " + a_str)
+
+    return _process(
+        real_input=None, output=output, template=template, test=test, mode=mode, pt=1
+    )
+
+
+@register2dict(name="medquad")
+def medquad(instances, template, test=False, mode=0):
+
+
+    return _process(
+        real_input=instances["Question"], output=instances["Answer"], template=template, test=test, mode=mode, pt=1
+    )
 
 
 if __name__ == "__main__":

@@ -181,12 +181,13 @@ def main():
                 mix=False,
                 mix_ratio=args.mix_ratio,
                 pt=False,
+                offline=False,
             )
             dataloader = DataLoader(
                 dataset=train_dataset,
-                batch_size=4,
+                batch_size=2,
                 collate_fn=collator,
-                num_workers=16,
+                num_workers=2,
                 pin_memory=False,
             )
             (
@@ -194,7 +195,9 @@ def main():
                 clm_similarity,
                 naive_label_similarity,
                 mix_similarity,
+                var,
             ) = (
+                0,
                 0,
                 0,
                 0,
@@ -217,8 +220,8 @@ def main():
                     ),
                     dim=-1,
                 )
-                import pdb
-                pdb.set_trace()
+
+                var += torch.sum(torch.var(last_logits, dim=-1)).item()
                 real_label = torch.cat(
                     [
                         torch.cat(

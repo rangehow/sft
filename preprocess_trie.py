@@ -115,7 +115,7 @@ def chunk_data(data, chunk_size):
         raise TypeError("data must be a dictionary or a list")
 
 
-def save_chunks(data, chunk_size, base_dir, name, start_idx):
+def save_chunks(data, chunk_size, base_dir, name, start_idx = 0):
     """将大字典分块并保存到多个文件中。"""
     for i, chunk in tqdm(enumerate(chunk_data(data, chunk_size))):
         filename = f"{name}_part{i+start_idx}.msgpack"
@@ -159,8 +159,7 @@ def main():
         dataset_list.append(train_dataset)
     train_dataset = datasets.concatenate_datasets(dataset_list)
     # train_dataset = train_dataset.sort('input_ids')
-    import pdb
-    pdb.set_trace()
+
     def statistic():
 
         supervised_trie = Trie()
@@ -225,9 +224,15 @@ def main():
                 load_from_cache_file=False,
                 desc="mono_tokenize",
             )
-        # logger.debug(f"supervised_dict,{len(supervised_dict)}")
-        # if args.clm:
-        #     logger.debug(f"clm_dict,{len(clm_dict)}")
+
+            for j in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
+                input_id, label = (
+                    train_dataset[j]["input_ids"],
+                    train_dataset[j]["labels"],
+                )
+                length = len
+                for i in range(len(label) - 1):
+                    clm_trie.insert(label[: i + 1], label[i + 1])
 
         return supervised_trie, clm_trie
 

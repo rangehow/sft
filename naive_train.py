@@ -49,7 +49,7 @@ def parse_args():
     parser.add_argument("--lora", action="store_true", help="decide to use lora or not")
     parser.add_argument("--total_bsz", default=64, type=int)
     parser.add_argument("--label_smoothing_factor", default=0, type=float)
-
+    parser.add_argument("--w_template", default=True, type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -88,9 +88,14 @@ for dname in dataset_name_list:
 
     print(train_dataset)
     train_dataset = train_dataset.map(
-        partial(dname2func[dname], template=template, mode=1, test=False),
+        partial(
+            dname2func[dname],
+            template=template,
+            mode=1 if args.w_template else 0,
+            test=False,
+        ),
         batched=True,
-        num_proc=1,
+        num_proc=30,
         # remove_columns=train_dataset.features.keys(),
         load_from_cache_file=False,
         desc="tokenize",
@@ -137,9 +142,7 @@ if args.lora:
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-real_bsz = (
-    args.total_bsz  // args.gradient_accumulation_steps
-)
+real_bsz = args.total_bsz // args.gradient_accumulation_steps
 logger.debug(
     f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}={args.gradient_accumulation_steps*real_bsz}"
 )

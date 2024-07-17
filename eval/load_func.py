@@ -117,18 +117,23 @@ def slimpajama(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("DKYoon/SlimPajama-6B")[
-            "train"
-        ]
+        return datasets.load_dataset("DKYoon/SlimPajama-6B")["train"]
+
 
 @register2dict(name="test")
 def slimpajama(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("JesusCrist/SimpleData")[
-            "train"
-        ]
+        return datasets.load_dataset("JesusCrist/SimpleData")["train"]
+
+
+@register2dict(name="wiki_medical")
+def wiki_medical(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("gamino/wiki_medical_terms")["train"]
 
 
 @register2dict(name="medpt")
@@ -146,11 +151,19 @@ def medqa(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("bigbio/med_qa")[
-            "train"
-        ]
+        return datasets.load_dataset("bigbio/med_qa")["train"]
+
+
+@register2dict(name="medquad")
+def medquad(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("keivalya/MedQuad-MedicalQnADataset")["train"]
+
 
 if __name__ == "__main__":
-    d=datasets.load_dataset("medpt")
+    d = datasets.load_dataset("medpt")
     import pdb
+
     pdb.set_trace()
