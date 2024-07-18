@@ -28,7 +28,7 @@ class MyCollator:
         labels = [list(example["labels"]) for example in examples]
 
         input_ids_padded = self.tokenizer.pad(
-            {"input_ids": input_ids}, return_tensors="pt", padding=True
+            {"input_ids": input_ids}, return_tensors="pt", padding=True,max_length=32768,
         )
         max_len = input_ids_padded.input_ids.shape[-1]
         labels_padded = torch.tensor(
@@ -92,7 +92,6 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype="auto",
     device_map="balanced_low_0",
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
-    attn_implementation="sdpa",
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
