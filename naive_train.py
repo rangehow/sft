@@ -55,16 +55,14 @@ def parse_args():
 
 
 args = parse_args()
-import pynvml
-
-pynvml.nvmlInit()
-device_count = pynvml.nvmlDeviceGetCount()
 
 if is_torchrun:
-    real_bsz = args.total_bsz // args.gradient_accumulation_steps // device_count
+    real_bsz = (
+        args.total_bsz // args.gradient_accumulation_steps // torch.cuda.device_count()
+    )
     logger.debug(f"data parallel mode")
     logger.debug(
-        f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz} x 卡数{device_count} ={args.gradient_accumulation_steps*real_bsz*device_count}"
+        f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz} x 卡数{torch.cuda.device_count()} ={args.gradient_accumulation_steps*real_bsz*torch.cuda.device_count()}"
     )
 else:
     real_bsz = args.total_bsz // args.gradient_accumulation_steps
