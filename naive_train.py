@@ -196,4 +196,4 @@ trainer = Trainer(
 #     pdb.set_trace()
 trainer.train()
 trainer.save_model(args.output_dir)
-trainer.save_state(args.output_dir)
+trainer.save_state()

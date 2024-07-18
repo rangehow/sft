@@ -313,7 +313,7 @@ trainer = KLTrainer(
 
 trainer.train()
 trainer.save_model(args.output_dir)
-trainer.save_state(args.output_dir)
+trainer.save_state()
 
 saved_args_dict = vars(args)
 saved_args_dict["实际的总batch_size"] = (
