@@ -23,6 +23,7 @@ import warnings
 import os
 import multiprocessing
 from tqdm import tqdm
+from shm_utils import get_shm_info
 
 
 def parse_args():
@@ -278,7 +279,7 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
         dataloader_pin_memory=True,
-        dataloader_num_workers=0,
+        dataloader_num_workers=get_shm_info() // 30,
         num_train_epochs=args.num_train_epochs,
         per_device_train_batch_size=real_bsz,
         bf16=True,
