@@ -34,3 +34,6 @@ accelerate launch --config_file megatron.yaml  naive_train.py naive_train.py --m
 
 
 CUDA_VISIBLE_DEVICES=1 python naive_train.py --model llama3_8b --lora --dataset wiki_medical --total_bsz 512  --gradient_accumulation_steps 512 --output_dir llama_med_pt  --num_train_epochs 1 --w_template False
+
+
+CUDA_VISIBLE_DEVICES=0,1 python naive_train.py --model llama3_8b --dataset medquad --total_bsz 512  --gradient_accumulation_steps 256 --output_dir llama_med_sft  --num_train_epochs 3 --w_template False

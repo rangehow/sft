@@ -136,6 +136,22 @@ def wiki_medical(local_dir):
         return datasets.load_dataset("gamino/wiki_medical_terms")["train"]
 
 
+@register2dict(name="medical_transcription")
+def medical_transcription(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("adisingh19/medical_transcriptions")["train"]
+
+
+@register2dict(name="textbooks")
+def textbooks(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("MedRAG/textbooks")["train"]
+
+
 @register2dict(name="medpt")
 def medpt(local_dir):
     if local_dir is not None:
@@ -173,9 +189,9 @@ def medmcqa(local_dir):
 @register2dict(name="medical")
 def medical(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir)['train']
+        return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("JesusCrist/med_qa_fewshot")['train']
+        return datasets.load_dataset("JesusCrist/med_qa_fewshot")["train"]
 
 
 if __name__ == "__main__":

@@ -381,6 +381,32 @@ def wiki_medical(instances, template, test=False, mode=0):
     )
 
 
+@register2dict(name="medical_transcription")
+def medical_transcription(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["transcription"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=1,
+    )
+
+
+@register2dict(name="textbooks")
+def textbooks(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["content"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=1,
+    )
+
+
 @register2dict(name="medpt")
 def medpt(instances, template, test=False, mode=0):
 
@@ -402,19 +428,28 @@ def medpt(instances, template, test=False, mode=0):
 @register2dict(name="medquad")
 def medquad(instances, template, test=False, mode=0):
 
-
     return _process(
-        real_input=instances["Question"], output=instances["Answer"], template=template, test=test, mode=mode, pt=1
+        real_input=instances["Question"],
+        output=instances["Answer"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=1,
     )
-    
+
 
 @register2dict(name="medquad")
 def medquad(instances, template, test=False, mode=0):
 
-
     return _process(
-        real_input=instances["Question"], output=instances["Answer"], template=template, test=test, mode=mode, pt=1
+        real_input=instances["Question"],
+        output=instances["Answer"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=1,
     )
+
 
 @register2dict(name="medmcqa")
 def medmcqa(instances, template, test=False, mode=0):
@@ -461,12 +496,16 @@ def medmcqa(instances, template, test=False, mode=0):
     return _process(real_input, output, **kwargs)
 
 
-
 @register2dict(name="medical")
-def medical(instances, template, shot=False,test=False, mode=0):
+def medical(instances, template, shot=False, test=False, mode=0):
 
-    return _process(real_input=instances['question'], output=instances['answer'],template=template, test=test, mode=mode )
-
+    return _process(
+        real_input=instances["question"],
+        output=instances["answer"],
+        template=template,
+        test=test,
+        mode=mode,
+    )
 
 
 if __name__ == "__main__":

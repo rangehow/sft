@@ -210,18 +210,19 @@ def main():
                     attention_mask=d["attention_mask"].to(model.device),
                 ).logits
 
+                temp_last_logits = torch.cat(
+                    [
+                        row[start:end]
+                        for row, turn in zip(response, d["valid_label_index_list"])
+                        for start, end in turn
+                    ]
+                )
                 last_logits = torch.nn.functional.softmax(
-                    torch.cat(
-                        [
-                            row[start:end]
-                            for row, turn in zip(response, d["valid_label_index_list"])
-                            for start, end in turn
-                        ]
-                    ),
+                    temp_last_logits,
                     dim=-1,
                 )
 
-                var += torch.sum(torch.var(last_logits, dim=-1)).item()
+                var += torch.sum(torch.var(temp_last_logits, dim=-1)).item()
                 real_label = torch.cat(
                     [
                         torch.cat(
