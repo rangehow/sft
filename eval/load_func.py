@@ -173,9 +173,9 @@ def medmcqa(local_dir):
 @register2dict(name="medical")
 def medical(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir)
+        return datasets.load_dataset(local_dir)['train']
     else:
-        return datasets.load_dataset("JesusCrist/med_qa_fewshot")
+        return datasets.load_dataset("JesusCrist/med_qa_fewshot")['train']
 
 
 if __name__ == "__main__":

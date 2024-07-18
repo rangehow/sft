@@ -98,6 +98,7 @@ timestamp=$(date +"%Y%m%d_%H%M%S")
 
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset gsm8k,mmlu,humaneval --model "${model_string}" --output_path  "$(dirname "$(realpath "$0")")/${timestamp}/"
 
+CUDA_VISIBLE_DEVICES=0,1 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model models/Llama-3-8B --output_path  fuck
 
 
 
