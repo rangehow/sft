@@ -17,6 +17,7 @@ from eval.load_func import dname2load
 import torch
 import ast
 
+
 class MyCollator:
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
@@ -54,6 +55,23 @@ def parse_args():
 
 
 args = parse_args()
+import pynvml
+
+pynvml.nvmlInit()
+device_count = pynvml.nvmlDeviceGetCount()
+
+if is_torchrun:
+    real_bsz = args.total_bsz // args.gradient_accumulation_steps // device_count
+    logger.debug(f"data parallel mode")
+    logger.debug(
+        f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz} x 卡数{device_count} ={args.gradient_accumulation_steps*real_bsz*device_count}"
+    )
+else:
+    real_bsz = args.total_bsz // args.gradient_accumulation_steps
+    logger.debug(f"pipeline parallel mode")
+    logger.debug(
+        f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x bsz{real_bsz}={args.gradient_accumulation_steps*real_bsz}"
+    )
 
 
 model_dir = model_dir.get(args.model, args.model)
@@ -142,10 +160,7 @@ if args.lora:
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-real_bsz = args.total_bsz // args.gradient_accumulation_steps
-logger.debug(
-    f"实际的总batch_size=梯度累计{args.gradient_accumulation_steps}x每张卡的bsz{real_bsz}={args.gradient_accumulation_steps*real_bsz}"
-)
+
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
