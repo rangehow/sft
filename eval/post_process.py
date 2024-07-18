@@ -126,14 +126,13 @@ def medical(prediciton, reference, vllm):
         # pdb.set_trace()
         if all_responsesr.lower() == idx2char[r].lower():
             correct += 1
-        # else:
-        #     print("-" * 40)
-        #     print(f"generated answer:\n{generated_text}")
-        #     print(f"Short generated answer:{all_responses}")
-        #     print(f"ground truth answer: {idx2char[r]}")
-        #     print(f"Correct: {correct} out of {idx+1}")
-        #     print("=" * 40)
-        # idx += 1
+        else:
+            print("-" * 40)
+            print(f"generated answer:\n{generated_text}")
+            print(f"ground truth answer: {idx2char[r]}")
+            print(f"Correct: {correct} out of {idx+1}")
+            print("=" * 40)
+        idx += 1
     return correct / len(reference) * 100
 
 
