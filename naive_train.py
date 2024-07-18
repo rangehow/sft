@@ -16,7 +16,7 @@ from dataset_func import dname2func
 from eval.load_func import dname2load
 import torch
 import ast
-
+import os
 
 class MyCollator:
     def __init__(self, tokenizer) -> None:
