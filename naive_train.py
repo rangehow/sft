@@ -56,7 +56,13 @@ def parse_args():
 
 args = parse_args()
 
-if is_torchrun:
+
+def is_torchrun():
+    # torchrun 通常会设置 RANK 和 WORLD_SIZE 环境变量
+    return "RANK" in os.environ and "WORLD_SIZE" in os.environ
+
+
+if is_torchrun():
     real_bsz = (
         args.total_bsz // args.gradient_accumulation_steps // torch.cuda.device_count()
     )

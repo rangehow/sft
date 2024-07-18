@@ -82,7 +82,7 @@ def is_torchrun():
 
 
 
-if is_torchrun:
+if is_torchrun():
     real_bsz = args.total_bsz // args.gradient_accumulation_steps // torch.cuda.device_count()
     logger.debug(f"data parallel mode")
     logger.debug(
