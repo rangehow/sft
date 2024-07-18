@@ -463,7 +463,7 @@ def medmcqa(instances, template, test=False, mode=0):
 
 
 @register2dict(name="medical")
-def medical(instances, template, test=False, mode=0):
+def medical(instances, template, shot=False,test=False, mode=0):
 
     return _process(real_input=instances['question'], output=instances['answer'],template=template, test=test, mode=mode )
 
