@@ -124,7 +124,7 @@ def medical(prediciton, reference, vllm):
         all_responses = generated_text[1]
         # import pdb
         # pdb.set_trace()
-        if all_responsesr.lower() == idx2char[r].lower():
+        if all_responses.lower() == r.lower():
             correct += 1
         else:
             print("-" * 40)
