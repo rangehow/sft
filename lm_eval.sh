@@ -67,7 +67,9 @@ models=(
 )
 
 
-
+llama3_8b_alpaca_gpt4_math_code_7m16d_0.1_bsz256_alpha0.8_mix0.7_lora/checkpoint-407 
+llama3_8b_alpaca_gpt4_math_code_7m16d_0.1_bsz256_alpha0.8_mix0.7_lora/checkpoint-814
+llama3_8b_alpaca_gpt4_math_code_7m16d_0.1_bsz256_alpha0.8_mix0.7_lora/checkpoint-1221
 
 
     

@@ -109,6 +109,34 @@ def mmlu(prediciton, reference, vllm):
     return correct / len(reference) * 100
 
 
+@register2dict(name="medical")
+def medical(prediciton, reference, vllm):
+
+    correct = 0
+    idx = 0
+    for p, r in zip(prediciton, reference):
+        if vllm:
+            generated_text = p.outputs[0].text
+        else:
+            generated_text = p
+
+        # print(f"generate_text:\n {generated_text}\n")
+        all_responses = generated_text[1]
+        # import pdb
+        # pdb.set_trace()
+        if all_responsesr.lower() == idx2char[r].lower():
+            correct += 1
+        # else:
+        #     print("-" * 40)
+        #     print(f"generated answer:\n{generated_text}")
+        #     print(f"Short generated answer:{all_responses}")
+        #     print(f"ground truth answer: {idx2char[r]}")
+        #     print(f"Correct: {correct} out of {idx+1}")
+        #     print("=" * 40)
+        # idx += 1
+    return correct / len(reference) * 100
+
+
 @register2dict(name="humaneval")
 def humaneval(prediciton, reference, vllm):
     from human_eval.data import write_jsonl

@@ -462,6 +462,12 @@ def medmcqa(instances, template, test=False, mode=0):
 
 
 
+@register2dict(name="medical")
+def medical(instances, template, test=False, mode=0):
+
+    return _process(real_input=instances['question'], output=instances['answer'],template=template, test=test, mode=mode )
+
+
 
 if __name__ == "__main__":
     pass

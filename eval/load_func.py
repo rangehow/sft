@@ -170,6 +170,14 @@ def medmcqa(local_dir):
         return datasets.load_dataset("openlifescienceai/medmcqa")["test"]
 
 
+@register2dict(name="medical")
+def medical(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)
+    else:
+        return datasets.load_dataset("JesusCrist/med_qa_fewshot")
+
+
 if __name__ == "__main__":
     d = datasets.load_dataset("medpt")
     import pdb
