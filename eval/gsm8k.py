@@ -92,7 +92,6 @@ def main():
                     template=template,
                     test=True,
                     shot=args.shot,
-                    vllm=True,
                     mode=args.mode,
                 ),
                 batched=True,
