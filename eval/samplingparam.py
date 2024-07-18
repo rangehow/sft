@@ -47,13 +47,23 @@ def mmlu():
     )
 
 
+@register2dict(name="medical")
+def medical():
+    return SamplingParams(
+        max_tokens=512,
+        temperature=0,
+        stop=["\n\nQuestion:"],
+    )
+
+
 @register2dict(name="bbh")
 def bbh():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        stop=["Q","\n\n","</s>"],
+        stop=["Q", "\n\n", "</s>"],
     )
+
 
 @register2dict(name="truthfulqa")
 def truthfulqa():
