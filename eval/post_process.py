@@ -129,7 +129,7 @@ def medical(prediciton, reference, vllm):
         else:
             print("-" * 40)
             print(f"generated answer:\n{generated_text}")
-            print(f"ground truth answer: {idx2char[r]}")
+            print(f"ground truth answer: {r}")
             print(f"Correct: {correct} out of {idx+1}")
             print("=" * 40)
         idx += 1
