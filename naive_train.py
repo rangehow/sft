@@ -18,6 +18,7 @@ import torch
 import ast
 import os
 
+
 class MyCollator:
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
@@ -178,6 +179,7 @@ trainer = Trainer(
         # evaluation_strategy="epoch",
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         bf16=True,
+        logging_steps=1,
         remove_unused_columns=True,
         save_strategy="epoch",
         label_smoothing_factor=args.label_smoothing_factor,
@@ -193,3 +195,4 @@ trainer = Trainer(
 #     pdb.set_trace()
 trainer.train()
 trainer.save_model(args.output_dir)
+trainer.save_state(args.output_dir)
