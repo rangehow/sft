@@ -1,8 +1,9 @@
 import subprocess
 
+
 def get_shm_info():
     # 运行 df -h /dev/shm 命令
-    result = subprocess.run(['df', '-h', '/dev/shm'], capture_output=True, text=True)
+    result = subprocess.run(["df", "-h", "/dev/shm"], capture_output=True, text=True)
 
     # 检查命令是否成功执行
     if result.returncode != 0:
@@ -19,5 +20,5 @@ def get_shm_info():
 
     # 将结果存储在字典中
     shm_info = dict(zip(header, values))
-    
-    return float(shm_info['Size'][:-1])
+
+    return int(shm_info["Size"][:-1])
