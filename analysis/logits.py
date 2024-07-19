@@ -58,6 +58,31 @@ def load_msgpack_file(filename):
         return pickle.load(f)  # ,strict_map_key=False,strict_types =True
 
 
+def count_top_p_elements(tensor):
+    # 计算累积概率
+    sorted_tensor, _ = torch.sort(tensor, descending=True)
+    cumulative_probabilities = torch.cumsum(sorted_tensor, dim=1)
+
+    # 初始化结果字典
+    top_p_counts = {p: 0 for p in [0.1 * i for i in range(1, 10)]}
+    import pdb
+
+    pdb.set_trace()
+    # 查找满足累积概率大于等于每个p阈值的第一个索引
+    for p in top_p_counts.keys():
+        for i in range(tensor.size(0)):
+            count = torch.sum(cumulative_probabilities[i] < p).item() + 1
+            top_p_counts[p] += count
+
+    return top_p_counts
+
+
+def merge_dicts(dict1, dict2):
+    for key in dict2:
+        dict1[key] += dict2[key]
+    return dict1
+
+
 @logger.catch
 def main():
     args = parse_args()
@@ -203,6 +228,7 @@ def main():
                 0,
                 0,
             )
+            cumulative_top_p_counts = defaultdict(int)
             for d in tqdm(dataloader):
 
                 response = model(
@@ -217,11 +243,15 @@ def main():
                         for start, end in turn
                     ]
                 )
+
                 last_logits = torch.nn.functional.softmax(
                     temp_last_logits,
                     dim=-1,
                 )
-
+                temp_topp_dict = count_top_p_elements(last_logits)
+                cumulative_top_p_counts = merge_dicts(
+                    cumulative_top_p_counts, temp_topp_dict
+                )
                 var += torch.sum(torch.var(temp_last_logits, dim=-1)).item()
                 real_label = torch.cat(
                     [
@@ -264,7 +294,9 @@ def main():
                 clm_similarity,
                 naive_label_similarity,
                 mix_similarity,
+                var,
             )
+            print(cumulative_top_p_counts)
             supervised_ratio_naive_label_similarity = (
                 supervised_similarity / naive_label_similarity
             )
@@ -281,7 +313,7 @@ def main():
                 "clm_similarity-ratio-naive_label_similarity": clm_ratio_naive_label_similarity,
                 "mix_similarity-ratio-naive_label_similarity": mix_ratio_naive_label_similarity,
             }
-
+            result.update(cumulative_top_p_counts)
             print("\nConfiguration:", config_str, "\n")
             print("\nResults:", result)
             # 保存到文件中
