@@ -149,7 +149,7 @@ def parse_dataset(args, template, dataset_str):
             desc="tokenize",
         )
         dataset_list.append(train_dataset)
-    train_dataset = datasets.concatenate_datasets(dataset_list)
+    return datasets.concatenate_datasets(dataset_list)
 
 
 @logger.catch
@@ -213,7 +213,7 @@ def main():
                     flag4LossArea = False
 
         if args.mono and args.clm:
-            
+
             mono_dataset = parse_dataset(args, template, args.mono_dataset)
             for j in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
                 input_id, label = (
