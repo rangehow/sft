@@ -115,7 +115,7 @@ def chunk_data(data, chunk_size):
         raise TypeError("data must be a dictionary or a list")
 
 
-def save_chunks(data, chunk_size, base_dir, name, start_idx = 0):
+def save_chunks(data, chunk_size, base_dir, name, start_idx=0):
     """将大字典分块并保存到多个文件中。"""
     for i, chunk in tqdm(enumerate(chunk_data(data, chunk_size))):
         filename = f"{name}_part{i+start_idx}.msgpack"
@@ -124,16 +124,8 @@ def save_chunks(data, chunk_size, base_dir, name, start_idx = 0):
         print(f"Saved chunk {i} to {filename}")
 
 
-@logger.catch
-def main():
-    args = parse_args()
-
-    tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
-    # config = AutoConfig.from_pretrained(model_dir[args.model])
-    # model_type = config.model_type
-    # template = modelType2Template[model_type](tokenizer)
-    template = modelType2Template[args.template](tokenizer)
-    dataset_name_list = args.dataset.split(",")
+def parse_dataset(args, template, dataset_str):
+    dataset_name_list = dataset_str.split(",")
     dataset_list = []
     for dname in dataset_name_list:
         train_dataset = dname2load[dname](dataset_dir.get(dname, None))
@@ -158,6 +150,19 @@ def main():
         )
         dataset_list.append(train_dataset)
     train_dataset = datasets.concatenate_datasets(dataset_list)
+
+
+@logger.catch
+def main():
+    args = parse_args()
+
+    tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
+    # config = AutoConfig.from_pretrained(model_dir[args.model])
+    # model_type = config.model_type
+    # template = modelType2Template[model_type](tokenizer)
+    template = modelType2Template[args.template](tokenizer)
+
+    train_dataset = parse_dataset(args, template, args.dataset)
     # train_dataset = train_dataset.sort('input_ids')
 
     def statistic():
@@ -208,23 +213,8 @@ def main():
                     flag4LossArea = False
 
         if args.mono and args.clm:
-            mono_dataset = dname2load[args.mono_dataset](
-                dataset_dir.get(args.mono_dataset, None)
-            )
-            mono_dataset = mono_dataset.map(
-                partial(
-                    dname2func[args.mono_dataset],
-                    template=template,
-                    mode=1 if args.w_template else 0,
-                    test=False,
-                ),
-                batched=True,
-                num_proc=30,
-                # remove_columns=train_dataset.features.keys(),
-                load_from_cache_file=False,
-                desc="mono_tokenize",
-            )
-
+            
+            mono_dataset = parse_dataset(args, template, args.mono_dataset)
             for j in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
                 input_id, label = (
                     train_dataset[j]["input_ids"],
@@ -316,24 +306,44 @@ def main():
 
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
     os.makedirs(
-        os.path.join(script_path, "train_dataset", f"{args.template}_{args.dataset}"),
+        os.path.join(
+            script_path,
+            "train_dataset",
+            (
+                f"{args.template}_{args.dataset}"
+                if not args.mono
+                else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
+            ),
+        ),
         exist_ok=True,
     )
 
     save_chunks(
         synthesis_dict,
         chunk_size=1024,
-        base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}",
+        base_dir=(
+            f"{args.template}_{args.dataset}"
+            if not args.mono
+            else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
+        ),
         name="synthesis",
     )
     save_chunks(
         cnt_list,
         chunk_size=1024,
-        base_dir=f"{script_path}/train_dataset/{args.template}_{args.dataset}",
+        base_dir=(
+            f"{args.template}_{args.dataset}"
+            if not args.mono
+            else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
+        ),
         name="index",
     )
 
-    logger.debug(f"整合文件被保存到train_dataset/{args.template}_{args.dataset}")
+    logger.debug(
+        f"整合文件被保存到train_dataset/{args.template}_{args.dataset}"
+        if not args.mono
+        else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
+    )
 
 
 def load_msgpack_file(filename):

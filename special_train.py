@@ -69,6 +69,12 @@ def parse_args():
         type=ast.literal_eval,
         help="offline mode or not?",
     )
+    parser.add_argument(
+        "--mono",
+        default=False,
+        type=ast.literal_eval,
+    )
+    parser.add_argument("--mono_dataset")
     return parser.parse_args()
 
 
@@ -197,6 +203,8 @@ def load_dataset():
     base_dir = f"{script_path}/train_dataset/{args.template}_{args.dataset}"
     if args.offline:
         base_dir = base_dir + "_offline"
+    if args.mono:
+        base_dir = base_dir + f"_mono_{args.mono_dataset.replace(',','_')}"
     synthesis = load_msgpack_chunks(
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
