@@ -131,7 +131,9 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="balanced_low_0",  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
+    device_map=(
+        "auto" if not is_torchrun() else None
+    ),  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 

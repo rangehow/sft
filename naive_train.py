@@ -95,7 +95,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="auto" if is_torchrun() else None,
+    device_map="auto" if not is_torchrun() else None,
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 
