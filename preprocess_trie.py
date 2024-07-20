@@ -217,8 +217,8 @@ def main():
             mono_dataset = parse_dataset(args, template, args.mono_dataset)
             for j in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
                 input_id, label = (
-                    train_dataset[j]["input_ids"],
-                    train_dataset[j]["labels"],
+                    mono_dataset[j]["input_ids"],
+                    mono_dataset[j]["labels"],
                 )
                 length = len
                 for i in range(len(label) - 1):
