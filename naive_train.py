@@ -24,8 +24,8 @@ class MyCollator:
         self.tokenizer = tokenizer
 
     def __call__(self, examples) -> torch.Any:
-        input_ids = [list(example["input_ids"]) for example in examples]
-        labels = [list(example["labels"]) for example in examples]
+        input_ids = [list(example["input_ids"][:8192]) for example in examples]
+        labels = [list(example["labels"][:8192]) for example in examples]
 
         input_ids_padded = self.tokenizer.pad(
             {"input_ids": input_ids},
@@ -95,7 +95,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="auto",
+    device_map="auto" if is_torchrun() else None,
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 

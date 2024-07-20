@@ -38,3 +38,5 @@ CUDA_VISIBLE_DEVICES=0,1 python naive_train.py --model llama3_8b --lora --datase
 
 CUDA_VISIBLE_DEVICES=0,1 python naive_train.py --model /niutrans/NEUNLP/rjh/sft/llama_med_pt/checkpoint-263 --lora --dataset medquad --total_bsz 512  --gradient_accumulation_steps 256 --output_dir llama_med_sft  --num_train_epochs 3 --w_template False
 
+
+python3 naive_train.py --num_train_epochs 2 --w_template False --dataset magpie --total_bsz 32 --gradient_accumulation_steps 8 --learning_rate 2e-5 --lr_scheduler_type cosine --num_train_epochs 2 --warmup_steps 100 --model llama3_8b --output_dir llama_magpie
