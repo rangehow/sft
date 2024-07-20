@@ -177,6 +177,10 @@ if args.output_dir is None:
     current_month = current_time.month
     current_day = current_time.day
     args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
+    if args.lora:
+        args.output_dir = args.output_dir + "_lora"
+    if args.w_template:
+        args.output_dir = args.output_dir + "_template"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 

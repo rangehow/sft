@@ -20,7 +20,6 @@ CUDA_VISIBLE_DEVICES=2,3 torchrun naive_train.py \
     --dataset alpaca_gpt4,code,math \
     --total_bsz 512 \
     --gradient_accumulation_steps 256 \
-    --output_dir llama_naive_bsz512_mix_ls01 \
     --num_train_epochs 9\
     --lora
 
@@ -30,4 +29,3 @@ CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc-per-node 2 naive_train.py \
     --dataset alpaca_gpt4,code,math \
     --total_bsz 512 \
     --gradient_accumulation_steps 256 \
-    --output_dir qwen2_1.5B_naive_bsz512_mix_2card_acc256 \

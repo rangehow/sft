@@ -116,6 +116,8 @@ if args.output_dir is None:
         args.output_dir = args.output_dir + f"_mix{args.mix_ratio}"
     if args.lora:
         args.output_dir = args.output_dir + "_lora"
+    if args.w_template:
+        args.output_dir = args.output_dir + "_template"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 model_dir = model_dir.get(args.model, args.model)
