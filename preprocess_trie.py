@@ -304,6 +304,7 @@ def main():
     )
     assert len(synthesis_dict) == len(cnt_list)
 
+    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
     # w_template
     output_base_dir = os.path.join(
         script_path,
@@ -314,7 +315,7 @@ def main():
         output_base_dir += f"_mono_{args.mono_dataset.replace(',','_')}"
     if args.w_template:
         output_base_dir += "_template"
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
+
     os.makedirs(
         exist_ok=True,
     )
