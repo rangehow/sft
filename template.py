@@ -106,9 +106,9 @@ class GemmaTemplate(Template):
         super().__init__(
             tokenizer=tokenizer,
             user_token="<start_of_turn>user\n{content}<end_of_turn>\n<start_of_turn>model\n",
-            assistant_token="{content}<end_of_turn>\n",
+            assistant_token="{content}<eos>\n",
             start_token_id=tokenizer.bos_token_id,
-            end_token_id=tokenizer.eos_token_id,
+            # end_token_id=tokenizer.eos_token_id,
             efficient_eos=True,
         )
 
@@ -201,6 +201,13 @@ def test(tokenizer_name, template):
     d = tokenizer.apply_chat_template(message, tokenize=False)
     a, b = g.apply(message)
 
+    # if c[-1] != tokenizer.eos_token_id:
+    #     print(tokenizer_name, "这个tokenizer的template不以eos结尾")
+    #     print("原始结果:\n", c)
+    #     print("模板结果:\n", a)
+    #     print("结尾：", tokenizer.decode(c[-1]), c[-1])
+    #     print("?", tokenizer.decode(tokenizer.eos_token_id))
+    #     print("EOS：", tokenizer.eos_token, tokenizer.eos_token_id)
     # print(tokenizer)
     if a != c:
         print("=" * 30)
