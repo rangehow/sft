@@ -176,7 +176,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
+    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_bsz{args.total_bsz}"
     if args.lora:
         args.output_dir = args.output_dir + "_lora"
     if args.w_template:
