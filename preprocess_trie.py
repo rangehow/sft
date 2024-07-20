@@ -156,7 +156,7 @@ def parse_dataset(args, template, dataset_str):
 def main():
     args = parse_args()
 
-    tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model,args.model))
+    tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model, args.model))
     # config = AutoConfig.from_pretrained(model_dir[args.model])
     # model_type = config.model_type
     # template = modelType2Template[model_type](tokenizer)
@@ -304,38 +304,31 @@ def main():
     )
     assert len(synthesis_dict) == len(cnt_list)
 
+    # w_template
+    output_base_dir = os.path.join(
+        script_path,
+        "train_dataset",
+        (f"{args.template}_{args.dataset}"),
+    )
+    if args.mono:
+        output_base_dir += f"_mono_{args.mono_dataset.replace(',','_')}"
+    if args.w_template:
+        output_base_dir += "_template"
     script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
     os.makedirs(
-        os.path.join(
-            script_path,
-            "train_dataset",
-            (
-                f"{args.template}_{args.dataset}"
-                if not args.mono
-                else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
-            ),
-        ),
         exist_ok=True,
     )
 
     save_chunks(
         synthesis_dict,
         chunk_size=1024,
-        base_dir=(
-            f"{args.template}_{args.dataset}"
-            if not args.mono
-            else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
-        ),
+        base_dir=output_base_dir,
         name="synthesis",
     )
     save_chunks(
         cnt_list,
         chunk_size=1024,
-        base_dir=(
-            f"{args.template}_{args.dataset}"
-            if not args.mono
-            else f"{args.template}_{args.dataset}_mono_{args.mono_dataset.replace(',','_')}"
-        ),
+        base_dir=output_base_dir,
         name="index",
     )
 

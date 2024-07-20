@@ -25,7 +25,7 @@ CUDA_VISIBLE_DEVICES=2,3 torchrun naive_train.py \
     --lora
 
 
-CUDA_VISIBLE_DEVICES=0,1 torchrun --master-port 29873  naive_train.py \
+CUDA_VISIBLE_DEVICES=0,1 torchrun  --nproc-per-node 2 --master-port 29873  naive_train.py \
     --model llama3_8b \
     --dataset alpaca_gpt4,code,math \
     --total_bsz 512 \

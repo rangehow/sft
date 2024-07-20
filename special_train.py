@@ -209,6 +209,8 @@ def load_dataset():
         base_dir = base_dir + "_offline"
     if args.mono:
         base_dir = base_dir + f"_mono_{args.mono_dataset.replace(',','_')}"
+    if args.w_template:
+        base_dir = base_dir + f"_template"
     synthesis = load_msgpack_chunks(
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
