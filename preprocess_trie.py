@@ -156,7 +156,7 @@ def parse_dataset(args, template, dataset_str):
 def main():
     args = parse_args()
 
-    tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model,model_dir))
+    tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model,args.model))
     # config = AutoConfig.from_pretrained(model_dir[args.model])
     # model_type = config.model_type
     # template = modelType2Template[model_type](tokenizer)
