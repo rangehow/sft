@@ -42,4 +42,4 @@ CUDA_VISIBLE_DEVICES=0,1 python naive_train.py --model /niutrans/NEUNLP/rjh/sft/
 python3 naive_train.py --num_train_epochs 2 --w_template False --dataset magpie --total_bsz 32 --gradient_accumulation_steps 8 --learning_rate 2e-5 --lr_scheduler_type cosine --num_train_epochs 2 --warmup_steps 100 --model llama3_8b --output_dir llama_magpie
 
 
-python preprocess_trie.py --dataset medquad --model llama3_8b --template llama --w_template False --mono --mono_dataset medical_transcription,text_books,wiki_term
+python preprocess_trie.py --dataset medquad --model llama3_8b --template llama --w_template False --mono True --mono_dataset medical_transcription,textbooks,wiki_term

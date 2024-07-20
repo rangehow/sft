@@ -1,4 +1,5 @@
 from functools import partial
+import json
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -217,3 +218,10 @@ trainer = Trainer(
 trainer.train()
 trainer.save_model(args.output_dir)
 trainer.save_state()
+saved_args_dict = vars(args)
+saved_args_dict["实际的总batch_size"] = (
+    args.gradient_accumulation_steps * real_bsz * torch.cuda.device_count()
+)
+logger.info(f"模型被保存至{args.output_dir}")
+with open(os.path.join(args.output_dir, "args.json"), "w", encoding="utf-8") as o:
+    json.dump(saved_args_dict, o, ensure_ascii=False, indent=4)
