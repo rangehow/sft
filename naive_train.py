@@ -170,6 +170,16 @@ if args.lora:
     model.print_trainable_parameters()
 
 
+if args.output_dir is None:
+    from datetime import datetime
+
+    current_time = datetime.now()
+    current_month = current_time.month
+    current_day = current_time.day
+    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}"
+    logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
+
+
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
