@@ -24,8 +24,8 @@ class MyCollator:
         self.tokenizer = tokenizer
 
     def __call__(self, examples) -> torch.Any:
-        input_ids = [list(example["input_ids"][:8192]) for example in examples]
-        labels = [list(example["labels"][:8192]) for example in examples]
+        input_ids = [list(example["input_ids"]) for example in examples]
+        labels = [list(example["labels"]) for example in examples]
 
         input_ids_padded = self.tokenizer.pad(
             {"input_ids": input_ids},
@@ -47,6 +47,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
+    parser.add_argument("--lr_scheduler_type", default="linear")
     parser.add_argument("--output_dir", default=None)
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
@@ -54,6 +55,8 @@ def parse_args():
     parser.add_argument("--total_bsz", default=64, type=int)
     parser.add_argument("--label_smoothing_factor", default=0, type=float)
     parser.add_argument("--w_template", default=True, type=ast.literal_eval)
+    parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
+    parser.add_argument("--warmup_steps", type=int, default=0)
     return parser.parse_args()
 
 
@@ -179,6 +182,9 @@ trainer = Trainer(
         # weight_decay=args.weight_decay,
         # evaluation_strategy="epoch",
         gradient_accumulation_steps=args.gradient_accumulation_steps,
+        learning_rate=args.learning_rate,
+        lr_scheduler_type=args.lr_scheduler_type,
+        warmup_steps=args.warmup_steps,
         bf16=True,
         logging_steps=1,
         remove_unused_columns=True,
