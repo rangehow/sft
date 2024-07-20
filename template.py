@@ -59,12 +59,9 @@ class Template:
                     )
                 else:
                     user_token = self.tokenizer.encode(
-                        '"'
-                        + self.user_token.format_map(
-                            {"content": messages[i]["content"]}
-                        ),
+                        self.user_token.format_map({"content": messages[i]["content"]}),
                         add_special_tokens=False,
-                    )[1:]
+                    )
                 input_id += user_token
                 if self.efficient_eos and not first_user_flag_for_efficient_eos:
                     label += [self.tokenizer.eos_token_id] + [-100] * (
@@ -76,12 +73,11 @@ class Template:
             elif messages[i]["role"] == "assistant":
 
                 assistant_token = self.tokenizer.encode(
-                    "“"
-                    + self.assistant_token.format_map(
+                    self.assistant_token.format_map(
                         {"content": messages[i]["content"]}
                     ),
                     add_special_tokens=False,
-                )[1:]
+                )
 
                 input_id += assistant_token
                 label += assistant_token
@@ -152,6 +148,22 @@ class LlamaTemplate(Template):
 
 
 @register_template
+class Llama2Template(Template):
+    model_type = "llama2"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<s>[INST] {content} [/INST]",
+            assistant_token="{content} </s>",
+            start_token_id=None,
+            end_token_id=tokenizer.eos_token_id,
+            efficient_eos=False,
+        )
+
+
+@register_template
 class YiTemplate(Template):
     model_type = "yi"
 
@@ -162,7 +174,7 @@ class YiTemplate(Template):
             user_token="<|im_start|>user\n{content}<|im_end|>\n<|im_start|>assistant\n",
             assistant_token="{content}<|im_end|>\n",
             start_token_id=None,
-            end_token_id=None, # yi的结束词就是<|im_end|>
+            end_token_id=None,  # yi的结束词就是<|im_end|>
             efficient_eos=False,
             system_token="<|im_start|>system\n{content}<|im_end|>\n",
             default_system=None,
@@ -170,14 +182,14 @@ class YiTemplate(Template):
 
 
 def test(tokenizer_name, template):
-    access_token = "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"
+    access_token = "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"
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         token=access_token,
     )
-    
+
     g = modelType2Template[template](tokenizer)
     message = [
         {"role": "user", "content": "aaa"},
@@ -189,12 +201,18 @@ def test(tokenizer_name, template):
     d = tokenizer.apply_chat_template(message, tokenize=False)
     a, b = g.apply(message)
 
-    print(tokenizer)
-    print("原始结果:\n", c)
-    print("模板结果:\n", a)
-    print("---------")
-    print("原始结果:\n", d)
-    print("模板结果:\n", tokenizer.decode(a))
+    # print(tokenizer)
+    if a != c:
+        print("=" * 30)
+        print(tokenizer_name)
+        print("原始结果:\n", c)
+        print("模板结果:\n", a)
+        print("---------")
+        print("原始结果:\n", tokenizer.convert_ids_to_tokens(c))
+        print("模板结果:\n", tokenizer.convert_ids_to_tokens(a))
+        print("---------")
+        print("原始结果:\n", d)
+        print("模板结果:\n", tokenizer.decode(a))
 
     # print("---------")
     # print([tokenizer.convert_ids_to_tokens(cc) for cc in c])
@@ -209,12 +227,17 @@ def test(tokenizer_name, template):
 if __name__ == "__main__":
     test_list = [
         ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
-        # ("google/gemma-2-27b-it", "gemma"),
-        # ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
-        # ("01-ai/Yi-1.5-34B-Chat", "yi"),
+        ("google/gemma-2-27b-it", "gemma"),
+        ("google/gemma-7b-it", "gemma"),
+        ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
+        ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
+        ("01-ai/Yi-1.5-34B-Chat", "yi"),
         # ("Qwen/Qwen2-72B-Instruct", "qwen2"),
     ]
+    result = {}
     for instance in test_list:
-        if not test(instance[0],instance[1]):
-            print(instance[0])
-        
+        if not test(instance[0], instance[1]):
+            result[instance[0]] = "fail"
+        else:
+            result[instance[0]] = "success"
+    print(result)
