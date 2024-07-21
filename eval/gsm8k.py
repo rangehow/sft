@@ -255,7 +255,11 @@ def main():
                 encoding="utf-8",
             ) as o:
                 json.dump(record_list, o, indent=2, ensure_ascii=False)
-        logger.debug(f"model:{m}的结果已保存至{os.path.join(os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl")}")
+        output_str = os.path.join(
+            os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+        )
+        logger.debug(f"model:{m}的结果已保存至{output_str}")
+
 
 if __name__ == "__main__":
     main()
