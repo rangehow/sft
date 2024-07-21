@@ -16,7 +16,7 @@ def register2dict(name):
 def gsm8k(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "main")["test"]
-    
+
     return datasets.load_dataset("gsm8k", "main")["test"]
 
 
@@ -24,7 +24,7 @@ def gsm8k(local_dir):
 def bbh(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
-    
+
     return datasets.load_dataset("JesusCrist/bbh_cot_fewshot")["train"]
 
 
@@ -34,19 +34,20 @@ def code(local_dir):
         return datasets.load_dataset(local_dir)["train"]
     return datasets.load_dataset("m-a-p/CodeFeedback-Filtered-Instruction")["train"]
 
+
 @register2dict(name="apps")
 def apps(local_dir):
-    exit() # '***数据集，不许用'
+    exit()  # '***数据集，不许用'
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "all")["train"]
     return datasets.load_dataset("codeparrot/apps", "all")["train"]
 
+
 @register2dict(name="alpaca_gpt4")
 def alpaca_gpt4(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir)["train"]
+        return datasets.load_dataset(local_dir)
     return datasets.load_dataset("vicgalle/alpaca-gpt4")["train"]
-
 
 
 @register2dict(name="mmlu")
@@ -59,7 +60,7 @@ def mmlu(local_dir):
 @register2dict(name="humaneval")
 def humaneval(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir)['test']
+        return datasets.load_dataset(local_dir)["test"]
     # from human_eval.data import write_jsonl, read_problems
     # problems = read_problems()
 
@@ -71,25 +72,27 @@ def humaneval(local_dir):
     #     for task_id in problems
     #     for _ in range(num_samples_per_task)
     # ]
-    return datasets.load_dataset('openai/openai_humaneval')['test']
-    
+    return datasets.load_dataset("openai/openai_humaneval")["test"]
+
+
 @register2dict(name="truthfulqa")
 def truthfulqa(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir, "multiple_choice")['validation']
+        return datasets.load_dataset(local_dir, "multiple_choice")["validation"]
     else:
-        return datasets.load_dataset('truthful_qa', "multiple_choice")['validation']
+        return datasets.load_dataset("truthful_qa", "multiple_choice")["validation"]
+
 
 @register2dict(name="math")
 def math(local_dir):
     if local_dir is not None:
-        a= datasets.load_dataset(local_dir,'default')['train']
-        b=datasets.load_dataset(local_dir,'default')['test']
+        a = datasets.load_dataset(local_dir, "default")["train"]
+        b = datasets.load_dataset(local_dir, "default")["test"]
     else:
-        a=datasets.load_dataset('lighteval/MATH','default')['train'] # 7.5k
-        b=datasets.load_dataset('lighteval/MATH','default')['test']  # 5k
-    return datasets.concatenate_datasets([a,b])
+        a = datasets.load_dataset("lighteval/MATH", "all")["train"]  # 7.5k
+        b = datasets.load_dataset("lighteval/MATH", "all")["test"]  # 5k
+    return datasets.concatenate_datasets([a, b])
+
 
 if __name__ == "__main__":
     humaneval()
-
