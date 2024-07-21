@@ -22,6 +22,14 @@ from .load_func import dname2load
 from .samplingparam import dname2samplingparams
 from vllm import LLM
 from ..config import *
+from datetime import datetime
+
+# 获取当前时间
+now = datetime.now()
+
+# 格式化为时间数字串
+time_string = now.strftime("%Y%m%d%H%M%S")
+
 
 
 def parse_args():
@@ -57,7 +65,9 @@ def parse_args():
     parser.add_argument(
         "--output_path",
     )
-
+    parser.add_argument(
+        "--timestamp", # 不要用默认值，因为和lm eval的就不能放在一起了？
+    )
     return parser.parse_args()
 
 
@@ -69,11 +79,12 @@ def main():
     dataset_list = args.dataset.split(",")
 
     # os.makedirs(args.output_path,exist_ok=True)
-    script_path = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.dirname(os.path.abspath(__file__)) # gsm8k文件的所在目录
     os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
+    
+    print("script_path", script_path)
     import pdb
     pdb.set_trace()
-    print("script_path", script_path)
     for m in model_list:
         model_type = AutoConfig.from_pretrained(
             os.path.join(m, "config.json")
