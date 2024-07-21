@@ -31,7 +31,6 @@ now = datetime.now()
 time_string = now.strftime("%Y%m%d%H%M%S")
 
 
-
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
@@ -66,7 +65,7 @@ def parse_args():
         "--output_path",
     )
     parser.add_argument(
-        "--timestamp", # 不要用默认值，因为和lm eval的就不能放在一起了？
+        "--timestamp",  # 不要用默认值，因为和lm eval的就不能放在一起了？
     )
     return parser.parse_args()
 
@@ -79,13 +78,12 @@ def main():
     dataset_list = args.dataset.split(",")
 
     # os.makedirs(args.output_path,exist_ok=True)
-    script_path = os.path.dirname(os.path.abspath(__file__)) # gsm8k文件的所在目录
-    os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
-    
+    script_path = os.path.dirname(os.path.abspath(__file__))  # gsm8k文件的所在目录
+
     print("script_path", script_path)
-    import pdb
-    pdb.set_trace()
+
     for m in model_list:
+        os.makedirs(os.path.join(os.path.dirname(args.output_path), m), exist_ok=True)
         model_type = AutoConfig.from_pretrained(
             os.path.join(m, "config.json")
         ).model_type
@@ -237,20 +235,29 @@ def main():
             record_list.append(f"task:{d},model:{m},score :{score}")
         try:
             with open(
-                os.path.join(args.output_path, f"{m}.jsonl"), "w", encoding="utf-8"
+                os.path.join(
+                    os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+                ),
+                "w",
+                encoding="utf-8",
             ) as o:
                 json.dump(record_list, o, indent=2, ensure_ascii=False)
         except FileNotFoundError as e:
             print(f"Error: {e}")
             os.makedirs(
-                os.path.dirname(os.path.join(args.output_path, f"{m}.jsonl")),
-                exist_ok=True,
+                os.path.join(os.path.dirname(args.output_path), m), exist_ok=True
             )
             with open(
-                os.path.join(args.output_path, f"{m}.jsonl"), "w", encoding="utf-8"
+                os.path.join(
+                    os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+                ),
+                "w",
+                encoding="utf-8",
             ) as o:
                 json.dump(record_list, o, indent=2, ensure_ascii=False)
-
+        logger.debug(f"model:{m}的结果已保存至{os.path.join(
+                    os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+                )}")
 
 if __name__ == "__main__":
     main()
