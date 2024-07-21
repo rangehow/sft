@@ -73,7 +73,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False):
                         add_special_tokens=False,
                     )
                     label = template.tokenizer.encode(
-                        o + template.tokenizer.eos_token,
+                        " "+o + template.tokenizer.eos_token,
                         add_special_tokens=False,
                     )
 
