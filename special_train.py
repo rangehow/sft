@@ -74,6 +74,11 @@ def parse_args():
         default=False,
         type=ast.literal_eval,
     )
+    parser.add_argument(
+        "--w_template",
+        default=False,
+        type=ast.literal_eval,
+    )
     parser.add_argument("--mono_dataset")
     return parser.parse_args()
 
