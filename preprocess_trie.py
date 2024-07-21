@@ -317,6 +317,7 @@ def main():
         output_base_dir += "_template"
 
     os.makedirs(
+        output_base_dir,
         exist_ok=True,
     )
 
