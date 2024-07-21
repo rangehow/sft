@@ -69,7 +69,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False):
                     return {"input_ids": real_input, "answer": output}
                 else:
                     input_id = template.tokenizer.encode(
-                        i + " ",
+                        i + " " + o,
                         add_special_tokens=False,
                     )
                     label = template.tokenizer.encode(
@@ -78,7 +78,9 @@ def _process(real_input, output, template, test=False, mode=0, pt=False):
                     )
 
                     input_ids.append(input_id + label)
-                    labels.append([-100 for _ in range(len(input_id))] + label)
+                    labels.append(
+                        [-100 for _ in range(len(input_id) - len(labels) - 1)] + label
+                    )
 
         if not test:
             return {"input_ids": input_ids, "labels": labels}

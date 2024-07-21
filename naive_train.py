@@ -210,11 +210,13 @@ trainer = Trainer(
     tokenizer=tokenizer,
     data_collator=my_collator,
 )
-# dataloader=trainer.get_train_dataloader()
-# for d in dataloader:
-#     print(d)
-#     import pdb
-#     pdb.set_trace()
+dataloader=trainer.get_train_dataloader()
+for d in dataloader:
+    input_ids=d['input_ids']
+    labels=d['labels']
+    print(d)
+    import pdb
+    pdb.set_trace()
 trainer.train()
 trainer.save_model(args.output_dir)
 trainer.save_state()
