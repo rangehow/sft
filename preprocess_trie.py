@@ -178,7 +178,7 @@ def main():
         for j in tqdm(range(len(train_dataset)), desc="statistic stage"):
 
             input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
-
+            assert len(input_id) == len(label)
             # 如果是多轮对话,那么label将是穿插着多段连续-100的int list
             # supervised信号的key是第一段-100结束开始,以后开始递增
             # clm信号的key应该是非-100区域内独立统计
