@@ -56,6 +56,15 @@ def medical():
     )
 
 
+@register2dict(name="medmcqa")
+def medical():
+    return SamplingParams(
+        max_tokens=512,
+        temperature=0,
+        stop=["\n}"],
+    )
+
+
 @register2dict(name="bbh")
 def bbh():
     return SamplingParams(

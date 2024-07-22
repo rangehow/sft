@@ -193,6 +193,7 @@ def main():
                     model=m,
                     tensor_parallel_size=torch.cuda.device_count(),
                     gpu_memory_utilization=0.9,
+                    # enable_prefix_caching=True,
                 )
 
                 # if args.logprob:
@@ -227,7 +228,6 @@ def main():
             score = dname2post[d](
                 prediciton=response,
                 reference=[t["answer"] for t in test_dataset],
-                vllm=True,
             )
 
             logger.debug(f"task:{d},model:{m},score :{score}")

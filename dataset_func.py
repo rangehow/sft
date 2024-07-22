@@ -37,7 +37,8 @@ def reformate(i, o):
     return chat_dict
 
 
-def _process(real_input, output, template, test=False, mode=0, pt=False):
+def _process(real_input, output, template, test=False, mode=0, pt=False,**kwargs):
+    # 注意，尽管这里有kwargs，但不会有任何一个被真正使用，只是作为遗留行为的兼容参数
 
     input_ids, labels = [], []
     if pt:
@@ -454,46 +455,51 @@ def medquad(instances, template, test=False, mode=0):
 
 
 @register2dict(name="medmcqa")
-def medmcqa(instances, template, test=False, mode=0):
+def medmcqa(instances,**kwargs):
 
-    PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
+    PROMPT = """
+## Instruction 
+
+Answer question by reasoning first and then providing your answer.
+Present your reasoning and solution in the following json format. 
+Please show your final answer in the `answer` field, e.g.,`"answer": "A"`.
+
+## Example
+```json
+{{
+    "question":"Chronic urethral obstruction due to benign prismatic hyperplasia can lead to the following change in kidney parenchyma",
+    "A":"Hyperplasia",
+    "B":"Hyperophy",
+    "C":"Atrophy",
+    "D":"Dyplasia",
+    "reasoning": "Chronic urethral obstruction because of urinary calculi, prostatic hyperophy, tumors, normal pregnancy, tumors, uterine prolapse or functional disorders cause hydronephrosis which by definition is used to describe dilatation of renal pelvis and calculus associated with progressive atrophy of the kidney due to obstruction to the outflow of urine.",
+    "answer": "C"
+}}
+```
+
+## Response
+```json
+{{
+    "question":{question},
+    "A":{opa},
+    "B":{opb},
+    "C":{opc},
+    "D":{opd},
+    "reasoning": "
+"""
+    cop2options={
+        0:'A',1:'B',2:'C',3:'D'
+    }
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
 
-    shot_data_path = "sft/eval/mmlu_few_shot_promot.json"
-    with open(shot_data_path, "r") as file:
-        cot_prompts = json.load(file)
+    real_input=[]
+    output=[]
 
-    real_input = []
-    output = []
+    for question,opa,opb,opc,opd,cop in zip(instances['question'],instances['opa'],instances['opb'],instances['opc'],instances['opd'],instances['cop']):
 
-    # 遍历input_列表中的每个元素，并匹配cot_prompts中的前缀
-    length = len(instances["question"])
-    for i in range(length):
-
-        question, answer, subject, choices = (
-            instances["question"][i],
-            instances["answer"][i],
-            instances["subject"][i],
-            instances["choices"][i],
-        )
-
-        if shot:
-            # 如果shot为真，使用cot_prompts中的值
-            real_input.append(
-                cot_prompts[subject]
-                + PROMPT.format(
-                    question=question.strip(),
-                    A=choices[0],
-                    B=choices[1],
-                    C=choices[2],
-                    D=choices[3],
-                )
-            )
-
-        else:
-            raise RuntimeError("不允许MMLU-cot采用非shot模式")
-
-        output.append(answer)
+        real_input.append(PROMPT.format_map({'question':question,'opa':opa,'opb':opb,'opc':opc,'opd':opd}))
+        output.append(cop2options[cop])
+        
 
     return _process(real_input, output, **kwargs)
 

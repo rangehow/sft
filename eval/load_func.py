@@ -184,9 +184,9 @@ def medquad(local_dir):
 @register2dict()
 def medmcqa(local_dir):
     if local_dir is not None:
-        return datasets.load_dataset(local_dir)["test"]
+        return datasets.load_dataset(local_dir)["validation"]
     else:
-        return datasets.load_dataset("openlifescienceai/medmcqa")["test"]
+        return datasets.load_dataset("openlifescienceai/medmcqa")["validation"]
 
 
 @register2dict()

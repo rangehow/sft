@@ -15,7 +15,7 @@ def register2dict(name):
 
 
 @register2dict(name="gsm8k")
-def gsm8k(prediciton, reference, vllm):
+def gsm8k(prediciton, reference):
 
     def find_numbers(x: str) -> list[str]:
         """Finds all numbers in a string."""
@@ -51,10 +51,9 @@ def gsm8k(prediciton, reference, vllm):
 
     for p, r in zip(prediciton, reference):
 
-        if vllm:
-            generated_text = p.outputs[0].text
-        else:
-            generated_text = p
+ 
+        generated_text = p.outputs[0].text
+        
         all_responses = generated_text.split("\nQ:")[0]
         short_responses = maybe_remove_comma(find_number(all_responses))
 
@@ -80,16 +79,15 @@ def gsm8k(prediciton, reference, vllm):
 
 
 @register2dict(name="mmlu")
-def mmlu(prediciton, reference, vllm):
+def mmlu(prediciton, reference):
 
     idx2char = {0: "A", 1: "B", 2: "C", 3: "D"}
     correct = 0
     idx = 0
     for p, r in zip(prediciton, reference):
-        if vllm:
-            generated_text = p.outputs[0].text
-        else:
-            generated_text = p
+
+        generated_text = p.outputs[0].text
+        
 
         # print(f"generate_text:\n {generated_text}\n")
         all_responses = generated_text[1]
@@ -110,15 +108,14 @@ def mmlu(prediciton, reference, vllm):
 
 
 @register2dict(name="medical")
-def medical(prediciton, reference, vllm):
+def medical(prediciton, reference):
 
     correct = 0
     idx = 0
     for p, r in zip(prediciton, reference):
-        if vllm:
-            generated_text = p.outputs[0].text
-        else:
-            generated_text = p
+        
+        generated_text = p.outputs[0].text
+        
 
         # print(f"generate_text:\n {generated_text}\n")
         all_responses = generated_text[1]
@@ -136,8 +133,43 @@ def medical(prediciton, reference, vllm):
     return correct / len(reference) * 100
 
 
+
+
+
+@register2dict(name="medmcqa")
+def medmcqa(prediciton, reference):
+    
+    correct = 0
+    idx = 0
+    parse_fail_cnt=0
+    for p, r in zip(prediciton, reference):
+        
+        generated_text = p.outputs[0].text
+
+
+        # print(f"generate_text:\n {generated_text}\n")
+        try:
+            all_responses = eval('''{\"reasoning\": \"'''+generated_text.replace('\n','')+'''}''')
+            # import pdb
+            # pdb.set_trace()
+            if all_responses['answer'].lower() == r.lower():
+                correct += 1
+            else:
+                print("-" * 40)
+                print(f"generated answer:\n{generated_text}")
+                print(f"ground truth answer: {r}")
+                print(f"Correct: {correct} out of {idx+1}")
+                print("=" * 40)
+        except:
+            parse_fail_cnt+=1
+        idx += 1
+    print('解析失败的计数',parse_fail_cnt,parse_fail_cnt/ len(reference))
+    return correct / len(reference) * 100
+
+
+
 @register2dict(name="humaneval")
-def humaneval(prediciton, reference, vllm):
+def humaneval(prediciton, reference):
     from human_eval.data import write_jsonl
     import os
 
@@ -159,7 +191,7 @@ def humaneval(prediciton, reference, vllm):
 
 
 @register2dict(name="bbh")
-def bbh(prediciton, reference, vllm):
+def bbh(prediciton, reference):
 
     correct = 0
     for p, r in zip(prediciton, reference):
@@ -222,7 +254,7 @@ def _parse_logprobs(tokens: list, outputs, ctxlen: int) -> tuple[float, bool]:
 
 
 @register2dict(name="truthfulqa")
-def truthfulqa(prediciton, reference, vllm):
+def truthfulqa(prediciton, reference):
 
     def process_results_mc2(doc, results):
         acc, num = 0, 0  # 准确率，问题数
