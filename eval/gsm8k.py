@@ -102,7 +102,6 @@ def main():
                     dname2func[d],
                     template=template,
                     test=True,
-                    shot=args.shot,
                     mode=args.mode,
                 ),
                 batched=True,

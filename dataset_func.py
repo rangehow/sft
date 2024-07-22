@@ -80,7 +80,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
 
                     input_ids.append(input_id + label)
 
-                    labels.append([-100 for _ in range(len(input_id))] + label)
+                    labels.append([ -100 for _ in range(len(input_id))] + label)
 
         if not test:
             return {"input_ids": input_ids, "labels": labels}
@@ -124,7 +124,7 @@ dname2func["alpaca_gpt4"] = alpaca_cleaned
 
 
 @register2dict(name="gsm8k")
-def gsm8k(instances, shot=False, **kwargs):
+def gsm8k(instances, shot=True, **kwargs):
     INSTURCTION = """As an expert problem solver solve step by step the following mathematical questions."""
 
     # The default gsm8k prompt from the CoT paper
@@ -173,7 +173,7 @@ A:"""
 
 
 @register2dict(name="mmlu")
-def mmlu(instances, shot=False, **kwargs):
+def mmlu(instances, shot=True, **kwargs):
 
     PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
@@ -230,10 +230,8 @@ def bbh(instances, shot=True, **kwargs):
 
 
 @register2dict(name="humaneval")
-def humaneval(instances, shot=False, **kwargs):
+def humaneval(instances, **kwargs):
 
-    if shot:
-        logger.warning("humaneval不支持shot，自动切换成非shot模式")
 
     num_repeat = 1  # 因为是贪心算法，所以根本无所谓。
     task_id = [item for item in instances["task_id"] for _ in range(num_repeat)]
@@ -301,7 +299,7 @@ def math(
 
 
 @register2dict(name="truthfulqa")
-def truthfulqa(instances, template, shot=False, mode=0, **kwargs):
+def truthfulqa(instances, template, shot=True, mode=0, **kwargs):
 
     def tok_encode(input, tokenizer, add_special_tokens=True):
         input_ids = tokenizer.encode(input, add_special_tokens=add_special_tokens)

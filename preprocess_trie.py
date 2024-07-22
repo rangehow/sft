@@ -94,7 +94,8 @@ def find_ranges(lst, target=-100):
 
     if start is not None:
         # 这个地方结束位置一般不重要，除非最后有什么不需要预测的特殊标志。
-        ranges.append((start - 1, len(lst) - 1))
+        # 到底什么情况会进这里呢？整句话都不存在-100的时候
+        ranges.append((min(start - 1, 0), len(lst) - 1))
 
     return ranges
 
