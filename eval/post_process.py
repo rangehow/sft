@@ -51,9 +51,8 @@ def gsm8k(prediciton, reference):
 
     for p, r in zip(prediciton, reference):
 
- 
         generated_text = p.outputs[0].text
-        
+
         all_responses = generated_text.split("\nQ:")[0]
         short_responses = maybe_remove_comma(find_number(all_responses))
 
@@ -87,7 +86,6 @@ def mmlu(prediciton, reference):
     for p, r in zip(prediciton, reference):
 
         generated_text = p.outputs[0].text
-        
 
         # print(f"generate_text:\n {generated_text}\n")
         all_responses = generated_text[1]
@@ -113,9 +111,8 @@ def medical(prediciton, reference):
     correct = 0
     idx = 0
     for p, r in zip(prediciton, reference):
-        
+
         generated_text = p.outputs[0].text
-        
 
         # print(f"generate_text:\n {generated_text}\n")
         all_responses = generated_text[1]
@@ -133,26 +130,35 @@ def medical(prediciton, reference):
     return correct / len(reference) * 100
 
 
-
-
-
 @register2dict(name="medmcqa")
 def medmcqa(prediciton, reference):
-    
+
     correct = 0
     idx = 0
-    parse_fail_cnt=0
+    parse_fail_cnt = 0
     for p, r in zip(prediciton, reference):
-        
-        generated_text = p.outputs[0].text
 
+        generated_text = p.outputs[0].text
 
         # print(f"generate_text:\n {generated_text}\n")
         try:
-            all_responses = eval('''{\"reasoning\": \"'''+generated_text.replace('\n','')+'''}''')
+            try:
+                all_responses = eval(generated_text+'}')
+            except:
+                try:
+                    all_responses = eval(
+                        '''{\"reasoning\": \"'''
+                        + generated_text.replace("\n", "")
+                        + """}"""
+                    )
+                except:
+                    all_responses = eval(
+                        """{""" + generated_text.replace("\n", "") + """}"""
+                    )
+
             # import pdb
             # pdb.set_trace()
-            if all_responses['answer'].lower() == r.lower():
+            if all_responses["answer"].lower() == r.lower():
                 correct += 1
             else:
                 print("-" * 40)
@@ -161,11 +167,11 @@ def medmcqa(prediciton, reference):
                 print(f"Correct: {correct} out of {idx+1}")
                 print("=" * 40)
         except:
-            parse_fail_cnt+=1
-        idx += 1
-    print('解析失败的计数',parse_fail_cnt,parse_fail_cnt/ len(reference))
-    return correct / len(reference) * 100
 
+            parse_fail_cnt += 1
+        idx += 1
+    print("解析失败的计数", parse_fail_cnt, parse_fail_cnt / len(reference))
+    return correct / len(reference) * 100
 
 
 @register2dict(name="humaneval")

@@ -43,3 +43,9 @@ python3 naive_train.py --num_train_epochs 2 --w_template False --dataset magpie 
 
 
 python preprocess_trie.py --dataset medquad --model llama3_8b --template llama --w_template False --mono True --mono_dataset medical_transcription,textbooks,wiki_medical
+
+
+ torchrun --nproc-per-node 2   naive_train.py     --model llama3_8b     --dataset alpaca_gpt4,code,math     --total_bsz 512     --gradient_accumulation_steps 256   --num_train_epochs 3    --w_template False  --lora
+
+
+ 

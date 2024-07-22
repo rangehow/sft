@@ -213,10 +213,10 @@ def main():
                 #         response.append(res)
 
                 # else:
-                max_len = 0
-                for p in all_prompt:
-                    max_len = max(max_len, len(p))
-                print(max_len)
+                # max_len = 0
+                # for p in all_prompt:
+                #     max_len = max(max_len, len(p))
+                # print(max_len)
                 response = model.generate(all_prompt, samplingParams)
 
             logger.debug(f"response的长度:{len(response)}")

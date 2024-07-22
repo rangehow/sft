@@ -62,6 +62,7 @@ def medical():
         max_tokens=512,
         temperature=0,
         stop=["\n}"],
+        frequency_penalty=0.2,
     )
 
 

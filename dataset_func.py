@@ -37,7 +37,7 @@ def reformate(i, o):
     return chat_dict
 
 
-def _process(real_input, output, template, test=False, mode=0, pt=False,**kwargs):
+def _process(real_input, output, template, test=False, mode=0, pt=False, **kwargs):
     # 注意，尽管这里有kwargs，但不会有任何一个被真正使用，只是作为遗留行为的兼容参数
 
     input_ids, labels = [], []
@@ -74,15 +74,13 @@ def _process(real_input, output, template, test=False, mode=0, pt=False,**kwargs
                         add_special_tokens=False,
                     )
                     label = template.tokenizer.encode(
-                        " "+o + template.tokenizer.eos_token,
+                        " " + o + template.tokenizer.eos_token,
                         add_special_tokens=False,
                     )
 
                     input_ids.append(input_id + label)
-                    
-                    labels.append(
-                        [0 for _ in range(len(input_id))] + label
-                    )
+
+                    labels.append([-100 for _ in range(len(input_id))] + label)
 
         if not test:
             return {"input_ids": input_ids, "labels": labels}
@@ -100,7 +98,7 @@ def alpaca_cleaned(instances, template, test=False, mode=0):
         instances["output"],
     )
 
-    real_input = [ins +' '+inp for ins, inp in zip(instruction, input)]
+    real_input = [ins + " " + inp for ins, inp in zip(instruction, input)]
 
     return _process(
         real_input=real_input, output=output, template=template, mode=mode, test=test
@@ -456,51 +454,63 @@ def medquad(instances, template, test=False, mode=0):
 
 
 @register2dict(name="medmcqa")
-def medmcqa(instances,**kwargs):
+def medmcqa(instances, **kwargs):
 
     PROMPT = """
 ## Instruction 
-
 Answer question by reasoning first and then providing your answer.
 Present your reasoning and solution in the following json format. 
-Please show your final answer in the `answer` field, e.g.,`"answer": "A"`.
+Please show your final answer in the `answer` field, e.g.,`"answer": "C"`.
 
-## Example
-```json
+# Example
+Question: Chronic urethral obstruction due to benign prismatic hyperplasia can lead to the following change in kidney parenchyma
+A: Hyperplasia
+B: Hyperophy
+C: Atrophy
+D: Dyplasia
 {{
-    "question":"Chronic urethral obstruction due to benign prismatic hyperplasia can lead to the following change in kidney parenchyma",
-    "A":"Hyperplasia",
-    "B":"Hyperophy",
-    "C":"Atrophy",
-    "D":"Dyplasia",
     "reasoning": "Chronic urethral obstruction because of urinary calculi, prostatic hyperophy, tumors, normal pregnancy, tumors, uterine prolapse or functional disorders cause hydronephrosis which by definition is used to describe dilatation of renal pelvis and calculus associated with progressive atrophy of the kidney due to obstruction to the outflow of urine.",
     "answer": "C"
 }}
-```
 
-## Response
-```json
+Question: Hyper viscosity is seen in
+A: Cryoglobulinemia
+B: Multiple myeloma
+C: MGUS
+D: Lymphoma
 {{
-    "question":{question},
-    "A":{opa},
-    "B":{opb},
-    "C":{opc},
-    "D":{opd},
-    "reasoning": "
+    "reasoning": "The term cryoglobulinemia refers to the presence in the serum of proteins that precipitate at temperatures below 37 degrees C and redissolve on rewarming. ... The elective treatment for hyperviscosity syndrome, whether associated with monoclonal, mixed, or polyclonalcryoglobulinemia, is plasma exchange.",
+    "answer": "A"
+}}
+
+# Real question
+Question: {question}
+A: {opa}
+B: {opb}
+C: {opc}
+D: {opd}
 """
-    cop2options={
-        0:'A',1:'B',2:'C',3:'D'
-    }
+    cop2options = {0: "A", 1: "B", 2: "C", 3: "D"}
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
 
-    real_input=[]
-    output=[]
+    real_input = []
+    output = []
 
-    for question,opa,opb,opc,opd,cop in zip(instances['question'],instances['opa'],instances['opb'],instances['opc'],instances['opd'],instances['cop']):
+    for question, opa, opb, opc, opd, cop in zip(
+        instances["question"],
+        instances["opa"],
+        instances["opb"],
+        instances["opc"],
+        instances["opd"],
+        instances["cop"],
+    ):
 
-        real_input.append(PROMPT.format_map({'question':question,'opa':opa,'opb':opb,'opc':opc,'opd':opd}))
+        real_input.append(
+            PROMPT.format_map(
+                {"question": question, "opa": opa, "opb": opb, "opc": opc, "opd": opd}
+            )
+        )
         output.append(cop2options[cop])
-        
 
     return _process(real_input, output, **kwargs)
 

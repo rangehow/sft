@@ -50,6 +50,7 @@ def parse_args():
         "--mix_ratio", default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
     )
     parser.add_argument("--template", type=str)
+    parser.add_argument("--w_template", default=False, type=ast.literal_eval)
     return parser.parse_args()
 
 
