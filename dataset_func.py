@@ -434,7 +434,7 @@ def medquad(instances, template, test=False, mode=0):
         template=template,
         test=test,
         mode=mode,
-        pt=1,
+        pt=0,
     )
 
 
