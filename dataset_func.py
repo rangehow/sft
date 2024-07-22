@@ -70,7 +70,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False,**kwargs
                     return {"input_ids": real_input, "answer": output}
                 else:
                     input_id = template.tokenizer.encode(
-                        i + " " + o,
+                        i,
                         add_special_tokens=False,
                     )
                     label = template.tokenizer.encode(
@@ -79,8 +79,9 @@ def _process(real_input, output, template, test=False, mode=0, pt=False,**kwargs
                     )
 
                     input_ids.append(input_id + label)
+                    
                     labels.append(
-                        [-100 for _ in range(len(input_id) - len(labels) - 1)] + label
+                        [0 for _ in range(len(input_id))] + label
                     )
 
         if not test:
@@ -99,7 +100,7 @@ def alpaca_cleaned(instances, template, test=False, mode=0):
         instances["output"],
     )
 
-    real_input = [ins + inp for ins, inp in zip(instruction, input)]
+    real_input = [ins +' '+inp for ins, inp in zip(instruction, input)]
 
     return _process(
         real_input=real_input, output=output, template=template, mode=mode, test=test
