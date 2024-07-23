@@ -131,6 +131,16 @@ for dname in dataset_name_list:
     )
     dataset_list.append(train_dataset)
 train_dataset = datasets.concatenate_datasets(dataset_list)
+
+input_ids = train_dataset[0]["input_ids"]
+labels = train_dataset[0]["labels"]
+mask = labels != -100
+filtered_tensor = labels[mask]
+print(tokenizer.decode(input_ids))
+print(tokenizer.convert_ids_to_tokens(input_ids))
+print(tokenizer.convert_ids_to_tokens(filtered_tensor))
+
+
 # import pdb
 # pdb.set_trace()
 # print(max(len(train_dataset['input_ids'])))
