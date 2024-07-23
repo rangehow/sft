@@ -182,6 +182,10 @@ if args.output_dir is None:
         args.output_dir = args.output_dir + "_lora"
     if args.w_template:
         args.output_dir = args.output_dir + "_template"
+    if args.label_smoothing_factor > 0:
+        args.output_dir = args.output_dir + f"_ls{args.label_smoothing_factor}".replace(
+            ".", ""
+        )
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 
@@ -213,7 +217,7 @@ trainer = Trainer(
 # dataloader=trainer.get_train_dataloader()
 # for d in dataloader:
 #     input_ids=d['input_ids']
-    
+
 #     labels=d['labels']
 #     mask = labels != -100
 #     filtered_tensor = labels[mask]

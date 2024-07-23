@@ -49,8 +49,8 @@ def parse_args():
     parser.add_argument(
         "--mix_ratio", default=0.8, type=ast.literal_eval, help="sft信号的融合比例"
     )
+    parser.add_argument("--w_template", default=True, type=ast.literal_eval)
     parser.add_argument("--template", type=str)
-    parser.add_argument("--w_template", default=False, type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -66,9 +66,9 @@ def count_top_p_elements(tensor):
 
     # 初始化结果字典
     top_p_counts = {p: 0 for p in [0.1 * i for i in range(1, 10)]}
-    import pdb
+    # import pdb
 
-    pdb.set_trace()
+    # pdb.set_trace()
     # 查找满足累积概率大于等于每个p阈值的第一个索引
     for p in top_p_counts.keys():
         for i in range(tensor.size(0)):
@@ -159,15 +159,20 @@ def main():
                 else:
                     raise TypeError("data must be a dictionary or a list")
 
+            base_dir = (
+                f"{data_folder_path}/train_dataset/{args.template}_{args.dataset}"
+            )
+            if args.w_template:
+                base_dir += "_template"
             synthesis = load_msgpack_chunks(
                 find_msgpack_chunk_files(
-                    f"{data_folder_path}/train_dataset/{args.template}_{args.dataset}",
+                    base_dir,
                     name="synthesis",
                 )
             )
             index = load_msgpack_chunks(
                 find_msgpack_chunk_files(
-                    f"{data_folder_path}/train_dataset/{args.template}_{args.dataset}",
+                    base_dir,
                     name="index",
                 )
             )
@@ -192,7 +197,7 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 m,
                 attn_implementation="flash_attention_2",
-                torch_dtype="auto",
+                torch_dtype="bfloat16",
                 device_map="auto",
             )
             tokenizer = AutoTokenizer.from_pretrained(m, padding_side="left")
@@ -211,10 +216,10 @@ def main():
             )
             dataloader = DataLoader(
                 dataset=train_dataset,
-                batch_size=2,
+                batch_size=1,
                 collate_fn=collator,
-                num_workers=2,
-                pin_memory=False,
+                num_workers=16,
+                pin_memory=True,
             )
             (
                 supervised_similarity,
@@ -229,12 +234,14 @@ def main():
                 0,
                 0,
             )
+            from collections import defaultdict
+
             cumulative_top_p_counts = defaultdict(int)
             for d in tqdm(dataloader):
 
                 response = model(
-                    input_ids=d["input_ids"].to(model.device),
-                    attention_mask=d["attention_mask"].to(model.device),
+                    input_ids=d["input_ids"],
+                    attention_mask=d["attention_mask"],
                 ).logits
 
                 temp_last_logits = torch.cat(
@@ -268,8 +275,12 @@ def main():
                         for start, end in turn
                     ]
                 )
-                label_tensor = F.one_hot(real_label, model.lm_head.weight.size()[0])
+                label_tensor = F.one_hot(real_label, model.lm_head.weight.size()[0]).to(
+                    last_logits.device
+                )
+                # import pdb
 
+                # pdb.set_trace()
                 all_prob_supervised = d["all_prob_supervised"].to(last_logits.device)
                 all_prob_clm = d["all_prob_clm"].to(last_logits.device)
                 all_prob_mix = (
