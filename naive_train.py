@@ -96,7 +96,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="auto" if not is_torchrun() else None,
+    device_map="balanced_low_0" if not is_torchrun() else None,
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 
@@ -178,7 +178,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_bsz{args.total_bsz}"
+    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_bsz{args.total_bsz}_{args.lr_scheduler_type}"
     if args.lora:
         args.output_dir = args.output_dir + "_lora"
     if args.w_template:
@@ -187,6 +187,9 @@ if args.output_dir is None:
         args.output_dir = args.output_dir + f"_ls{args.label_smoothing_factor}".replace(
             ".", ""
         )
+    if args.warmup_steps > 0:
+        args.output_dir = args.output_dir + f"_warm{args.warmup_steps}"
+
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 
