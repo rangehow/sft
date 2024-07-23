@@ -41,4 +41,7 @@ CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node 2 special_train.py --model ll
 
 
 
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 special_train.py --model llama3_8b --lora --gradient_accumulation_steps 256 --total_bsz 512 --zero_prob 0 --div_mode False --weighted False --dataset medquad --mono True --mono_dataset medical_transcription,textbooks,wiki_medical --mix True --mix_ratio 0.8 --template llama --w_template False
+
+
+
+

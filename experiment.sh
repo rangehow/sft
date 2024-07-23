@@ -48,4 +48,5 @@ python preprocess_trie.py --dataset medquad --model llama3_8b --template llama -
  torchrun --nproc-per-node 2   naive_train.py     --model llama3_8b     --dataset alpaca_gpt4,code,math     --total_bsz 512     --gradient_accumulation_steps 256   --num_train_epochs 3    --w_template False  --lora
 
 
- 
+ python naive_train.py --model mistral_7b --lora --gradient_accumulation_steps 128 --total_bsz 128  --dataset textbooks,wiki_medical,medical_transcription  -w_template False --num_train_epochs 1 --learning_rate 6e-4 --lr_scheduler_type cosine
+
