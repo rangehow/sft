@@ -134,10 +134,11 @@ train_dataset = datasets.concatenate_datasets(dataset_list)
 
 input_ids = train_dataset[0]["input_ids"]
 labels = train_dataset[0]["labels"]
-import pdb
-pdb.set_trace()
-mask = labels != -100
-filtered_tensor = labels[mask]
+
+if -100 in labels:
+    filtered_tensor = labels[labels.index(-100) + labels.count(-100) :]
+else:
+    filtered_tensor = labels
 logger.debug("input_ids")
 print(tokenizer.decode(input_ids))
 print(tokenizer.convert_ids_to_tokens(input_ids))
