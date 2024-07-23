@@ -181,6 +181,22 @@ class YiTemplate(Template):
         )
 
 
+@register_template
+class MistralTemplate(Template):
+    model_type = "mistral"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="[INST] {content}[/INST]",
+            assistant_token=" {content}</s>",
+            start_token_id=tokenizer.bos_token_id,
+            end_token_id=None,
+            efficient_eos=True,
+        )
+
+
 def test(tokenizer_name, template):
     access_token = "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"
     from transformers import AutoTokenizer
@@ -233,12 +249,15 @@ def test(tokenizer_name, template):
 
 if __name__ == "__main__":
     test_list = [
-        ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
-        ("google/gemma-2-27b-it", "gemma"),
-        ("google/gemma-7b-it", "gemma"),
-        ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
-        ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
-        ("01-ai/Yi-1.5-34B-Chat", "yi"),
+        ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
+        ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
+        
+        # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
+        # ("google/gemma-2-27b-it", "gemma"),
+        # ("google/gemma-7b-it", "gemma"),
+        # ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
+        # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
+        # ("01-ai/Yi-1.5-34B-Chat", "yi"),
         # ("Qwen/Qwen2-72B-Instruct", "qwen2"),
     ]
     result = {}
