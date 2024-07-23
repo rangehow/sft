@@ -134,6 +134,8 @@ train_dataset = datasets.concatenate_datasets(dataset_list)
 
 input_ids = train_dataset[0]["input_ids"]
 labels = train_dataset[0]["labels"]
+import pdb
+pdb.set_trace()
 mask = labels != -100
 filtered_tensor = labels[mask]
 logger.debug("input_ids")
