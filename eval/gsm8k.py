@@ -84,9 +84,8 @@ def main():
 
     for m in model_list:
         os.makedirs(os.path.join(os.path.dirname(args.output_path), m), exist_ok=True)
-        model_type = AutoConfig.from_pretrained(
-            os.path.join(m, "config.json")
-        ).model_type
+        model_type = AutoConfig.from_pretrained(m).model_type
+
         tokenizer = AutoTokenizer.from_pretrained(m)
         tokenizer.padding_side = "left"
         template = modelType2Template[model_type](tokenizer)
