@@ -13,9 +13,12 @@ from loguru import logger
 dname2func = {}
 
 
-def register2dict(name):
+def register2dict():
     def decorator(func):
-        dname2func[name] = func
+        if func.__name__ not in dname2func:
+            dname2func[func.__name__] = func
+        else:
+            exit()
         return func
 
     return decorator
@@ -89,7 +92,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
             return {"input_ids": input_ids, "answer": output}
 
 
-@register2dict(name="alpaca_cleaned")
+@register2dict()
 def alpaca_cleaned(instances, template, test=False, mode=0):
 
     instruction, input, output = (
@@ -123,7 +126,7 @@ def alpaca_cleaned(instances, template, test=False, mode=0):
 dname2func["alpaca_gpt4"] = alpaca_cleaned
 
 
-@register2dict(name="gsm8k")
+@register2dict()
 def gsm8k(instances, shot=True, **kwargs):
     INSTURCTION = """As an expert problem solver solve step by step the following mathematical questions."""
 
@@ -172,7 +175,7 @@ A:"""
     return _process(real_input, output, **kwargs)
 
 
-@register2dict(name="mmlu")
+@register2dict()
 def mmlu(instances, shot=True, **kwargs):
 
     PROMPT = """Question: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\nAnswer:"""
@@ -217,7 +220,7 @@ def mmlu(instances, shot=True, **kwargs):
     return _process(real_input, output, **kwargs)
 
 
-@register2dict(name="bbh")
+@register2dict()
 def bbh(instances, shot=True, **kwargs):
 
     if not shot:
@@ -229,7 +232,7 @@ def bbh(instances, shot=True, **kwargs):
     return _process(real_input, target, **kwargs)
 
 
-@register2dict(name="humaneval")
+@register2dict()
 def humaneval(instances, **kwargs):
 
 
@@ -240,7 +243,7 @@ def humaneval(instances, **kwargs):
     return _process(real_input, task_id, **kwargs)
 
 
-@register2dict(name="apps")
+@register2dict()
 def apps(
     instances,
     template,
@@ -262,7 +265,7 @@ def apps(
     return _process(input_ids, labels, template=template, **kwargs)
 
 
-@register2dict(name="code")
+@register2dict()
 def code(
     instances,
     template,
@@ -283,7 +286,7 @@ def code(
     return _process(input_ids, labels, template=template, **kwargs)
 
 
-@register2dict(name="math")
+@register2dict()
 def math(
     instances,
     template,
@@ -298,7 +301,7 @@ def math(
     return _process(real_input, label, template=template, **kwargs)
 
 
-@register2dict(name="truthfulqa")
+@register2dict()
 def truthfulqa(instances, template, shot=True, mode=0, **kwargs):
 
     def tok_encode(input, tokenizer, add_special_tokens=True):
@@ -326,7 +329,7 @@ def truthfulqa(instances, template, shot=True, mode=0, **kwargs):
     return {"input_ids": real_input, "answer": output}
 
 
-@register2dict(name="magpie")
+@register2dict()
 def magpie(instances, template, test=False, **kwargs):
     conversations = instances["conversations"]
     input_ids = []
@@ -344,7 +347,7 @@ def magpie(instances, template, test=False, **kwargs):
         return {"input_ids": input_ids}
 
 
-@register2dict(name="redpajama")
+@register2dict()
 def redpajama(instances, template, test=False, **kwargs):
     labels = []
     for text in instances["text"]:
@@ -356,7 +359,7 @@ def redpajama(instances, template, test=False, **kwargs):
     return {"labels": labels}
 
 
-@register2dict(name="test")
+@register2dict()
 def test(instances, template, test=False, **kwargs):
     labels = []
     for text in instances["text"]:
@@ -368,7 +371,7 @@ def test(instances, template, test=False, **kwargs):
     return {"labels": labels}
 
 
-@register2dict(name="wiki_medical")
+@register2dict()
 def wiki_medical(instances, template, test=False, mode=0):
 
     return _process(
@@ -381,7 +384,7 @@ def wiki_medical(instances, template, test=False, mode=0):
     )
 
 
-@register2dict(name="medical_transcription")
+@register2dict()
 def medical_transcription(instances, template, test=False, mode=0):
 
     return _process(
@@ -394,7 +397,7 @@ def medical_transcription(instances, template, test=False, mode=0):
     )
 
 
-@register2dict(name="textbooks")
+@register2dict()
 def textbooks(instances, template, test=False, mode=0):
 
     return _process(
@@ -407,7 +410,7 @@ def textbooks(instances, template, test=False, mode=0):
     )
 
 
-@register2dict(name="medpt")
+@register2dict()
 def medpt(instances, template, test=False, mode=0):
 
     output = []
@@ -425,7 +428,7 @@ def medpt(instances, template, test=False, mode=0):
     )
 
 
-@register2dict(name="medquad")
+@register2dict()
 def medquad(instances, template, test=False, mode=0):
 
     return _process(
@@ -438,20 +441,8 @@ def medquad(instances, template, test=False, mode=0):
     )
 
 
-@register2dict(name="medquad")
-def medquad(instances, template, test=False, mode=0):
 
-    return _process(
-        real_input=instances["Question"],
-        output=instances["Answer"],
-        template=template,
-        test=test,
-        mode=mode,
-        pt=1,
-    )
-
-
-@register2dict(name="medmcqa")
+@register2dict()
 def medmcqa(instances, **kwargs):
 
     PROMPT = """
@@ -513,7 +504,7 @@ D: {opd}
     return _process(real_input, output, **kwargs)
 
 
-@register2dict(name="medical")
+@register2dict()
 def medical(instances, template, shot=False, test=False, mode=0):
 
     return _process(
