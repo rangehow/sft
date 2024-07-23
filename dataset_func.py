@@ -380,7 +380,7 @@ def wiki_medical(instances, template, test=False, mode=0):
         template=template,
         test=test,
         mode=mode,
-        pt=1,
+        pt=True,
     )
 
 
@@ -393,7 +393,7 @@ def medical_transcription(instances, template, test=False, mode=0):
         template=template,
         test=test,
         mode=mode,
-        pt=1,
+        pt=True,
     )
 
 
@@ -406,7 +406,7 @@ def textbooks(instances, template, test=False, mode=0):
         template=template,
         test=test,
         mode=mode,
-        pt=1,
+        pt=True,
     )
 
 
@@ -424,7 +424,7 @@ def medpt(instances, template, test=False, mode=0):
         output.append(q_str + " " + a_str)
 
     return _process(
-        real_input=None, output=output, template=template, test=test, mode=mode, pt=1
+        real_input=None, output=output, template=template, test=test, mode=mode, pt=True
     )
 
 
@@ -437,7 +437,7 @@ def medquad(instances, template, test=False, mode=0):
         template=template,
         test=test,
         mode=mode,
-        pt=0,
+        pt=False,
     )
 
 
