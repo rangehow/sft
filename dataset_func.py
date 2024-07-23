@@ -83,7 +83,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
 
                     input_ids.append(input_id + label)
 
-                    labels.append([ -100 for _ in range(len(input_id))] + label)
+                    labels.append([-100 for _ in range(len(input_id))] + label)
 
         if not test:
             return {"input_ids": input_ids, "labels": labels}
@@ -234,7 +234,6 @@ def bbh(instances, shot=True, **kwargs):
 
 @register2dict()
 def humaneval(instances, **kwargs):
-
 
     num_repeat = 1  # 因为是贪心算法，所以根本无所谓。
     task_id = [item for item in instances["task_id"] for _ in range(num_repeat)]
@@ -389,7 +388,7 @@ def medical_transcription(instances, template, test=False, mode=0):
 
     return _process(
         real_input=None,
-        output=instances["transcription"],
+        output=instances["text"],
         template=template,
         test=test,
         mode=mode,
@@ -439,7 +438,6 @@ def medquad(instances, template, test=False, mode=0):
         mode=mode,
         pt=False,
     )
-
 
 
 @register2dict()

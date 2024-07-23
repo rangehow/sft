@@ -144,7 +144,7 @@ def medical_transcription(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("adisingh19/medical_transcriptions")["train"]
+        return datasets.load_dataset("rungalileo/medical_transcription_40")["train"]
 
 
 @register2dict()

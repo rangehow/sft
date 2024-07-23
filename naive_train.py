@@ -101,9 +101,10 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
-config = AutoConfig.from_pretrained(model_dir)
-model_type = config.model_type
+# config = AutoConfig.from_pretrained(model_dir)
+model_type = model.config.model_type
 template = modelType2Template[model_type](tokenizer)
+
 my_collator = MyCollator(tokenizer)
 # 读取数据集
 dataset_name_list = args.dataset.split(",")
