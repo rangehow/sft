@@ -136,8 +136,10 @@ input_ids = train_dataset[0]["input_ids"]
 labels = train_dataset[0]["labels"]
 mask = labels != -100
 filtered_tensor = labels[mask]
+logger.debug("input_ids")
 print(tokenizer.decode(input_ids))
 print(tokenizer.convert_ids_to_tokens(input_ids))
+logger.debug("labels")
 print(tokenizer.convert_ids_to_tokens(filtered_tensor))
 
 
