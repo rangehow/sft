@@ -50,7 +50,6 @@ def gsm8k(prediciton, reference):
     correct, correct1 = 0, 0
 
     for p, r in zip(prediciton, reference):
-
         generated_text = p.outputs[0].text
 
         all_responses = generated_text.split("\nQ:")[0]

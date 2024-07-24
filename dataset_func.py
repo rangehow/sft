@@ -47,11 +47,18 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
     if pt:
 
         for text in output:
+            if template.tokenizer.add_bos_token:
+                temp_label=template.tokenizer.encode(
+                        template.tokenizer.bos_token+text + template.tokenizer.eos_token,
+                        add_special_tokens=False,
+                    )
+            else:
+                temp_label=template.tokenizer.encode(
+                        text + template.tokenizer.eos_token,
+                        add_special_tokens=False,
+                    )
             labels.append(
-                template.tokenizer.encode(
-                    text + template.tokenizer.eos_token,
-                    add_special_tokens=False,
-                )
+                temp_label
             )
 
         return {"input_ids": labels, "labels": labels}
