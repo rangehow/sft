@@ -58,6 +58,8 @@ def parse_args():
     parser.add_argument("--w_template", default=True, type=ast.literal_eval)
     parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
     parser.add_argument("--warmup_steps", type=int, default=0)
+    parser.add_argument("--warmup_ratio ", type=float, default=0)
+    
     return parser.parse_args()
 
 
@@ -193,7 +195,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_bsz{args.total_bsz}_{args.lr_scheduler_type}_lr{args.learning_rate}"
+    args.output_dir = f"naive_{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_bsz{args.total_bsz}_{args.lr_scheduler_type}_lr{args.learning_rate:.0e}"
     if args.lora:
         args.output_dir = args.output_dir + "_lora"
     if args.w_template:
@@ -203,8 +205,9 @@ if args.output_dir is None:
             ".", ""
         )
     if args.warmup_steps > 0:
-        args.output_dir = args.output_dir + f"_warm{args.warmup_steps}"
-
+        args.output_dir = args.output_dir + f"_warmstep{args.warmup_steps}"
+    if args.warmup_ratio >0:
+        args.output_dir = args.output_dir + f"_warmratio{args.warmup_ratio:.0e}"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 
@@ -227,6 +230,7 @@ trainer = Trainer(
         logging_steps=1,
         remove_unused_columns=True,
         save_strategy="epoch",
+        warmup_ratio=args.warmup_ratio,
         label_smoothing_factor=args.label_smoothing_factor,
     ),
     train_dataset=train_dataset,
