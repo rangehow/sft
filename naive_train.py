@@ -58,7 +58,7 @@ def parse_args():
     parser.add_argument("--w_template", default=True, type=ast.literal_eval)
     parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
     parser.add_argument("--warmup_steps", type=int, default=0)
-    parser.add_argument("--warmup_ratio ", type=float, default=0)
+    parser.add_argument("--warmup_ratio", type=float, default=0)
     
     return parser.parse_args()
 
