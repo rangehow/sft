@@ -226,6 +226,7 @@ trainer = Trainer(
         learning_rate=args.learning_rate,
         lr_scheduler_type=args.lr_scheduler_type,
         warmup_steps=args.warmup_steps,
+        dataloader_num_workers=8,
         bf16=True,
         logging_steps=1,
         remove_unused_columns=True,
