@@ -42,24 +42,25 @@ def reformate(i, o):
 
 def _process(real_input, output, template, test=False, mode=0, pt=False, **kwargs):
     # 注意，尽管这里有kwargs，但不会有任何一个被真正使用，只是作为遗留行为的兼容参数
-
+    try:
+        add_bos_token = template.tokenizer.add_bos_token  # for slow tokenizer
+    except:
+        add_bos_token = template.tokenizer.add_bos_token()  # for fast tokenizer
     input_ids, labels = [], []
     if pt:
-
         for text in output:
-            if template.tokenizer.add_bos_token:
-                temp_label=template.tokenizer.encode(
-                        template.tokenizer.bos_token+text + template.tokenizer.eos_token,
-                        add_special_tokens=False,
-                    )
+
+            if add_bos_token:
+                temp_label = template.tokenizer.encode(
+                    template.tokenizer.bos_token + text + template.tokenizer.eos_token,
+                    add_special_tokens=False,
+                )
             else:
-                temp_label=template.tokenizer.encode(
-                        text + template.tokenizer.eos_token,
-                        add_special_tokens=False,
-                    )
-            labels.append(
-                temp_label
-            )
+                temp_label = template.tokenizer.encode(
+                    text + template.tokenizer.eos_token,
+                    add_special_tokens=False,
+                )
+            labels.append(temp_label)
 
         return {"input_ids": labels, "labels": labels}
     else:
