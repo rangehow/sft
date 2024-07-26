@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
     parser.add_argument("--warmup_steps", type=int, default=0)
     parser.add_argument("--warmup_ratio", type=float, default=0)
-    
+
     return parser.parse_args()
 
 
@@ -98,7 +98,7 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="balanced_low_0" if not is_torchrun() else None,
+    device_map="auto" if not is_torchrun() else None,
     # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
 )
 
@@ -206,7 +206,7 @@ if args.output_dir is None:
         )
     if args.warmup_steps > 0:
         args.output_dir = args.output_dir + f"_warmstep{args.warmup_steps}"
-    if args.warmup_ratio >0:
+    if args.warmup_ratio > 0:
         args.output_dir = args.output_dir + f"_warmratio{args.warmup_ratio:.0e}"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
