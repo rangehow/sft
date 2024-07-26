@@ -43,11 +43,12 @@ def reformate(i, o):
 def _process(real_input, output, template, test=False, mode=0, pt=False, **kwargs):
     # 注意，尽管这里有kwargs，但不会有任何一个被真正使用，只是作为遗留行为的兼容参数
 
-    temp_case = template.tokenizer.encode("你好")
-    add_bos_token = temp_case[0] == template.tokenizer.bos_token_id
-    print(add_bos_token, temp_case[0])
+    
     input_ids, labels = [], []
     if pt:
+        temp_case = template.tokenizer.encode("你好")
+        add_bos_token = temp_case[0] == template.tokenizer.bos_token_id
+        print(add_bos_token, temp_case[0])
         for text in output:
 
             if add_bos_token:
