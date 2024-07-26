@@ -197,6 +197,21 @@ class MistralTemplate(Template):
         )
 
 
+@register_template
+class Phi3Template(Template):
+    model_type = "phi3"
+
+    def __init__(self, tokenizer) -> None:
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<|user|>\n{content}<|end|>\n<|assistant|>\n",
+            assistant_token="{content}<|end|>\n",
+            start_token_id=None,
+            end_token_id=32000,
+            efficient_eos=True,
+        )
+
+
 def test(tokenizer_name, template):
     access_token = "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"
     from transformers import AutoTokenizer
@@ -249,9 +264,9 @@ def test(tokenizer_name, template):
 
 if __name__ == "__main__":
     test_list = [
-        ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
-        ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
-        
+        # ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
+        # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
+        ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
         # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
         # ("google/gemma-2-27b-it", "gemma"),
         # ("google/gemma-7b-it", "gemma"),
