@@ -140,6 +140,14 @@ def wiki_medical(local_dir):
 
 
 @register2dict()
+def pubmed(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("ccdv/pubmed-summarization",'document')["train"]
+
+
+@register2dict()
 def medical_transcription(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]

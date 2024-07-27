@@ -15,3 +15,7 @@ python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutra
 
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/naive_llama3_8b_textbooks_wiki_medical_medical_transcription_7m27d_bsz256_cosine_lr1e-04_warmratio5e-02/checkpoint-535 --output_path  fuck
 
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/naive_llama3_8b_medquad_7m27d_bsz256_cosine_lr6e-04_template_warmratio5e-02 --output_path  fuck
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/naive_llama_med_pt_medquad_7m27d_bsz256_linear_lr5e-05_template --output_path  fuck

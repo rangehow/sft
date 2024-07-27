@@ -395,6 +395,18 @@ def wiki_medical(instances, template, test=False, mode=0):
         mode=mode,
         pt=True,
     )
+    
+@register2dict()
+def pubmed(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["article"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=True,
+    )
 
 
 @register2dict()
