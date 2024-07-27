@@ -46,6 +46,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
     
     input_ids, labels = [], []
     if pt:
+        
         temp_case = template.tokenizer.encode("你好")
         add_bos_token = temp_case[0] == template.tokenizer.bos_token_id
         print(add_bos_token, temp_case[0])
@@ -62,7 +63,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
                     add_special_tokens=False,
                 )
             labels.append(temp_label)
-
+            
         return {"input_ids": labels, "labels": labels}
     else:
         for i, o in zip(real_input, output):
@@ -84,7 +85,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
                     # 这个空格放在input_id还是label，我考虑的问题如下：
                     # 1.mono dataset的增强结合。应当是放在input_id合适，因为pt数据集的第一个词总不以空格开头。
                     # 2. 大模型在生成的时候，开头总是带着一些
-                    
+                    exit()
                     input_id = template.tokenizer.encode(
                         i+" ",
                         add_special_tokens=False,

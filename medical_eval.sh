@@ -2,7 +2,11 @@ CUDA_VISIBLE_DEVICES=0,1 python -m sft.eval.gsm8k  --mode 0 --shot --dp --datase
 
 
 
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/models/Llama-3-8B --output_path  fuck
 
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/models/Qwen2-7B --output_path  fuck
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/models/Meta-Llama-3-8B-Instruct --output_path  fuck
 
 
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/models/Mistral-7B-v0.3 --output_path  fuck
