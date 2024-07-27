@@ -147,6 +147,7 @@ print(tokenizer.convert_ids_to_tokens(input_ids))
 logger.debug("labels")
 print(tokenizer.convert_ids_to_tokens(filtered_tensor))
 
+logger.debug(f'数据集总量是{len(train_dataset)}')
 
 # import pdb
 # pdb.set_trace()

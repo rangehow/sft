@@ -220,7 +220,8 @@ def test(tokenizer_name, template):
         tokenizer_name,
         token=access_token,
     )
-
+    import pdb
+    pdb.set_trace()
     g = modelType2Template[template](tokenizer)
     message = [
         {"role": "user", "content": "aaa"},
@@ -266,8 +267,8 @@ if __name__ == "__main__":
     test_list = [
         # ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
         # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
-        ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
-        # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
+        # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
+        ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
         # ("google/gemma-2-27b-it", "gemma"),
         # ("google/gemma-7b-it", "gemma"),
         # ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),

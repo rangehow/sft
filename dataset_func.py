@@ -49,17 +49,17 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
         
         temp_case = template.tokenizer.encode("你好")
         add_bos_token = temp_case[0] == template.tokenizer.bos_token_id
-        print(add_bos_token, temp_case[0])
+        # print(add_bos_token, temp_case[0])
         for text in output:
 
             if add_bos_token:
                 temp_label = template.tokenizer.encode(
-                    template.tokenizer.bos_token + text + template.tokenizer.eos_token,
+                    template.tokenizer.bos_token + text,
                     add_special_tokens=False,
                 )
             else:
                 temp_label = template.tokenizer.encode(
-                    text + template.tokenizer.eos_token,
+                    text,
                     add_special_tokens=False,
                 )
             labels.append(temp_label)
