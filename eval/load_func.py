@@ -144,7 +144,7 @@ def pubmed(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("ccdv/pubmed-summarization",'document')["train"]
+        return datasets.load_dataset("JesusCrist/pubmed",)["train"]
 
 
 @register2dict()
