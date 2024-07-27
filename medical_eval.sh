@@ -9,3 +9,5 @@ python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutra
 
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/naive_mistral_7b_textbooks_wiki_medical_medical_transcription_7m24d_bsz256_cosine_lr0.0006/checkpoint-535 --output_path  fuck
 
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/naive_llama3_8b_textbooks_wiki_medical_medical_transcription_7m27d_bsz256_cosine_lr1e-04_warmratio5e-02/checkpoint-535 --output_path  fuck
+

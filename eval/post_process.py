@@ -114,18 +114,21 @@ def medical(prediciton, reference):
         generated_text = p.outputs[0].text
 
         # print(f"generate_text:\n {generated_text}\n")
-        all_responses = generated_text[1]
-        # import pdb
-        # pdb.set_trace()
-        if all_responses.lower() == r.lower():
-            correct += 1
-        else:
-            print("-" * 40)
-            print(f"generated answer:\n{generated_text}")
-            print(f"ground truth answer: {r}")
-            print(f"Correct: {correct} out of {idx+1}")
-            print("=" * 40)
-        idx += 1
+        try:
+            all_responses = generated_text[1]
+            # import pdb
+            # pdb.set_trace()
+            if all_responses.lower() == r.lower():
+                correct += 1
+            else:
+                print("-" * 40)
+                print(f"generated answer:{generated_text}")
+                print(f"ground truth answer: {r}")
+                print(f"Correct: {correct} out of {idx+1}")
+                print("=" * 40)
+            idx += 1
+        except Exception as e:
+            print(e)
     return correct / len(reference) * 100
 
 

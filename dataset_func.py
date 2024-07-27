@@ -81,12 +81,16 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
                 if test:
                     return {"input_ids": real_input, "answer": output}
                 else:
+                    # 这个空格放在input_id还是label，我考虑的问题如下：
+                    # 1.mono dataset的增强结合。应当是放在input_id合适，因为pt数据集的第一个词总不以空格开头。
+                    # 2. 大模型在生成的时候，开头总是带着一些
+                    
                     input_id = template.tokenizer.encode(
-                        i,
+                        i+" ",
                         add_special_tokens=False,
                     )
                     label = template.tokenizer.encode(
-                        " " + o + template.tokenizer.eos_token,
+                        o + template.tokenizer.eos_token,
                         add_special_tokens=False,
                     )
 
@@ -524,4 +528,41 @@ def medical(instances, template, shot=False, test=False, mode=0):
 
 
 if __name__ == "__main__":
-    pass
+    import datasets
+    from template import modelType2Template
+    from transformers import AutoTokenizer
+    from functools import partial
+    from loguru import logger
+    dataset=datasets.load_dataset('math')
+    tokenizer = AutoTokenizer.from_pretrained('google/gemma-2b')
+    template=modelType2Template['gemma'](tokenizer)
+    dataset = dataset.map(
+            partial(
+                dname2func['math'],
+                template=template,
+                mode=0,
+                test=False,
+            ),
+            batched=True,
+            num_proc=1,
+            # remove_columns=train_dataset.features.keys(),
+            load_from_cache_file=False,
+            desc="tokenize",
+        )
+    for d in dataset['train']:
+        
+        input_ids = d["input_ids"]
+        labels = d["labels"]
+
+        if -100 in labels:
+            filtered_tensor = labels[labels.index(-100) + labels.count(-100) :]
+        else:
+            filtered_tensor = labels
+        logger.debug("input_ids")
+        print(tokenizer.decode(input_ids))
+        print(tokenizer.convert_ids_to_tokens(input_ids))
+        logger.debug("labels")
+        print(tokenizer.convert_ids_to_tokens(filtered_tensor))
+        import pdb
+        pdb.set_trace()
+        
