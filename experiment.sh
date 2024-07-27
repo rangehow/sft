@@ -50,7 +50,7 @@ python preprocess_trie.py --dataset medquad --model llama3_8b --template llama -
 
  python naive_train.py --model mistral_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset textbooks,wiki_medical,medical_transcription  -w_template False --num_train_epochs 1 --learning_rate 6e-4 --lr_scheduler_type constant_with_warmup --warmup_ratio 0.05
 
-python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset textbooks,wiki_medical,medical_transcription,pubmed  --w_template False --num_train_epochs 1 --learning_rate 6e-4 --lr_scheduler_type cosine --warmup_ratio 0.05
+python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset textbooks,wiki_medical,pubmed  --w_template False --num_train_epochs 1 --learning_rate 3e-4 --lr_scheduler_type cosine --warmup_ratio 0.05
 
 
 

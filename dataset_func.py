@@ -427,7 +427,7 @@ def textbooks(instances, template, test=False, mode=0):
 
     return _process(
         real_input=None,
-        output=instances["text"],
+        output=instances["content"],
         template=template,
         test=test,
         mode=mode,
