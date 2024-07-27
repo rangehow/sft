@@ -401,7 +401,7 @@ def pubmed(instances, template, test=False, mode=0):
 
     return _process(
         real_input=None,
-        output=instances["article"],
+        output=instances["text"],
         template=template,
         test=test,
         mode=mode,
