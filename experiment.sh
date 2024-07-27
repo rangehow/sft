@@ -54,4 +54,4 @@ python naive_train.py --model mistral_7b --gradient_accumulation_steps 128 --tot
 
 
 
-python naive_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 1 --learning_rate 6e-4 --lr_scheduler_type cosine --warmup_ratio 0.05
+python naive_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 2 --learning_rate 6e-4 --lr_scheduler_type cosine --warmup_ratio 0.05

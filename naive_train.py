@@ -230,7 +230,7 @@ trainer = Trainer(
         bf16=True,
         logging_steps=1,
         remove_unused_columns=True,
-        save_strategy="epoch",
+        # save_strategy="epoch",
         warmup_ratio=args.warmup_ratio,
         label_smoothing_factor=args.label_smoothing_factor,
     ),
