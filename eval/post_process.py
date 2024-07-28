@@ -130,9 +130,10 @@ def medqa(prediciton, reference):
             # print the no answer examples for debugging 
             # if False and "Llama-3.1" in model:
             #     print(f"No answer for {item['id']}")
-            #     print(prediction_str)
-            #     print(prediction_json)
-            #     print(correct_answer)
+            print(prediction_str)
+            print(prediction_json)
+            import pdb
+            pdb.set_trace()
             continue 
         reason = prediction_json.get("reasoning", "")
         model_answer = prediction_json["answer"]
