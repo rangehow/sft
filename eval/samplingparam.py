@@ -50,14 +50,14 @@ def mmlu():
 @register2dict(name="medical")
 def medical():
     return SamplingParams(
-        max_tokens=512,
+        max_tokens=2,
         temperature=0,
         stop=["\n\nQuestion:"],
     )
 
 
 @register2dict(name="medmcqa")
-def medical():
+def medmcqa():
     return SamplingParams(
         max_tokens=512,
         temperature=0,

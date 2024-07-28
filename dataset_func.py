@@ -375,15 +375,13 @@ def redpajama(instances, template, test=False, **kwargs):
 
 
 @register2dict()
-def test(instances, template, test=False, **kwargs):
-    labels = []
-    for text in instances["text"]:
-        text_id = template.tokenizer.encode(
-            text + template.tokenizer.eos_token,
-            add_special_tokens=False,
-        )
-        labels.append(text_id)
-    return {"labels": labels}
+def test(instances, **kwargs):
+    
+    return _process(
+        real_input=instances["text"],
+        output=instances["text"],
+        **kwargs
+    )
 
 
 @register2dict()

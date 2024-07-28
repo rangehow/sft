@@ -55,7 +55,15 @@ class Trie:
                     node1.children[key] = child_node2
 
         _merge_nodes(self.root, other.root)
+        
+    def __str__(self):
+        def _print(node, prefix):
+            if node.value:
+                print(f"{prefix}: {dict(node.value)}")
+            for key, child in node.children.items():
+                _print(child, prefix + [key])
 
+        _print(self.root, [])
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -69,7 +77,7 @@ def parse_args():
     parser.add_argument("--template", type=str)
     parser.add_argument("--mono", default=False, type=ast.literal_eval)
     parser.add_argument("--mono_dataset", default="wiki_medical")
-    parser.add_argument("--w_template", default=False, type=ast.literal_eval)
+    parser.add_argument("--w_template", default=True, type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -145,34 +153,22 @@ def parse_dataset(args, template, dataset_str):
             ),
             batched=True,
             num_proc=30,
-            # remove_columns=train_dataset.features.keys(),
+            remove_columns=train_dataset.features.keys(),
             load_from_cache_file=False,
             desc="tokenize",
         )
         dataset_list.append(train_dataset)
     return datasets.concatenate_datasets(dataset_list)
 
-
-@logger.catch
-def main():
-    args = parse_args()
-
-    tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model, args.model))
-    # config = AutoConfig.from_pretrained(model_dir[args.model])
-    # model_type = config.model_type
-    # template = modelType2Template[model_type](tokenizer)
-    template = modelType2Template[args.template](tokenizer)
-
-    train_dataset = parse_dataset(args, template, args.dataset)
-    # train_dataset = train_dataset.sort('input_ids')
-
-    def statistic():
+def statistic(args,train_dataset,mono_dataset=None):
 
         supervised_trie = Trie()
         # supervised_dict = defaultdict(Counter)
         if args.clm:
             clm_trie = Trie()
-            # clm_dict = defaultdict(Counter)
+            # clm_dict = defaultdict(Counter)   
+        
+        max_target_len=0 # 用于减少mono阶段无意义的统计。
 
         logger.debug(f"start to make statistic")
         # 统计begin-----------------------------------------------------------------------------------
@@ -190,6 +186,7 @@ def main():
                 # 用于辅助ngram测算现在是否可以更新clm了
                 regionBeginIdx = -1
 
+            max_target_len=max(max_target_len,len(label))
             for i in range(len(label) - 1):
 
                 if label[i + 1] != -100:
@@ -215,26 +212,30 @@ def main():
 
         if args.mono and args.clm:
 
-            mono_dataset = parse_dataset(args, template, args.mono_dataset)
             for j in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
                 input_id, label = (
                     mono_dataset[j]["input_ids"],
                     mono_dataset[j]["labels"],
                 )
-                length = len
+                index_for_start_area=0
                 for i in range(len(label) - 1):
-                    clm_trie.insert(label[: i + 1], label[i + 1])
+                    if label[i]==-100:
+                        index_for_start_area+=1
+                    if label[i + 1] != -100 and i-index_for_start_area>=args.ngram-1 and i-index_for_start_area<= max_target_len+5: # +5没什么实际意义只是随便设置的，怕不准确
+                        # import pdb
+                        # pdb.set_trace()
+                        clm_trie.insert(label[index_for_start_area: i + 1], label[i + 1])
+                        
 
         return supervised_trie, clm_trie
 
-    supervised_trie, clm_trie = statistic()
 
-    def synthesis():
+def synthesis(args,train_dataset,supervised_trie,clm_trie):
         synthesis_dict = defaultdict(list)
         cnt_list = []
 
         for j in tqdm(range(len(train_dataset)), desc="synthesis stage"):
-
+            
             input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
 
             if args.clm:
@@ -260,11 +261,11 @@ def main():
                 for i in range(
                     length - 1
                 ):  # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
-
+                    
                     if (
                         label[i + 1] != -100
                     ):  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
-
+                        
                         # supervised_key = tuple(input_id[: i + 1])
                         # supervised_value = supervised_dict[supervised_key]
                         supervised_value = supervised_trie.search(input_id[: i + 1])
@@ -284,12 +285,14 @@ def main():
                             if (
                                 clm_value == None or len(clm_value) == 0
                             ):  # trie的返回不稳定，现在是空counter
-                                clm_value = supervised_value
-                        synthesis_dict[key].append([supervised_value, clm_value])
+                                    
+                                synthesis_dict[key].append([supervised_value])
+                            else:
+                                synthesis_dict[key].append([supervised_value, clm_value])
 
                     elif args.clm and flag4LossArea:
                         flag4LossArea = False
-
+                    
                     if len(synthesis_dict) != len(cnt_list):
                         # llama3-base和it的eos token不一样
                         import pdb
@@ -298,7 +301,28 @@ def main():
 
         return synthesis_dict, cnt_list
 
-    synthesis_dict, cnt_list = synthesis()
+
+@logger.catch
+def main():
+    args = parse_args()
+
+    test(args)
+
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model, args.model))
+    # config = AutoConfig.from_pretrained(model_dir[args.model])
+    # model_type = config.model_type
+    # template = modelType2Template[model_type](tokenizer)
+    template = modelType2Template[args.template](tokenizer)
+
+    train_dataset = parse_dataset(args, template, args.dataset)
+    # train_dataset = train_dataset.sort('input_ids')
+    if args.mono:
+        mono_dataset = parse_dataset(args, template, args.mono_dataset)
+        supervised_trie, clm_trie = statistic(args,train_dataset,mono_dataset)
+    else:
+        supervised_trie, clm_trie = statistic(args,train_dataset)
+    synthesis_dict, cnt_list = synthesis(args,train_dataset,supervised_trie, clm_trie)
 
     logger.debug(
         f"length of synthesis_dict:{len(synthesis_dict)};length of cnt_list:{len(cnt_list)}"
@@ -342,87 +366,33 @@ def main():
     )
 
 
-def load_msgpack_file(filename):
-    with open(filename, "rb") as f:
-        return pickle.load(f)  # ,strict_map_key=False,strict_types =True
 
 
-def find_msgpack_chunk_files(
-    base_dir,
-    name,
-):
-    """查找与基准文件名匹配的所有 msgpack 分块文件。"""
-
-    chunk_files = [
-        os.path.join(base_dir, f)
-        for f in os.listdir(base_dir)
-        if f.startswith(name) and f.endswith(".msgpack")
-    ]
-    return sorted(chunk_files)
-
-
-import concurrent.futures
-
-
-def load_msgpack_chunks(chunk_files):
-
-    print(chunk_files)
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = list(executor.map(load_msgpack_file, chunk_files))
-    if isinstance(results[0], dict):
-        merged_data = {}
-        for chunk in results:
-            merged_data.update(chunk)
-        return merged_data
-    elif isinstance(results[0], list):
-        merged_data = []
-        for chunk in results:
-            merged_data.extend(chunk)
-        return merged_data
-    else:
-        raise TypeError("data must be a dictionary or a list")
-
-
-def test():
-    args = parse_args()
-
-    tokenizer = AutoTokenizer.from_pretrained(model_dir[args.model])
-
-    template = modelType2Template[args.template](tokenizer)
-
-    # 示例使用
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    base_dir = f"{script_path}/train_dataset/{args.template}_{args.dataset}"
-    synthesis_dict = load_msgpack_chunks(
-        find_msgpack_chunk_files(base_dir, name="synthesis")
-    )
-    cnt_list = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
-
-    train_dataset = datasets.load_dataset(dataset_dir[args.dataset])["train"]
-
-    train_dataset = train_dataset.map(
-        partial(dname2func[args.dataset], template=template),
+def test(args):
+    tokenizer = AutoTokenizer.from_pretrained(model_dir.get('gemma_2b'))
+    template = modelType2Template['gemma'](tokenizer)
+    mock_dataset=dname2load['test'](None)
+    mono_dataset = parse_dataset(args, template, 'test')
+    mock_dataset = mock_dataset.map(
+        partial(
+            dname2func['test'],
+            template=template,
+            mode=1 ,
+            test=False,
+        ),
         batched=True,
         num_proc=30,
-        remove_columns=train_dataset.features.keys(),
+        # remove_columns=train_dataset.features.keys(),
+        load_from_cache_file=False,
         desc="tokenize",
     )
-
-    synthesis_dict = [data_sample for data_sample in synthesis_dict.items()]
-
-    cnt = 0
-    for i in range(len(synthesis_dict)):
-
-        input_ids = synthesis_dict[i][0]
-        length = cnt_list[i][0][-1]
-        if len(input_ids) != length:
-            pdb.set_trace()
-        # logger.debug(train_dataset[cnt])
-
-        # cnt+=1
-    logger.debug(len(synthesis_dict))
-    logger.debug(len(train_dataset))
-
+    supervised_trie, clm_trie = statistic(args,mock_dataset,mono_dataset)
+    target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1})], [Counter({2182: 1})], [Counter({692: 1})], [Counter({604: 1})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1})], [Counter({798: 1})], [Counter({235303: 1})], [Counter({235251: 1})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
+    target_cnt_list=[[(0, 24)], [(0, 22)]]
+    synthesis_dict, cnt_list = synthesis(args,mock_dataset,supervised_trie, clm_trie)
+    assert target_synthesis_dict==synthesis_dict and cnt_list == target_cnt_list
+    
 
 if __name__ == "__main__":
     main()
+    # test()
