@@ -555,17 +555,17 @@ def medqa(instances, **kwargs):
     real_input,answer=[],[]
     def generate_choice_string(choices):
         choice_string = ""
-        for i,choice in enumerate(choices):
-            choice_string += f"- ({chr(65 + i)}) {choice['value']}\n"
+        for key, choice in choices.items():
+            choice_string += f"- ({key}) {choice}\n"
         return choice_string
     for instance in list(zip(*instances.values())):
         
         
         real_input.append(PROMPT.format_map({
-            'question':instance[1],
-            'choices':generate_choice_string(instance[4])
+            'question':instance[0],
+            'choices':generate_choice_string(instance[2])
         }))
-        answer.append(instance[2])
+        answer.append(instance[1])
     return _process(real_input, output, **kwargs)
     
 

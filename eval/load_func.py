@@ -178,7 +178,7 @@ def medqa(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["test"]
     else:
-        return datasets.load_dataset("bigbio/med_qa")["test"]
+        return datasets.load_dataset("truehealth/medqa")["test"]
 
 
 @register2dict()
