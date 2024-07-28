@@ -2,7 +2,7 @@
 import re
 
 import numpy as np
-from json_utils import *
+from .json_utils import *
 dname2post = {}
 
 
