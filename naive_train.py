@@ -48,7 +48,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
-    parser.add_argument("--lr_scheduler_type", default="linear")
+    
     parser.add_argument("--output_dir", default=None)
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
@@ -56,10 +56,11 @@ def parse_args():
     parser.add_argument("--total_bsz", default=64, type=int)
     parser.add_argument("--label_smoothing_factor", default=0, type=float)
     parser.add_argument("--w_template", default=True, type=ast.literal_eval)
-    parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
+    
     parser.add_argument("--warmup_steps", type=int, default=0)
     parser.add_argument("--warmup_ratio", type=float, default=0)
-
+    parser.add_argument("--lr_scheduler_type", default="linear")
+    parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
     return parser.parse_args()
 
 

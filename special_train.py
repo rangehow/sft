@@ -80,6 +80,9 @@ def parse_args():
         type=ast.literal_eval,
     )
     parser.add_argument("--mono_dataset")
+    parser.add_argument("--warmup_ratio", type=float, default=0)
+    parser.add_argument("--lr_scheduler_type", default="linear")
+    parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -112,7 +115,7 @@ if args.output_dir is None:
     current_time = datetime.now()
     current_month = current_time.month
     current_day = current_time.day
-    args.output_dir = f"{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}_alpha{args.alpha}"
+    args.output_dir = f"{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}_alpha{args.alpha}_{args.lr_scheduler_type}_lr{args.learning_rate:.0e}"
     if args.weighted:
         args.output_dir = args.output_dir + "_weighted"
     if args.div_mode:
@@ -123,6 +126,8 @@ if args.output_dir is None:
         args.output_dir = args.output_dir + "_lora"
     if args.w_template:
         args.output_dir = args.output_dir + "_template"
+    if args.warmup_ratio > 0:
+        args.output_dir = args.output_dir + f"_warmratio{args.warmup_ratio:.0e}"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 model_dir = model_dir.get(args.model, args.model)
@@ -319,6 +324,9 @@ trainer = KLTrainer(
         num_train_epochs=args.num_train_epochs,
         per_device_train_batch_size=real_bsz,
         bf16=True,
+        warmup_ratio=args.warmup_ratio,
+        learning_rate=args.learning_rate,
+        lr_scheduler_type=args.lr_scheduler_type,
     ),
     data_collator=collator,
 )
