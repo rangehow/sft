@@ -287,9 +287,8 @@ def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
                             clm_value == None or len(clm_value) == 0
                         ):  # trie的返回不稳定，现在是空counter
                                 
-                            synthesis_dict[key].append([supervised_value])
-                        else:
-                            synthesis_dict[key].append([supervised_value, clm_value])
+                            clm_value = supervised_value
+                    synthesis_dict[key].append([supervised_value, clm_value])
 
                 elif args.clm and flag4LossArea:
                     flag4LossArea = False
