@@ -110,10 +110,9 @@ def mmlu(prediciton, reference):
 @register2dict(name="medqa")
 def medqa(prediciton, reference):
     solved_examples = 0 
-    num_total_examples = len(data) 
+    num_total_examples = len(reference) 
     no_answer = 0  
-    
-    reason_lens = []
+
     for p, r in zip(prediciton, reference):
         # Read and Parse the prediction from model output
 
@@ -137,33 +136,17 @@ def medqa(prediciton, reference):
             continue 
         reason = prediction_json.get("reasoning", "")
         model_answer = prediction_json["answer"]
-        correct_answer = item["correct_answer"]
-        index_of_correct_answer = item["choices"].index(correct_answer)
-        label_of_correct_answer = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index_of_correct_answer]
         if  model_answer == r or f"{r})" in model_answer:
             solved_examples += 1
         else:
-            if True and "Llama-3.1" in model: # for debugging 
-                print(f"## Example ID {item['id']}")
-                # print(f"Input: {item['chat_history'][0]}")
-                print(f"\n### Question:\n\n {item['question']}")
-                print(f"\n### Choices:\n\n")
-                for choice_index, choice in enumerate(item["choices"]):
-                    print(f"- {chr(65+choice_index)}) {choice}")
-                print(f"\n### Correct Answer:\n\n {label_of_correct_answer}")
-                print(f"\n### Model's reasoning:\n\n {reason}")
-                print(f"\n### Model's prediction:\n\n {model_answer}")
-                print("\n\n--------------------------------\n\n")
-        reason_lens.append(len(reason))
+            print("-" * 40)
+            print(f"answer:{model_answer}")
+            print(f"reason:{reason}")
+            print(f"ground truth answer: {r}")
+            print("=" * 40)
  
-    result = {}
-    result["Model"] = model.split("%")[0]
-    result["Mode"] = model.split("%")[1]
-    result["Acc"] = f"{solved_examples/num_total_examples*100:.2f}"
-    result["No answer"] = f"{no_answer/num_total_examples*100:.2f}"
-    result["Total"] = num_total_examples
-    result["Reason Lens"] = f"{sum(reason_lens)/len(reason_lens):.2f}"
-    return result
+    print(f'解析失败比例：{no_answer/num_total_examples}')
+    return solved_examples/num_total_examples*100
 
 
 @register2dict(name="medical")
