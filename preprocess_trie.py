@@ -323,7 +323,7 @@ def main():
         supervised_trie, clm_trie = statistic(args,train_dataset,mono_dataset)
     else:
         supervised_trie, clm_trie = statistic(args,train_dataset)
-    synthesis_dict, cnt_list = synthesis(args,train_dataset,supervised_trie, clm_trie,tokenizer)
+    synthesis_dict, cnt_list = synthesis(args,train_dataset,supervised_trie, clm_trie,template)
 
     logger.debug(
         f"length of synthesis_dict:{len(synthesis_dict)};length of cnt_list:{len(cnt_list)}"
@@ -390,7 +390,7 @@ def test(args):
     supervised_trie, clm_trie = statistic(args,mock_dataset,mono_dataset)
     target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1})], [Counter({2182: 1})], [Counter({692: 1})], [Counter({604: 1})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1})], [Counter({798: 1})], [Counter({235303: 1})], [Counter({235251: 1})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
     target_cnt_list=[[(0, 24)], [(0, 22)]]
-    synthesis_dict, cnt_list = synthesis(args,mock_dataset,supervised_trie, clm_trie,tokenizer)
+    synthesis_dict, cnt_list = synthesis(args,mock_dataset,supervised_trie, clm_trie,template)
     assert target_synthesis_dict==synthesis_dict and cnt_list == target_cnt_list
     
 
