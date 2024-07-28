@@ -165,6 +165,8 @@ class SpecialDataset(Dataset):
                 for i in range(len(synthesis_dict))
             ]
             # self.supervised = [synthesis_dict[i][1][j][0]  for i in range(len(synthesis_dict))  for j in range(len(synthesis_dict[i]))]
+            import pdb
+            pdb.set_trace()
             self.clm = [
                 [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
                 for i in range(len(synthesis_dict))
