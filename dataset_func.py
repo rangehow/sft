@@ -565,7 +565,7 @@ def medqa(instances, **kwargs):
             'question':instance[0],
             'choices':generate_choice_string(instance[2])
         }))
-        answer.append(instance[1])
+        answer.append(instance[4])
     return _process(real_input, answer, **kwargs)
     
 
