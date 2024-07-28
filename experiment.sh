@@ -42,7 +42,7 @@ CUDA_VISIBLE_DEVICES=0,1 python naive_train.py --model /niutrans/NEUNLP/rjh/sft/
 python3 naive_train.py --num_train_epochs 2 --w_template False --dataset magpie --total_bsz 32 --gradient_accumulation_steps 8 --learning_rate 2e-5 --lr_scheduler_type cosine --num_train_epochs 2 --warmup_steps 100 --model llama3_8b --output_dir llama_magpie
 
 
-python preprocess_trie.py --dataset medquad --model mistralai/Mistral-7B-Instruct-v0.3 --template mistral --w_template True --mono True --mono_dataset textbooks,wiki_medical
+
 
 
  torchrun --nproc-per-node 2   naive_train.py     --model llama3_8b     --dataset alpaca_gpt4,code,math     --total_bsz 512     --gradient_accumulation_steps 256   --num_train_epochs 3    --w_template False  --lora
@@ -50,7 +50,7 @@ python preprocess_trie.py --dataset medquad --model mistralai/Mistral-7B-Instruc
 
  python naive_train.py --model mistral_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset textbooks,wiki_medical,medical_transcription  -w_template False --num_train_epochs 1 --learning_rate 6e-4 --lr_scheduler_type constant_with_warmup --warmup_ratio 0.05
 
-python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset textbooks,wiki_medical,pubmed  --w_template False --num_train_epochs 1 --learning_rate 3e-4 --lr_scheduler_type cosine --warmup_ratio 0.05
+python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset textbooks  --w_template False --num_train_epochs 1 --learning_rate 3e-4 --lr_scheduler_type cosine --warmup_ratio 0.05
 
 
 
@@ -58,3 +58,6 @@ python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total
 
 
 python naive_train.py --model mistral_med_pt --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 2 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
+
+
+python preprocess_trie.py --dataset medquad --model qwen2_7b --template mistral --w_template True --mono True --mono_dataset textbooks
