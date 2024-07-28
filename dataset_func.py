@@ -54,12 +54,12 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
 
             if add_bos_token:
                 temp_label = template.tokenizer.encode(
-                    template.tokenizer.bos_token + text 
+                    template.tokenizer.bos_token + text ,
                     add_special_tokens=False,
                 )+ template.base_eos_token_id
             else:
                 temp_label = template.tokenizer.encode(
-                    text + template.base_eos_token_id,
+                    text,
                     add_special_tokens=False,
                 )+ template.base_eos_token_id
             if len(temp_label)>8192 or len(temp_label)<20:
