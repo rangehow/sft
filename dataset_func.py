@@ -546,17 +546,27 @@ def medqa(instances, **kwargs):
     Please show your choice in the `answer` field with only the choice letter, e.g.,`"answer": "C"`.
 
     ```json
-    {
+    {{
         "reasoning": "___",
         "answer": "___"
-    }
+    }}
     ```
     """
+    real_input,answer=[],[]
+    def generate_choice_string(choices):
+        choice_string = ""
+        for i,choice in enumerate(choices):
+            choice_string += f"- ({chr(65 + i)}) {choice['value']}\n"
+        return choice_string
     for instance in list(zip(*instances.values())):
         
-        import pdb
-        pdb.set_trace()
-    # return _process()
+        
+        real_input.append(PROMPT.format_map({
+            'question':instance[1],
+            'choices':generate_choice_string(instance[4])
+        }))
+        answer.append(instance[2])
+    return _process(real_input, output, **kwargs)
     
 
 

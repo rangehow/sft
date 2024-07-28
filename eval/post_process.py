@@ -2,7 +2,7 @@
 import re
 
 import numpy as np
-
+from json_utils import *
 dname2post = {}
 
 
@@ -102,6 +102,68 @@ def mmlu(prediciton, reference):
         # idx += 1
     print(f"total_data_: {len(reference)}")
     return correct / len(reference) * 100
+
+
+
+
+
+@register2dict(name="medqa")
+def medqa(prediciton, reference):
+    solved_examples = 0 
+    num_total_examples = len(data) 
+    no_answer = 0  
+    
+    reason_lens = []
+    for p, r in zip(prediciton, reference):
+        # Read and Parse the prediction from model output
+
+        prediction_str = p.outputs[0].text
+        prediction_json = extract_first_complete_json(prediction_str)
+        if prediction_json is None or "answer" not in prediction_json:
+            prediction_json = extract_values_from_json(prediction_str, allow_no_quotes=True)
+        if prediction_json is None or "answer" not in prediction_json or prediction_json["answer"] is None or prediction_json["answer"] == "": 
+            # try_extracted_answer = model_specific_extraction(model, prediction_str)
+            # if try_extracted_answer:
+            #     # print(f"Extracted answer from model: {try_extracted_answer}")
+            #     prediction_json["answer"] = try_extracted_answer
+            # else:
+            no_answer += 1 
+            # print the no answer examples for debugging 
+            # if False and "Llama-3.1" in model:
+            #     print(f"No answer for {item['id']}")
+            #     print(prediction_str)
+            #     print(prediction_json)
+            #     print(correct_answer)
+            continue 
+        reason = prediction_json.get("reasoning", "")
+        model_answer = prediction_json["answer"]
+        correct_answer = item["correct_answer"]
+        index_of_correct_answer = item["choices"].index(correct_answer)
+        label_of_correct_answer = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index_of_correct_answer]
+        if  model_answer == r or f"{r})" in model_answer:
+            solved_examples += 1
+        else:
+            if True and "Llama-3.1" in model: # for debugging 
+                print(f"## Example ID {item['id']}")
+                # print(f"Input: {item['chat_history'][0]}")
+                print(f"\n### Question:\n\n {item['question']}")
+                print(f"\n### Choices:\n\n")
+                for choice_index, choice in enumerate(item["choices"]):
+                    print(f"- {chr(65+choice_index)}) {choice}")
+                print(f"\n### Correct Answer:\n\n {label_of_correct_answer}")
+                print(f"\n### Model's reasoning:\n\n {reason}")
+                print(f"\n### Model's prediction:\n\n {model_answer}")
+                print("\n\n--------------------------------\n\n")
+        reason_lens.append(len(reason))
+ 
+    result = {}
+    result["Model"] = model.split("%")[0]
+    result["Mode"] = model.split("%")[1]
+    result["Acc"] = f"{solved_examples/num_total_examples*100:.2f}"
+    result["No answer"] = f"{no_answer/num_total_examples*100:.2f}"
+    result["Total"] = num_total_examples
+    result["Reason Lens"] = f"{sum(reason_lens)/len(reason_lens):.2f}"
+    return result
 
 
 @register2dict(name="medical")

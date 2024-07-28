@@ -120,8 +120,7 @@ class Qwen2Template(Template):
     model_type = "qwen2"
 
     def __init__(self, tokenizer) -> None:
-        self.base_eos_token_id=151643
-        self.chat_eos_token_id=151645
+        
         super().__init__(
             tokenizer=tokenizer,
             user_token="<|im_start|>user\n{content}<|im_end|>\n<|im_start|>assistant\n",
@@ -132,6 +131,9 @@ class Qwen2Template(Template):
             system_token="<|im_start|>system\n{content}<|im_end|>\n",
             default_system="You are a helpful assistant.",
         )
+        # 必须写在后面不然会被默认值覆盖
+        self.base_eos_token_id=151643
+        self.chat_eos_token_id=151645
 
 
 @register_template
@@ -139,8 +141,7 @@ class LlamaTemplate(Template):
     model_type = "llama"
 
     def __init__(self, tokenizer) -> None:
-        self.base_eos_token_id=128001
-        self.chat_eos_token_id=128009
+        
         super().__init__(
             tokenizer=tokenizer,
             user_token="<|start_header_id|>user<|end_header_id|>\n\n{content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
@@ -149,6 +150,8 @@ class LlamaTemplate(Template):
             end_token_id=tokenizer.eos_token_id,
             efficient_eos=False,
         )
+        self.base_eos_token_id=128001
+        self.chat_eos_token_id=128009
 
 
 @register_template
