@@ -61,7 +61,7 @@ def medqa():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        stop=["}\n"],
+        # stop=["}\n"],
     )
 
 
