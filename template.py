@@ -29,7 +29,9 @@ class Template:
         self.start_token_id = start_token_id if start_token_id else None
         self.end_token_id = end_token_id if end_token_id else None
         self.default_system = default_system if default_system else None
-
+        self.base_eos_token_id=tokenizer.eos_token_id
+        self.chat_eos_token_id=tokenizer.eos_token_id
+        
     def apply(self, messages: list[dict[str, str]]):
 
         if self.start_token_id:
@@ -118,7 +120,8 @@ class Qwen2Template(Template):
     model_type = "qwen2"
 
     def __init__(self, tokenizer) -> None:
-
+        self.base_eos_token_id=151643
+        self.chat_eos_token_id=151645
         super().__init__(
             tokenizer=tokenizer,
             user_token="<|im_start|>user\n{content}<|im_end|>\n<|im_start|>assistant\n",
@@ -136,7 +139,8 @@ class LlamaTemplate(Template):
     model_type = "llama"
 
     def __init__(self, tokenizer) -> None:
-
+        self.base_eos_token_id=128001
+        self.chat_eos_token_id=128009
         super().__init__(
             tokenizer=tokenizer,
             user_token="<|start_header_id|>user<|end_header_id|>\n\n{content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
@@ -233,8 +237,8 @@ def test(tokenizer_name, template):
     d = tokenizer.apply_chat_template(message, tokenize=False)
     a, b = g.apply(message)
 
-    # if c[-1] != tokenizer.eos_token_id:
-    #     print(tokenizer_name, "这个tokenizer的template不以eos结尾")
+    if c[-1] != tokenizer.eos_token_id:
+        print(tokenizer_name, "这个tokenizer的template不以eos结尾")
     #     print("原始结果:\n", c)
     #     print("模板结果:\n", a)
     #     print("结尾：", tokenizer.decode(c[-1]), c[-1])
@@ -269,9 +273,9 @@ if __name__ == "__main__":
         # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
         # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
         # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
-        ("google/gemma-2-27b-it", "gemma"),
+        # ("google/gemma-2-27b-it", "gemma"),
         # ("google/gemma-7b-it", "gemma"),
-        # ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
+        ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
         # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
         # ("01-ai/Yi-1.5-34B-Chat", "yi"),
         # ("Qwen/Qwen2-72B-Instruct", "qwen2"),

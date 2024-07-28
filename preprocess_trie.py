@@ -230,76 +230,77 @@ def statistic(args,train_dataset,mono_dataset=None):
         return supervised_trie, clm_trie
 
 
-def synthesis(args,train_dataset,supervised_trie,clm_trie,tokenizer):
-        synthesis_dict = defaultdict(list)
-        cnt_list = []
+def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
+    tokenizer=template.tokenizer
+    synthesis_dict = defaultdict(list)
+    cnt_list = []
 
-        for j in tqdm(range(len(train_dataset)), desc="synthesis stage"):
-            
-            input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
+    for j in tqdm(range(len(train_dataset)), desc="synthesis stage"):
+        
+        input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
 
-            if args.clm:
-                # 用于标志是否到达非-100区域的,这里有个假定就是开头一定是连续的-100区域[通常因为开头是特殊标记,所以总是的]
-                # 这个标记主要的作用就是为了辅助regionBeginIdx更新
-                flag4LossArea = False
-                # 用于辅助ngram测算现在是否可以更新clm了
-                regionBeginIdx = -1
+        if args.clm:
+            # 用于标志是否到达非-100区域的,这里有个假定就是开头一定是连续的-100区域[通常因为开头是特殊标记,所以总是的]
+            # 这个标记主要的作用就是为了辅助regionBeginIdx更新
+            flag4LossArea = False
+            # 用于辅助ngram测算现在是否可以更新clm了
+            regionBeginIdx = -1
 
-            # 这个地方和encoder-decoder模型还不一样，不需要特地区分编解码的输入，所以只需要一个input_id即可，input_id最后的EOS不需要送给模型
-            key = tuple(input_id[:-1])
-            length = len(input_id)
-            if synthesis_dict[key] == [] or (
-                tokenizer.eos_token_id not in synthesis_dict[key][-1][0]
-                and tokenizer.eos_token_id
-                not in synthesis_dict[key][-2][
-                    0
-                ]  # qwen的template结尾是\n，我无语了。。
-            ):  # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
-                # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
-                cnt_list.append(find_ranges(label))
+        # 这个地方和encoder-decoder模型还不一样，不需要特地区分编解码的输入，所以只需要一个input_id即可，input_id最后的EOS不需要送给模型
+        key = tuple(input_id[:-1])
+        length = len(input_id)
+        if synthesis_dict[key] == [] or (
+            tokenizer.chat_eos_token_id not in synthesis_dict[key][-1][0]
+            and tokenizer.chat_eos_token_id
+            not in synthesis_dict[key][-2][
+                0
+            ]  # qwen的template结尾是\n，我无语了。。
+        ):  # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
+            # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
+            cnt_list.append(find_ranges(label))
 
-                for i in range(
-                    length - 1
-                ):  # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
+            for i in range(
+                length - 1
+            ):  # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
+                
+                if (
+                    label[i + 1] != -100
+                ):  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
                     
-                    if (
-                        label[i + 1] != -100
-                    ):  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
-                        
-                        # supervised_key = tuple(input_id[: i + 1])
-                        # supervised_value = supervised_dict[supervised_key]
-                        supervised_value = supervised_trie.search(input_id[: i + 1])
+                    # supervised_key = tuple(input_id[: i + 1])
+                    # supervised_value = supervised_dict[supervised_key]
+                    supervised_value = supervised_trie.search(input_id[: i + 1])
 
-                        if args.clm:
-                            if flag4LossArea is False:
-                                # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
-                                regionBeginIdx = i
-                                flag4LossArea = True
+                    if args.clm:
+                        if flag4LossArea is False:
+                            # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
+                            regionBeginIdx = i
+                            flag4LossArea = True
 
-                            # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
-                            # clm_value = clm_dict.get(clm_key, supervised_value)
-                            clm_value = clm_trie.search(
-                                label[regionBeginIdx + 1 : i + 1]
-                            )
+                        # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
+                        # clm_value = clm_dict.get(clm_key, supervised_value)
+                        clm_value = clm_trie.search(
+                            label[regionBeginIdx + 1 : i + 1]
+                        )
 
-                            if (
-                                clm_value == None or len(clm_value) == 0
-                            ):  # trie的返回不稳定，现在是空counter
-                                    
-                                synthesis_dict[key].append([supervised_value])
-                            else:
-                                synthesis_dict[key].append([supervised_value, clm_value])
+                        if (
+                            clm_value == None or len(clm_value) == 0
+                        ):  # trie的返回不稳定，现在是空counter
+                                
+                            synthesis_dict[key].append([supervised_value])
+                        else:
+                            synthesis_dict[key].append([supervised_value, clm_value])
 
-                    elif args.clm and flag4LossArea:
-                        flag4LossArea = False
-                    
-                    if len(synthesis_dict) != len(cnt_list):
-                        # llama3-base和it的eos token不一样
-                        import pdb
+                elif args.clm and flag4LossArea:
+                    flag4LossArea = False
+                
+                if len(synthesis_dict) != len(cnt_list):
+                    # llama3-base和it的eos token不一样
+                    import pdb
 
-                        pdb.set_trace()
+                    pdb.set_trace()
 
-        return synthesis_dict, cnt_list
+    return synthesis_dict, cnt_list
 
 
 @logger.catch
