@@ -165,7 +165,7 @@ class SpecialDataset(Dataset):
                 for i in range(len(synthesis_dict))
             ]
             # self.supervised = [synthesis_dict[i][1][j][0]  for i in range(len(synthesis_dict))  for j in range(len(synthesis_dict[i]))]
-
+            # synthesis_dict[0][1][0]
             self.clm = [
                 [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
                 for i in range(len(synthesis_dict))

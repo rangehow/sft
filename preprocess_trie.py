@@ -85,16 +85,22 @@ def find_ranges(lst, target=-100):
     ranges = []
     start = None
     multiTurnOnlyOnceInfoFlag = True
+    have_target=False
     for i, num in enumerate(lst):
+        if num==target:
+            have_target=True
+        
         if num != target and start is None:
             start = i
         elif num == target and start is not None:
+            
             if multiTurnOnlyOnceInfoFlag:
                 logger.info(
                     "这个分支理论上只有多轮对话的数据集才会进入,确保自己在使用多轮对话数据集"
                 )
                 multiTurnOnlyOnceInfoFlag = False
             #  -100（start-1） start ，，，words4predictend(i-2) end(i-1) -100（i） 这个数据结构被用于从model_output里按切片取出logits来预测下一个词
+
             ranges.append(
                 (start - 1, i - 1)
             )  # 因为是切片，i-1实际上会取到i-2范围,logits的核心就是不要预测任何-100
@@ -103,7 +109,10 @@ def find_ranges(lst, target=-100):
     if start is not None:
         # 这个地方结束位置一般不重要，除非最后有什么不需要预测的特殊标志。
         # 到底什么情况会进这里呢？整句话都不存在-100的时候
-        ranges.append((min(start - 1, 0), len(lst) - 1))
+        if have_target:
+            ranges.append((start - 1, len(lst) - 1))
+        else:
+            ranges.append((0, len(lst) - 1))
 
     return ranges
 
@@ -389,7 +398,7 @@ def test(args):
     )
     supervised_trie, clm_trie = statistic(args,mock_dataset,mono_dataset)
     target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({2182: 1}), Counter({2182: 1})], [Counter({692: 1}), Counter({692: 1})], [Counter({604: 1}), Counter({604: 1})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({798: 1}), Counter({798: 1})], [Counter({235303: 1}), Counter({235303: 1})], [Counter({235251: 1}), Counter({235251: 1})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
-    target_cnt_list=[[(0, 24)], [(0, 22)]]
+    target_cnt_list=[[(15, 24)], [(14, 22)]]
     synthesis_dict, cnt_list = synthesis(args,mock_dataset,supervised_trie, clm_trie,template)
     if target_synthesis_dict!=synthesis_dict:
         import pdb
