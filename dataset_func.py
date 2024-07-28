@@ -586,6 +586,15 @@ def medical(instances, template, shot=False, test=False, mode=0):
     )
 
 
+@register2dict()
+def pubmedqa(instances, **kwargs):
+    return _process(
+        real_input=instances["question"],
+        output=instances["long_answer"],
+        **kwargs,
+    )
+
+
 if __name__ == "__main__":
     import datasets
     from template import modelType2Template

@@ -203,6 +203,14 @@ def medical(local_dir):
         return datasets.load_dataset(local_dir)["train"]
     else:
         return datasets.load_dataset("JesusCrist/med_qa_fewshot")["train"]
+    
+
+@register2dict()
+def pubmedqa(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("qiaojin/PubMedQA","pqa_artificial")["train"]
 
 
 if __name__ == "__main__":
