@@ -527,6 +527,42 @@ D: {opd}
 
     return _process(real_input, output, **kwargs)
 
+@register2dict()
+def medqa(instances, **kwargs):
+
+    PROMPT = """
+    ## Question: 
+
+    {question}
+
+    ## Choices:
+
+    {choices}
+
+    ## Instruction 
+
+    Please answer this question by first reasoning and then selecting the correct choice. 
+    Present your reasoning and solution in the following json format. 
+    Please show your choice in the `answer` field with only the choice letter, e.g.,`"answer": "C"`.
+
+    ```json
+    {
+        "reasoning": "___",
+        "answer": "___"
+    }
+    ```
+    """
+    for instance in list(zip(*instances.values())):
+        
+        import pdb
+        pdb.set_trace()
+    # return _process()
+    
+
+
+
+
+
 
 @register2dict()
 def medical(instances, template, shot=False, test=False, mode=0):
@@ -546,14 +582,15 @@ if __name__ == "__main__":
     from transformers import AutoTokenizer
     from functools import partial
     from loguru import logger
-    dataset=datasets.load_dataset('math')
+    from eval.load_func import dname2load
+    dataset=dname2load['medqa'](None)
     tokenizer = AutoTokenizer.from_pretrained('google/gemma-2b')
     template=modelType2Template['gemma'](tokenizer)
     dataset = dataset.map(
             partial(
-                dname2func['math'],
+                dname2func['medqa'],
                 template=template,
-                mode=0,
+                mode=1,
                 test=False,
             ),
             batched=True,

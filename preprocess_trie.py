@@ -250,8 +250,8 @@ def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
         key = tuple(input_id[:-1])
         length = len(input_id)
         if synthesis_dict[key] == [] or (
-            tokenizer.chat_eos_token_id not in synthesis_dict[key][-1][0]
-            and tokenizer.chat_eos_token_id
+            template.chat_eos_token_id not in synthesis_dict[key][-1][0]
+            and template.chat_eos_token_id
             not in synthesis_dict[key][-2][
                 0
             ]  # qwen的template结尾是\n，我无语了。。
