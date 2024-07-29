@@ -65,4 +65,10 @@ python preprocess_trie.py --dataset medquad --model qwen2_7b --template qwen2 --
 # 728晚上2253没跑完的
 python naive_train.py --model qwen_med_pt --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 3 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
 
+python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 3 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
+#========================================
+
 python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 3 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05 --mono True --mono_dataset textbooks --mix True --mix_ratio 0.8 --div_mode False --weighted False --template qwen2
+
+
+python preprocess_trie.py --dataset medquad --model qwen2_7b --template qwen2 --w_template True --mono True --mono_dataset textbooks,pubmed 
