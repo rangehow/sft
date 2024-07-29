@@ -16,7 +16,16 @@ def gsm8k():
     return SamplingParams(
         max_tokens=512,
         temperature=0,
-        stop=["Q:"],
+        stop=[
+            "}\n",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "</s>",
+            "## Question:",
+            "<|eot_id|>",
+            "\n\nQuestion:",
+            "Q:",
+        ],
     )
 
 
@@ -43,7 +52,15 @@ def mmlu():
     return SamplingParams(
         max_tokens=512,
         temperature=0,
-        stop=["\n\nQuestion:"],
+        stop=[
+            "}\n",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "</s>",
+            "## Question:",
+            "<|eot_id|>",
+            "\n\nQuestion:",
+        ],
     )
 
 
@@ -52,7 +69,15 @@ def medical():
     return SamplingParams(
         max_tokens=2,
         temperature=0,
-        stop=["\n\nQuestion:"],
+        stop=[
+            "}\n",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "</s>",
+            "## Question:",
+            "<|eot_id|>",
+            "\n\nQuestion:",
+        ],
     )
 
 
@@ -61,7 +86,15 @@ def medqa():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        stop=["}\n", "<|endoftext|>", "<|im_end|>", "</s>", "## Question:"],
+        stop=[
+            "}\n",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "</s>",
+            "## Question:",
+            "<|eot_id|>",
+            "\n\nQuestion:",
+        ],
         frequency_penalty=0.2,
     )
 
@@ -84,7 +117,16 @@ def bbh():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        stop=["Q", "\n\n", "</s>"],
+        stop=[
+            "}\n",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "</s>",
+            "## Question:",
+            "<|eot_id|>",
+            "\n\nQuestion:",
+            "Q:",
+        ],
     )
 
 

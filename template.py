@@ -269,6 +269,7 @@ def test(tokenizer_name, template):
     # print([tokenizer.convert_ids_to_tokens(bb) for bb in b if bb != -100])
     return a == c
 
+modelType2Template['gemma2']=GemmaTemplate
 
 if __name__ == "__main__":
     test_list = [

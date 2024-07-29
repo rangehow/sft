@@ -60,7 +60,7 @@ python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total
 python naive_train.py --model qwen_med_pt --gradient_accumulation_steps 128 --total_bsz 256  --dataset pubmedqa --w_template True --num_train_epochs 2 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
 
 
-python preprocess_trie.py --dataset medquad --model qwen2_7b --template qwen2 --w_template True --mono True --mono_dataset textbooks
+python preprocess_trie.py --dataset medquad --model gemma2_9b --template qwen2 --w_template True --mono True --mono_dataset textbooks
 
 # 728晚上2253没跑完的
 python naive_train.py --model qwen_med_pt --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad --w_template True --num_train_epochs 3 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
@@ -72,3 +72,7 @@ python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --tot
 
 
 python preprocess_trie.py --dataset alpaca_gpt4,math,code --model llama3_8b --template llama --w_template True --ngram 1
+
+
+
+python naive_train.py --model llama3_8b --gradient_accumulation_steps 256 --total_bsz 512  --dataset alpaca_gpt4,math,code --w_template True --num_train_epochs 3 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
