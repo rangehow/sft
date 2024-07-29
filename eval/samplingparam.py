@@ -94,6 +94,11 @@ def medqa():
             "## Question:",
             "<|eot_id|>",
             "\n\nQuestion:",
+            "(A)",  # 防止无脑把答案都生成一遍……
+            "(B)",
+            "(C)",
+            "(D)",
+            "(E)",
         ],
         # frequency_penalty=0.2,
     )
