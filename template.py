@@ -5,7 +5,11 @@ modelType2Template = {}
 
 
 def register_template(cls):
-    modelType2Template[cls.model_type] = cls
+    if isinstance(cls.model_type,list):
+        for name in cls.model_type:
+            modelType2Template[name]=cls
+    else:
+        modelType2Template[cls.model_type] = cls
     return
 
 
@@ -101,7 +105,7 @@ class Template:
 
 @register_template
 class GemmaTemplate(Template):
-    model_type = "gemma"
+    model_type = ["gemma","gemma2"]
 
     def __init__(self, tokenizer) -> None:
 
@@ -269,7 +273,6 @@ def test(tokenizer_name, template):
     # print([tokenizer.convert_ids_to_tokens(bb) for bb in b if bb != -100])
     return a == c
 
-modelType2Template['gemma2']=GemmaTemplate
 
 if __name__ == "__main__":
     test_list = [
@@ -277,7 +280,7 @@ if __name__ == "__main__":
         # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
         # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
         # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
-        # ("google/gemma-2-27b-it", "gemma"),
+        ("google/gemma-2-27b-it", "gemma2"),
         # ("google/gemma-7b-it", "gemma"),
         ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
         # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
