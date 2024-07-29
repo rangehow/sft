@@ -131,24 +131,27 @@ def medqa(prediciton, reference):
             #     # print(f"Extracted answer from model: {try_extracted_answer}")
             #     prediction_json["answer"] = try_extracted_answer
             # else:
-            no_answer += 1
-            # print the no answer examples for debugging
-            # if False and "Llama-3.1" in model:
-            #     print(f"No answer for {item['id']}")
-            print(prediction_str)
-            print(prediction_json)
-            import pdb
-
-            pdb.set_trace()
-            continue
+            if f"({r})" in prediction_str:
+                solved_examples += 1
+            else:
+                no_answer += 1
+                # print the no answer examples for debugging
+                # if False and "Llama-3.1" in model:
+                #     print(f"No answer for {item['id']}")
+                print("-" * 40)
+                print("解析失败")
+                print(prediction_str)
+                print(prediction_json)
+                print("=" * 40)
+                continue
         reason = prediction_json.get("reasoning", "")
         model_answer = prediction_json["answer"]
         if model_answer == r or f"{r})" in model_answer:
             solved_examples += 1
         else:
             print("-" * 40)
-            print(f"answer:{model_answer}")
-            print(f"reason:{reason}")
+            print(f"answer: {model_answer}")
+            print(f"reason: {reason}")
             print(f"ground truth answer: {r}")
             print("=" * 40)
 
