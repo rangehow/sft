@@ -61,22 +61,22 @@ def medqa():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        stop=["}\n"],
+        stop=["}\n", "<|endoftext|>", "<|im_end|>", "</s>", "## Question:"],
         frequency_penalty=0.2,
     )
 
 
-@register2dict(name="medmcqa")
-def medmcqa():
-    return SamplingParams(
-        max_tokens=1024,
-        temperature=0,
-        stop=["\n}"],
-        frequency_penalty=0.2,
-    )
+# @register2dict(name="medmcqa")
+# def medmcqa():
+#     return SamplingParams(
+#         max_tokens=1024,
+#         temperature=0,
+#         stop=["\n}"],
+#         frequency_penalty=0.2,
+#     )
 
-
-dname2samplingparams["pubmedqa"] = medmcqa
+dname2samplingparams["medmcqa"] = medqa
+dname2samplingparams["pubmedqa"] = medqa
 
 
 @register2dict(name="bbh")
