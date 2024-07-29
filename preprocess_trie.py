@@ -397,7 +397,7 @@ def test(args):
         desc="tokenize",
     )
     supervised_trie, clm_trie = statistic(args,mock_dataset,mono_dataset)
-    if args.template=='llama':
+    if args.template=='qwen2':
         if args.ngram==0:
             target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 4})], [Counter({2182: 1}), Counter({2182: 2, 798: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({604: 1}), Counter({604: 2})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 4})], [Counter({798: 1}), Counter({2182: 2, 798: 2})], [Counter({235303: 1}), Counter({235303: 2})], [Counter({235251: 1}), Counter({235251: 2})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
         elif args.ngram==4:
