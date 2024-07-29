@@ -100,6 +100,8 @@ def medqa():
             "(D)",
             "(E)",
         ],
+        include_stop_str_in_output=True,  # 给模糊匹配一线生机
+        min_tokens=1,  # 防止逆天空生成
         # frequency_penalty=0.2,
     )
 
