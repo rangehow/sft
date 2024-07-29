@@ -143,7 +143,7 @@ def medqa(prediciton, reference):
                 print(prediction_str)
                 print(prediction_json)
                 print("=" * 40)
-                continue
+            continue
         reason = prediction_json.get("reasoning", "")
         model_answer = prediction_json["answer"]
         if model_answer == r or f"{r})" in model_answer:
