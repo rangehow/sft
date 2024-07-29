@@ -150,6 +150,16 @@ def pubmed(local_dir):
 
 
 @register2dict()
+def pubmed_abstract(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset(
+            "brainchalov/pubmed_arxiv_abstracts_data",
+        )["train"]
+
+
+@register2dict()
 def medical_transcription(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]

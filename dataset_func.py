@@ -427,6 +427,18 @@ def pubmed(instances, template, test=False, mode=0):
         mode=mode,
         pt=True,
     )
+    
+@register2dict()
+def pubmed_abstract(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["abstr"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=True,
+    )
 
 
 @register2dict()
