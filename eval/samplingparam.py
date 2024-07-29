@@ -61,7 +61,7 @@ def medqa():
     return SamplingParams(
         max_tokens=1024,
         temperature=0,
-        # stop=["}\n"],
+        stop=["}\n"],
     )
 
 
@@ -73,6 +73,9 @@ def medmcqa():
         stop=["\n}"],
         frequency_penalty=0.2,
     )
+
+
+dname2samplingparams["pubmedqa"] = medmcqa
 
 
 @register2dict(name="bbh")

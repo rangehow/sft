@@ -20,9 +20,10 @@ python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutra
 
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/qwen2_7b_medquad_7m29d_0_bsz256_alpha0.8_cosine_lr2e-05_mix0.8_template_warmratio5e-02/checkpoint-127 --output_path  fuck
 
-python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa --model /niutrans/NEUNLP/rjh/models/Qwen2-7B --output_path  fuck
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medmcqa,pubmedqa,medqa, --model /niutrans/NEUNLP/rjh/models/Qwen2-7B --output_path  fuck
 
-
+# ,
+qwen2_7b_medquad_7m29d_0_bsz256_alpha0.8_cosine_lr2e-05_mix0.8_template_warmratio5e-02
 
 
 

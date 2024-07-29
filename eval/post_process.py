@@ -3,6 +3,7 @@ import re
 
 import numpy as np
 from .json_utils import *
+
 dname2post = {}
 
 
@@ -104,14 +105,11 @@ def mmlu(prediciton, reference):
     return correct / len(reference) * 100
 
 
-
-
-
 @register2dict(name="medqa")
 def medqa(prediciton, reference):
-    solved_examples = 0 
-    num_total_examples = len(reference) 
-    no_answer = 0  
+    solved_examples = 0
+    num_total_examples = len(reference)
+    no_answer = 0
 
     for p, r in zip(prediciton, reference):
         # Read and Parse the prediction from model output
@@ -119,25 +117,33 @@ def medqa(prediciton, reference):
         prediction_str = p.outputs[0].text
         prediction_json = extract_first_complete_json(prediction_str)
         if prediction_json is None or "answer" not in prediction_json:
-            prediction_json = extract_values_from_json(prediction_str, allow_no_quotes=True)
-        if prediction_json is None or "answer" not in prediction_json or prediction_json["answer"] is None or prediction_json["answer"] == "": 
+            prediction_json = extract_values_from_json(
+                prediction_str, allow_no_quotes=True
+            )
+        if (
+            prediction_json is None
+            or "answer" not in prediction_json
+            or prediction_json["answer"] is None
+            or prediction_json["answer"] == ""
+        ):
             # try_extracted_answer = model_specific_extraction(model, prediction_str)
             # if try_extracted_answer:
             #     # print(f"Extracted answer from model: {try_extracted_answer}")
             #     prediction_json["answer"] = try_extracted_answer
             # else:
-            no_answer += 1 
-            # print the no answer examples for debugging 
+            no_answer += 1
+            # print the no answer examples for debugging
             # if False and "Llama-3.1" in model:
             #     print(f"No answer for {item['id']}")
             print(prediction_str)
             print(prediction_json)
             import pdb
+
             pdb.set_trace()
-            continue 
+            continue
         reason = prediction_json.get("reasoning", "")
         model_answer = prediction_json["answer"]
-        if  model_answer == r or f"{r})" in model_answer:
+        if model_answer == r or f"{r})" in model_answer:
             solved_examples += 1
         else:
             print("-" * 40)
@@ -145,9 +151,9 @@ def medqa(prediciton, reference):
             print(f"reason:{reason}")
             print(f"ground truth answer: {r}")
             print("=" * 40)
- 
-    print(f'解析失败比例：{no_answer/num_total_examples}')
-    return solved_examples/num_total_examples*100
+
+    print(f"解析失败比例：{no_answer/num_total_examples}")
+    return solved_examples / num_total_examples * 100
 
 
 @register2dict(name="medical")
@@ -178,48 +184,52 @@ def medical(prediciton, reference):
     return correct / len(reference) * 100
 
 
-@register2dict(name="medmcqa")
-def medmcqa(prediciton, reference):
+dname2post["pubmedqa"] = medqa
+dname2post["medmcqa"] = medqa
 
-    correct = 0
-    idx = 0
-    parse_fail_cnt = 0
-    for p, r in zip(prediciton, reference):
 
-        generated_text = p.outputs[0].text
+# @register2dict(name="medmcqa")
+# def medmcqa(prediciton, reference):
 
-        # print(f"generate_text:\n {generated_text}\n")
-        try:
-            try:
-                all_responses = eval(generated_text+'}')
-            except:
-                try:
-                    all_responses = eval(
-                        '''{\"reasoning\": \"'''
-                        + generated_text.replace("\n", "")
-                        + """}"""
-                    )
-                except:
-                    all_responses = eval(
-                        """{""" + generated_text.replace("\n", "") + """}"""
-                    )
+#     correct = 0
+#     idx = 0
+#     parse_fail_cnt = 0
+#     for p, r in zip(prediciton, reference):
 
-            # import pdb
-            # pdb.set_trace()
-            if all_responses["answer"].lower() == r.lower():
-                correct += 1
-            else:
-                print("-" * 40)
-                print(f"generated answer:\n{generated_text}")
-                print(f"ground truth answer: {r}")
-                print(f"Correct: {correct} out of {idx+1}")
-                print("=" * 40)
-        except:
+#         generated_text = p.outputs[0].text
 
-            parse_fail_cnt += 1
-        idx += 1
-    print("解析失败的计数", parse_fail_cnt, parse_fail_cnt / len(reference))
-    return correct / len(reference) * 100
+#         # print(f"generate_text:\n {generated_text}\n")
+#         try:
+#             try:
+#                 all_responses = eval(generated_text+'}')
+#             except:
+#                 try:
+#                     all_responses = eval(
+#                         '''{\"reasoning\": \"'''
+#                         + generated_text.replace("\n", "")
+#                         + """}"""
+#                     )
+#                 except:
+#                     all_responses = eval(
+#                         """{""" + generated_text.replace("\n", "") + """}"""
+#                     )
+
+#             # import pdb
+#             # pdb.set_trace()
+#             if all_responses["answer"].lower() == r.lower():
+#                 correct += 1
+#             else:
+#                 print("-" * 40)
+#                 print(f"generated answer:\n{generated_text}")
+#                 print(f"ground truth answer: {r}")
+#                 print(f"Correct: {correct} out of {idx+1}")
+#                 print("=" * 40)
+#         except:
+
+#             parse_fail_cnt += 1
+#         idx += 1
+#     print("解析失败的计数", parse_fail_cnt, parse_fail_cnt / len(reference))
+#     return correct / len(reference) * 100
 
 
 @register2dict(name="humaneval")
