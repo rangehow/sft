@@ -13,6 +13,30 @@ from loguru import logger
 dname2func = {}
 
 
+MCQA_PROMPT = """
+## Question: 
+
+{question}
+
+## Choices:
+
+{choices}
+
+## Instruction 
+
+Please answer this question by first reasoning and then selecting the correct choice. 
+Present your reasoning and solution in the following json format. 
+Please show your choice in the `answer` field with only the choice letter, e.g.,`"answer": "C"`.
+
+```json
+{{
+    "reasoning": "___",
+    "answer": "___"
+}}
+```
+"""
+
+
 def register2dict():
     def decorator(func):
         if func.__name__ not in dname2func:
@@ -43,10 +67,9 @@ def reformate(i, o):
 def _process(real_input, output, template, test=False, mode=0, pt=False, **kwargs):
     # 注意，尽管这里有kwargs，但不会有任何一个被真正使用，只是作为遗留行为的兼容参数
 
-    
     input_ids, labels = [], []
     if pt:
-        
+
         temp_case = template.tokenizer.encode("你好")
         add_bos_token = temp_case[0] == template.tokenizer.bos_token_id
         # print(add_bos_token, temp_case[0])
@@ -54,18 +77,18 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
 
             if add_bos_token:
                 temp_label = template.tokenizer.encode(
-                    template.tokenizer.bos_token + text ,
+                    template.tokenizer.bos_token + text,
                     add_special_tokens=False,
-                )+ [template.base_eos_token_id]
+                ) + [template.base_eos_token_id]
             else:
                 temp_label = template.tokenizer.encode(
                     text,
                     add_special_tokens=False,
-                )+ [template.base_eos_token_id]
-            if len(temp_label)>8192 or len(temp_label)<20:
+                ) + [template.base_eos_token_id]
+            if len(temp_label) > 8192 or len(temp_label) < 20:
                 continue
             labels.append(temp_label)
-            
+
         return {"input_ids": labels, "labels": labels}
     else:
         for i, o in zip(real_input, output):
@@ -89,7 +112,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
                     # 2. 大模型在生成的时候，开头总是带着一些
                     exit()
                     input_id = template.tokenizer.encode(
-                        i+" ",
+                        i + " ",
                         add_special_tokens=False,
                     )
                     label = template.tokenizer.encode(
@@ -376,12 +399,8 @@ def redpajama(instances, template, test=False, **kwargs):
 
 @register2dict()
 def test(instances, **kwargs):
-    
-    return _process(
-        real_input=instances["text"],
-        output=instances["text"],
-        **kwargs
-    )
+
+    return _process(real_input=instances["text"], output=instances["text"], **kwargs)
 
 
 @register2dict()
@@ -395,7 +414,8 @@ def wiki_medical(instances, template, test=False, mode=0):
         mode=mode,
         pt=True,
     )
-    
+
+
 @register2dict()
 def pubmed(instances, template, test=False, mode=0):
 
@@ -466,48 +486,80 @@ def medquad(instances, template, test=False, mode=0):
     )
 
 
+# @register2dict()
+# def medmcqa(instances, **kwargs):
+
+#     PROMPT = """
+# ## Instruction
+# Answer question by reasoning first and then providing your answer.
+# Present your reasoning and solution in the following json format.
+# Please show your final answer in the `answer` field, e.g.,`"answer": "C"`.
+
+# # Example
+# Question: Chronic urethral obstruction due to benign prismatic hyperplasia can lead to the following change in kidney parenchyma
+# A: Hyperplasia
+# B: Hyperophy
+# C: Atrophy
+# D: Dyplasia
+# {{
+#     "reasoning": "Chronic urethral obstruction because of urinary calculi, prostatic hyperophy, tumors, normal pregnancy, tumors, uterine prolapse or functional disorders cause hydronephrosis which by definition is used to describe dilatation of renal pelvis and calculus associated with progressive atrophy of the kidney due to obstruction to the outflow of urine.",
+#     "answer": "C"
+# }}
+
+# Question: Hyper viscosity is seen in
+# A: Cryoglobulinemia
+# B: Multiple myeloma
+# C: MGUS
+# D: Lymphoma
+# {{
+#     "reasoning": "The term cryoglobulinemia refers to the presence in the serum of proteins that precipitate at temperatures below 37 degrees C and redissolve on rewarming. ... The elective treatment for hyperviscosity syndrome, whether associated with monoclonal, mixed, or polyclonalcryoglobulinemia, is plasma exchange.",
+#     "answer": "A"
+# }}
+
+# # Real question
+# Question: {question}
+# A: {opa}
+# B: {opb}
+# C: {opc}
+# D: {opd}
+# """
+#     cop2options = {0: "A", 1: "B", 2: "C", 3: "D"}
+#     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
+
+#     real_input = []
+#     output = []
+
+#     for question, opa, opb, opc, opd, cop in zip(
+#         instances["question"],
+#         instances["opa"],
+#         instances["opb"],
+#         instances["opc"],
+#         instances["opd"],
+#         instances["cop"],
+#     ):
+
+#         real_input.append(
+#             PROMPT.format_map(
+#                 {"question": question, "opa": opa, "opb": opb, "opc": opc, "opd": opd}
+#             )
+#         )
+#         output.append(cop2options[cop])
+
+
+#     return _process(real_input, output, **kwargs)
 @register2dict()
 def medmcqa(instances, **kwargs):
-
-    PROMPT = """
-## Instruction 
-Answer question by reasoning first and then providing your answer.
-Present your reasoning and solution in the following json format. 
-Please show your final answer in the `answer` field, e.g.,`"answer": "C"`.
-
-# Example
-Question: Chronic urethral obstruction due to benign prismatic hyperplasia can lead to the following change in kidney parenchyma
-A: Hyperplasia
-B: Hyperophy
-C: Atrophy
-D: Dyplasia
-{{
-    "reasoning": "Chronic urethral obstruction because of urinary calculi, prostatic hyperophy, tumors, normal pregnancy, tumors, uterine prolapse or functional disorders cause hydronephrosis which by definition is used to describe dilatation of renal pelvis and calculus associated with progressive atrophy of the kidney due to obstruction to the outflow of urine.",
-    "answer": "C"
-}}
-
-Question: Hyper viscosity is seen in
-A: Cryoglobulinemia
-B: Multiple myeloma
-C: MGUS
-D: Lymphoma
-{{
-    "reasoning": "The term cryoglobulinemia refers to the presence in the serum of proteins that precipitate at temperatures below 37 degrees C and redissolve on rewarming. ... The elective treatment for hyperviscosity syndrome, whether associated with monoclonal, mixed, or polyclonalcryoglobulinemia, is plasma exchange.",
-    "answer": "A"
-}}
-
-# Real question
-Question: {question}
-A: {opa}
-B: {opb}
-C: {opc}
-D: {opd}
-"""
     cop2options = {0: "A", 1: "B", 2: "C", 3: "D"}
     # INSTRUCTION = "The following are multiple choice questions (with answers) about "
 
     real_input = []
     output = []
+
+    def generate_choice_string(choices):
+        choice_string = ""
+        for key, choice in choices.items():
+            choice_string += f"- ({key}) {choice}\n"
+        return choice_string
 
     for question, opa, opb, opc, opd, cop in zip(
         instances["question"],
@@ -519,59 +571,43 @@ D: {opd}
     ):
 
         real_input.append(
-            PROMPT.format_map(
-                {"question": question, "opa": opa, "opb": opb, "opc": opc, "opd": opd}
+            MCQA_PROMPT.format_map(
+                {
+                    "question": question,
+                    "choices": generate_choice_string(
+                        {"A": opa, "B": opb, "C": opc, "D": opd}
+                    ),
+                }
             )
         )
         output.append(cop2options[cop])
 
     return _process(real_input, output, **kwargs)
 
+
 @register2dict()
 def medqa(instances, **kwargs):
 
-    PROMPT = """
-    ## Question: 
+    real_input, answer = [], []
 
-    {question}
-
-    ## Choices:
-
-    {choices}
-
-    ## Instruction 
-
-    Please answer this question by first reasoning and then selecting the correct choice. 
-    Present your reasoning and solution in the following json format. 
-    Please show your choice in the `answer` field with only the choice letter, e.g.,`"answer": "C"`.
-
-    ```json
-    {{
-        "reasoning": "___",
-        "answer": "___"
-    }}
-    ```
-    """
-    real_input,answer=[],[]
     def generate_choice_string(choices):
         choice_string = ""
         for key, choice in choices.items():
             choice_string += f"- ({key}) {choice}\n"
         return choice_string
+
     for instance in list(zip(*instances.values())):
-        
-        
-        real_input.append(PROMPT.format_map({
-            'question':instance[0],
-            'choices':generate_choice_string(instance[2])
-        }))
+
+        real_input.append(
+            MCQA_PROMPT.format_map(
+                {
+                    "question": instance[0],
+                    "choices": generate_choice_string(instance[2]),
+                }
+            )
+        )
         answer.append(instance[4])
     return _process(real_input, answer, **kwargs)
-    
-
-
-
-
 
 
 @register2dict()
@@ -588,9 +624,31 @@ def medical(instances, template, shot=False, test=False, mode=0):
 
 @register2dict()
 def pubmedqa(instances, **kwargs):
+    real_input = []
+    answer = []
+
+    def generate_choice_string(choices):
+        choice_string = ""
+        for key, choice in choices.items():
+            choice_string += f"- ({key}) {choice}\n"
+        return choice_string
+
+    choice_str = generate_choice_string({"A": "yes", "B": "no", "C": "maybe"})
+    choice2label = {"yes": "A", "no": "B", "maybe": "C"}
+
+    for instance in list(zip(*instances.values())):
+        real_input.append(
+            MCQA_PROMPT.format_map(
+                {
+                    "question": instance[1],
+                    "choices": choice_str,
+                }
+            )
+        )
+        answer.append(choice2label[instance[4]])
     return _process(
-        real_input=instances["question"],
-        output=instances["long_answer"],
+        real_input=real_input,
+        output=answer,
         **kwargs,
     )
 
@@ -602,24 +660,25 @@ if __name__ == "__main__":
     from functools import partial
     from loguru import logger
     from eval.load_func import dname2load
-    dataset=dname2load['medqa'](None)
-    tokenizer = AutoTokenizer.from_pretrained('google/gemma-2b')
-    template=modelType2Template['gemma'](tokenizer)
+
+    dataset = dname2load["medqa"](None)
+    tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
+    template = modelType2Template["gemma"](tokenizer)
     dataset = dataset.map(
-            partial(
-                dname2func['medqa'],
-                template=template,
-                mode=1,
-                test=False,
-            ),
-            batched=True,
-            num_proc=1,
-            # remove_columns=train_dataset.features.keys(),
-            load_from_cache_file=False,
-            desc="tokenize",
-        )
-    for d in dataset['train']:
-        
+        partial(
+            dname2func["medqa"],
+            template=template,
+            mode=1,
+            test=False,
+        ),
+        batched=True,
+        num_proc=1,
+        # remove_columns=train_dataset.features.keys(),
+        load_from_cache_file=False,
+        desc="tokenize",
+    )
+    for d in dataset["train"]:
+
         input_ids = d["input_ids"]
         labels = d["labels"]
 
@@ -633,5 +692,5 @@ if __name__ == "__main__":
         logger.debug("labels")
         print(tokenizer.convert_ids_to_tokens(filtered_tensor))
         import pdb
+
         pdb.set_trace()
-        
