@@ -110,7 +110,7 @@ def medqa(prediciton, reference):
     solved_examples = 0
     num_total_examples = len(reference)
     no_answer = 0
-
+    ambigious = 0
     for p, r in zip(prediciton, reference):
         # Read and Parse the prediction from model output
 
@@ -132,7 +132,7 @@ def medqa(prediciton, reference):
             #     prediction_json["answer"] = try_extracted_answer
             # else:
             if f"({r})" in prediction_str:
-
+                ambigious += 1
                 print("模糊命中")
                 print(prediction_str)
                 print("答案: ", r)
@@ -163,6 +163,7 @@ def medqa(prediciton, reference):
             # print("=" * 40)
 
     print(f"解析失败比例：{no_answer/num_total_examples}")
+    print(f"模糊命中比例：{ambigious/num_total_examples}")
     return solved_examples / num_total_examples * 100
 
 
