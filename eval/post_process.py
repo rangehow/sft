@@ -197,7 +197,7 @@ def medical(prediciton, reference):
 
 dname2post["pubmedqa"] = medqa
 dname2post["medmcqa"] = medqa
-
+dname2post["bioasq"] = medqa
 
 # @register2dict(name="medmcqa")
 # def medmcqa(prediciton, reference):

@@ -117,6 +117,7 @@ def medqa():
 
 dname2samplingparams["medmcqa"] = medqa
 dname2samplingparams["pubmedqa"] = medqa
+dname2samplingparams["bioasq"] = medqa
 
 
 @register2dict(name="bbh")

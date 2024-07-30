@@ -427,7 +427,8 @@ def pubmed(instances, template, test=False, mode=0):
         mode=mode,
         pt=True,
     )
-    
+
+
 @register2dict()
 def pubmed_abstract(instances, template, test=False, mode=0):
 
@@ -658,6 +659,37 @@ def pubmedqa(instances, **kwargs):
             )
         )
         answer.append(choice2label[instance[4]])
+    return _process(
+        real_input=real_input,
+        output=answer,
+        **kwargs,
+    )
+
+
+@register2dict()
+def bioasq(instances, **kwargs):
+    real_input = []
+    answer = []
+
+    def generate_choice_string(choices):
+        choice_string = ""
+        for key, choice in choices.items():
+            choice_string += f"- ({key}) {choice}\n"
+        return choice_string
+
+    choice_str = generate_choice_string({"A": "yes", "B": "no"})
+    choice2label = {"yes": "A", "no": "B"}
+
+    for instance in list(zip(*instances.values())):
+        real_input.append(
+            MCQA_PROMPT.format_map(
+                {
+                    "question": instance[1],
+                    "choices": choice_str,
+                }
+            )
+        )
+        answer.append(choice2label[instance[3]])
     return _process(
         real_input=real_input,
         output=answer,
