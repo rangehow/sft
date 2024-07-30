@@ -33,5 +33,9 @@ python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutra
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medical --model /niutrans/NEUNLP/rjh/sft/naive_qwen2_7b_medquad_7m29d_bsz256_cosine_lr2e-05_template_warmratio5e-02,/niutrans/NEUNLP/rjh/sft/naive_qwen_med_pt_medquad_7m29d_bsz256_cosine_lr2e-05_template_warmratio5e-02 --output_path  fuck
 
 
-# med_qwen_pt and med_qwen_pt + NTP
+# med_qwen_pt and med_qwen_pt + NTP   textbooks
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa --model /niutrans/NEUNLP/rjh/sft/naive_qwen2_7b_textbooks_7m28d_bsz256_cosine_lr3e-04_warmratio5e-02,/niutrans/NEUNLP/rjh/sft/naive_qwen_med_pt_medquad_7m29d_bsz256_cosine_lr2e-05_template_warmratio5e-02 --output_path  fuck
+
+# pubmed abstract
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,bioasq --model /niutrans/NEUNLP/rjh/sft/naive_qwen2_7b_pubmed_abstract_7m29d_bsz256_cosine_lr3e-04_warmratio5e-02 --output_path  fuck
