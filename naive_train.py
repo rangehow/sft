@@ -48,7 +48,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument("--dataset", default="alpaca_cleaned")
-    
+
     parser.add_argument("--output_dir", default=None)
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument("--total_bsz", default=64, type=int)
     parser.add_argument("--label_smoothing_factor", default=0, type=float)
     parser.add_argument("--w_template", default=True, type=ast.literal_eval)
-    
+
     parser.add_argument("--warmup_steps", type=int, default=0)
     parser.add_argument("--warmup_ratio", type=float, default=0)
     parser.add_argument("--lr_scheduler_type", default="linear")
@@ -148,7 +148,7 @@ print(tokenizer.convert_ids_to_tokens(input_ids))
 logger.debug("labels")
 print(tokenizer.convert_ids_to_tokens(filtered_tensor))
 
-logger.debug(f'数据集总量是{len(train_dataset)}')
+logger.debug(f"数据集总量是{len(train_dataset)}")
 
 # import pdb
 # pdb.set_trace()
@@ -187,7 +187,20 @@ if args.lora:
             "layers.*.mlp.down_proj",
         ],
     )
+
     model = get_peft_model(model, peft_config)
+
+    # from unsloth import FastLanguageModel
+
+    # model = FastLanguageModel.get_peft_model(
+    #     model,
+    #     r = 8,
+    #     target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
+    #                     "gate_proj", "up_proj", "down_proj",
+    #                     "lm_head", "embed_tokens",],
+    #     lora_alpha = 16,
+    # )
+
     model.print_trainable_parameters()
 
 

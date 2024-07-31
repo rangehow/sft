@@ -735,9 +735,10 @@ def careqa(instances, **kwargs):
             choice_string += f"- ({key}) {choice}\n"
         return choice_string
 
-    choice2label = {"yes": "A", "no": "B"}
+    choice2label = {1: "A", 2: "B",3: "C" ,4:"D"}
 
     for instance in list(zip(*instances.values())):
+        # print(instance)
         real_input.append(
             MCQA_PROMPT.format_map(
                 {

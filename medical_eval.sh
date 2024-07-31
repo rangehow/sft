@@ -39,3 +39,8 @@ python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa 
 # pubmed abstract
 
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,bioasq --model /niutrans/NEUNLP/rjh/sft/naive_qwen2_7b_pubmed_abstract_7m29d_bsz256_cosine_lr3e-04_warmratio5e-02 --output_path  fuck
+
+
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,bioasq,careqa,mmlu --model /niutrans/NEUNLP/rjh/sft/qwen2_7b_medquad_alpaca_gpt4_7m31d_0_bsz256_alpha0.8_cosine_lr2e-05_mix0.8_template_warmratio5e-02/checkpoint-267,/niutrans/NEUNLP/rjh/sft/qwen2_7b_medquad_alpaca_gpt4_7m31d_0_bsz256_alpha0.8_cosine_lr2e-05_mix0.8_template_warmratio5e-02/checkpoint-534,/niutrans/NEUNLP/rjh/sft/qwen2_7b_medquad_alpaca_gpt4_7m31d_0_bsz256_alpha0.8_cosine_lr2e-05_mix0.8_template_warmratio5e-02/checkpoint-801 --output_path  fuck
+
