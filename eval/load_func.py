@@ -102,17 +102,8 @@ def magpie(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("Magpie-Align/Magpie-Pro-300K-Filtered")["train"]
+        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-300K-Filtered")["train"]
 
-
-@register2dict()
-def redpajama(local_dir):
-    if local_dir is not None:
-        return datasets.load_dataset(local_dir)["train"]
-    else:
-        return datasets.load_dataset("togethercomputer/RedPajama-Data-1T-Sample")[
-            "train"
-        ]
 
 
 @register2dict()

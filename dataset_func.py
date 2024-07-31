@@ -368,22 +368,22 @@ def truthfulqa(instances, template, shot=True, mode=0, **kwargs):
 
 
 @register2dict()
-def magpie(instances, template, test=False, **kwargs):
-    conversations = instances["conversations"]
-    input_ids = []
-    labels = []
-    for conv in conversations:
+def magpie(instances, **kwargs):
+    # conversations = instances["conversations"]
+    # input_ids = []
+    # labels = []
+    # for conv in conversations:
 
-        human, assistant = conv[0]["value"], conv[1]["value"]
+    #     human, assistant = conv[0]["value"], conv[1]["value"]
 
-        input_id, label = template.apply(reformate(human, assistant))
-        input_ids.append(input_id)
-        labels.append(label)
-    if not test:
-        return {"input_ids": input_ids, "labels": labels}
-    else:
-        return {"input_ids": input_ids}
-
+    #     input_id, label = template.apply(reformate(human, assistant))
+    #     input_ids.append(input_id)
+    #     labels.append(label)
+    # if not test:
+    #     return {"input_ids": input_ids, "labels": labels}
+    # else:
+    #     return {"input_ids": input_ids}
+    return _process(real_input=instances['instruction'],output=instances['response'],**kwargs)
 
 @register2dict()
 def redpajama(instances, template, test=False, **kwargs):
@@ -409,6 +409,18 @@ def wiki_medical(instances, template, test=False, mode=0):
     return _process(
         real_input=None,
         output=instances["page_text"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=True,
+    )
+
+@register2dict()
+def slimpajama(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["text"],
         template=template,
         test=test,
         mode=mode,
