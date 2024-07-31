@@ -735,26 +735,33 @@ def careqa(instances, **kwargs):
             choice_string += f"- ({key}) {choice}\n"
         return choice_string
 
-    choice2label = {1: "A", 2: "B",3: "C" ,4:"D"}
+    choice2label = {1: "A", 2: "B", 3: "C", 4: "D"}
 
-    for instance in list(zip(*instances.values())):
+    for instance in zip(
+        instances["question"],
+        instances["op1"],
+        instances["op2"],
+        instances["op3"],
+        instances["op4"],
+        instances["cop"],
+    ):
         # print(instance)
         real_input.append(
             MCQA_PROMPT.format_map(
                 {
-                    "question": instance[2],
+                    "question": instance[0],
                     "choices": generate_choice_string(
                         {
-                            "A": instance[7],
-                            "B": instance[6],
+                            "A": instance[1],
+                            "B": instance[2],
                             "C": instance[3],
-                            "D": instance[8],
+                            "D": instance[4],
                         }
                     ),  # 这个仓库的维护者很逆天，乱序排放ABCD
                 }
             )
         )
-        answer.append(choice2label[instance[0]])
+        answer.append(choice2label[instance[5]])
     return _process(
         real_input=real_input,
         output=answer,
