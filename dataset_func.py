@@ -623,6 +623,33 @@ def medqa(instances, **kwargs):
     return _process(real_input, answer, **kwargs)
 
 
+# @register2dict()
+# def medqa(instances, **kwargs):
+#     SHOT="""Question:{question}\n
+#     {choices}\n
+#     Answer:"""
+#     real_input, answer = [], []
+
+#     def generate_choice_string(choices):
+#         choice_string = ""
+#         for key, choice in choices.items():
+#             choice_string += f"- ({key}) {choice}\n"
+#         return choice_string
+
+#     for instance in list(zip(*instances.values())):
+
+#         real_input.append(
+#             SHOT.format_map(
+#                 {
+#                     "question": instance[0],
+#                     "choices": generate_choice_string(instance[2]),
+#                 }
+#             )
+#         )
+#         answer.append(instance[4])
+#     return _process(real_input, answer, **kwargs)
+
+
 @register2dict()
 def medical(instances, template, shot=False, test=False, mode=0):
 
@@ -690,6 +717,74 @@ def bioasq(instances, **kwargs):
             )
         )
         answer.append(choice2label[instance[3]])
+    return _process(
+        real_input=real_input,
+        output=answer,
+        **kwargs,
+    )
+
+
+@register2dict()
+def careqa(instances, **kwargs):
+    real_input = []
+    answer = []
+
+    def generate_choice_string(choices):
+        choice_string = ""
+        for key, choice in choices.items():
+            choice_string += f"- ({key}) {choice}\n"
+        return choice_string
+
+    choice2label = {"yes": "A", "no": "B"}
+
+    for instance in list(zip(*instances.values())):
+        real_input.append(
+            MCQA_PROMPT.format_map(
+                {
+                    "question": instance[2],
+                    "choices": generate_choice_string(
+                        {
+                            "A": instance[7],
+                            "B": instance[6],
+                            "C": instance[3],
+                            "D": instance[8],
+                        }
+                    ),  # 这个仓库的维护者很逆天，乱序排放ABCD
+                }
+            )
+        )
+        answer.append(choice2label[instance[0]])
+    return _process(
+        real_input=real_input,
+        output=answer,
+        **kwargs,
+    )
+
+
+@register2dict()
+def multimedqa(instances, **kwargs):
+    real_input = []
+    answer = []
+
+    def generate_choice_string(choices):
+        choice_string = ""
+        for key, choice in choices.items():
+            choice_string += f"- ({key}) {choice}\n"
+        return choice_string
+
+    choice_str = generate_choice_string({"A": "yes", "B": "no"})
+    choice2label = {"yes": "A", "no": "B"}
+
+    for instance in instances["data"]:
+        real_input.append(
+            MCQA_PROMPT.format_map(
+                {
+                    "question": instance["Question"],
+                    "choices": generate_choice_string(instance["Options"]),
+                }
+            )
+        )
+        answer.append(choice2label[instance["Correct Option"]])
     return _process(
         real_input=real_input,
         output=answer,
