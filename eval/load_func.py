@@ -102,7 +102,7 @@ def magpie(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-300K-Filtered")["train"]
+        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-1M-v0.1")["train"]
 
 
 
