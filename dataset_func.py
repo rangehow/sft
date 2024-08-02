@@ -385,6 +385,8 @@ def magpie(instances, **kwargs):
     #     return {"input_ids": input_ids}
     return _process(real_input=instances['instruction'],output=instances['response'],**kwargs)
 
+dname2func['magpie_300k']=magpie
+
 @register2dict()
 def redpajama(instances, template, test=False, **kwargs):
     labels = []

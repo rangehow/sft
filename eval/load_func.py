@@ -240,6 +240,14 @@ def multimedqa(local_dir):
         return datasets.load_dataset("openlifescienceai/multimedqa")["test"]
 
 
+@register2dict()
+def magpie_300k(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-300K-Filtered")["train"]
+
+
 if __name__ == "__main__":
     d = datasets.load_dataset("medpt")
     import pdb
