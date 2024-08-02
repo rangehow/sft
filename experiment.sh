@@ -86,3 +86,16 @@ python special_train.py --model qwen_med_pt --gradient_accumulation_steps 128 --
 
 
 python naive_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset pubmed_abstract  --w_template False --num_train_epochs 1 --learning_rate 3e-4 --lr_scheduler_type cosine --warmup_ratio 0.05
+
+
+
+python naive_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset magpie --w_template True --num_train_epochs 3 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
+
+
+# 8/1
+google/gemma-2-2b
+
+python naive_train.py --model gemma2_2b --gradient_accumulation_steps 256 --total_bsz 256  --dataset magpie --w_template True --num_train_epochs 3 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
+
+
+python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad,alpaca_gpt4 --w_template True --num_train_epochs 3 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template qwen2

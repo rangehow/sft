@@ -1,5 +1,6 @@
 from functools import partial
 import json
+import sys
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -68,8 +69,32 @@ args = parse_args()
 
 
 def is_torchrun():
-    # torchrun 通常会设置 RANK 和 WORLD_SIZE 环境变量
-    return "RANK" in os.environ and "WORLD_SIZE" in os.environ
+    """
+    检查是否通过 torchrun 启动。
+    
+    通过检查命令行参数，判断是否包含 torchrun 相关的参数。
+    
+    返回值：
+    - 如果命令行参数包含 torchrun 相关的参数，返回 True。
+    - 否则返回 False。
+    """
+    # 检查命令行参数中是否包含 torchrun 相关的参数
+    args = sys.argv
+    return "torchrun" in args or any(arg.startswith("--nproc_per_node") for arg in args)
+
+def is_accelerate():
+    """
+    检查是否通过 torchrun 启动。
+    
+    通过检查命令行参数，判断是否包含 torchrun 相关的参数。
+    
+    返回值：
+    - 如果命令行参数包含 torchrun 相关的参数，返回 True。
+    - 否则返回 False。
+    """
+    # 检查命令行参数中是否包含 torchrun 相关的参数
+    args = sys.argv
+    return "accelerate" in args or any(arg.startswith("--nproc_per_node") for arg in args)
 
 
 if is_torchrun():
@@ -99,8 +124,8 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="auto" if not is_torchrun() else None,
-    # attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
+    # device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
+    # attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
