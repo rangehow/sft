@@ -94,7 +94,7 @@ def is_accelerate():
     """
     # 检查命令行参数中是否包含 torchrun 相关的参数
     args = sys.argv
-    return "accelerate" in args or any(arg.startswith("--nproc_per_node") for arg in args)
+    return "accelerate" in args 
 
 
 if is_torchrun():
@@ -124,8 +124,8 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    # device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
-    # attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
+    device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
+    attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
