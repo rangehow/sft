@@ -316,7 +316,13 @@ def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
 def main():
     args = parse_args()
 
-    test(args)
+    while True:
+        a=str(input('你要跳过检查吗？y/n'))
+        if a=='y':
+            break
+        elif a=='n':
+            test(args)
+            break
 
     
     tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model, args.model))
@@ -411,13 +417,13 @@ def test(args):
             target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({2182: 1}), Counter({2182: 1, 798: 1})], [Counter({692: 1}), Counter({692: 1})], [Counter({604: 1}), Counter({604: 1})], [Counter({2149: 1}), Counter({2149: 1})], [Counter({13669: 1}), Counter({13669: 1})], [Counter({1069: 1}), Counter({1069: 1})], [Counter({1: 1}), Counter({1: 1})], [Counter({108: 1}), Counter({108: 1})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({798: 1}), Counter({2182: 1, 798: 1})], [Counter({235303: 1}), Counter({235303: 1})], [Counter({235251: 1}), Counter({235251: 1})], [Counter({1707: 1}), Counter({1707: 1})], [Counter({692: 1}), Counter({692: 1})], [Counter({1: 1}), Counter({1: 1})], [Counter({108: 1}), Counter({108: 1})]]}
     target_cnt_list=[[(15, 24)], [(14, 22)]]
     synthesis_dict, cnt_list = synthesis(args,mock_dataset,supervised_trie, clm_trie,template)
+    
     if target_synthesis_dict!=synthesis_dict:
-        while True:
-            a=str(input("你要跳过检查吗，有可能是没覆盖这种测试情况.y/n"))
-            if a=='n':
-                exit()
-            elif a=='y':
-                break
+            exit()
+
+        
+            
+                
     # assert target_synthesis_dict==synthesis_dict 
     # assert cnt_list == target_cnt_list
     
