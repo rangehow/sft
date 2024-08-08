@@ -13,7 +13,7 @@ class KDTrainer(Trainer):
         self.temperature = temperature
         self.alpha = alpha
         super().__init__(**kwargs)
-        self.args._n_gpu = 2
+        self.args._n_gpu = 1
 
     def compute_loss(self, model, inputs, return_outputs=False):
         # print("model's device",model.device)
