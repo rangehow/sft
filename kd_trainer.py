@@ -15,6 +15,7 @@ class KDTrainer(Trainer):
         super().__init__(**kwargs)
 
     def compute_loss(self, model, inputs, return_outputs=False):
+        print("model's device",model.device)
         input_ids = inputs.pop("input_ids")
         attention_mask = inputs.pop("attention_mask")
         labels = inputs.pop("labels")

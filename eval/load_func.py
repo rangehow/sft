@@ -256,7 +256,5 @@ def redpajama(local_dir):
 
 
 if __name__ == "__main__":
-    d = datasets.load_dataset("medpt")
-    import pdb
-
-    pdb.set_trace()
+    d = datasets.load_dataset("/mnt/rangehow/rangehow/medqa")['test']
+    print(d)
