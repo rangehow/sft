@@ -253,7 +253,7 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-teacher_model=AutoModelForCausalLM.from_pretrained(teacher_model_dir,low_cpu_mem_usage=True,torch_dtype='auto').to('cuda:1')
+teacher_model=AutoModelForCausalLM.from_pretrained(teacher_model_dir,low_cpu_mem_usage=True,torch_dtype=torch.bfloat16).to('cuda:1')
 trainer= KDTrainer(
         teacher_model=teacher_model,
         model=model,
