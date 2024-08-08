@@ -16,7 +16,7 @@ class KDTrainer(Trainer):
         self.args._n_gpu=1
 
     def compute_loss(self, model, inputs, return_outputs=False):
-        print("model's device",model.device)
+        # print("model's device",model.device)
         input_ids = inputs.pop("input_ids")
         attention_mask = inputs.pop("attention_mask")
         labels = inputs.pop("labels")
