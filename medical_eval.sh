@@ -61,3 +61,13 @@ python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,
 # llama3 base+ntp
 # naive_llama3_8b_medquad_alpaca_gpt4_8m4d_bsz256_cosine_lr5e-05_template_warmratio5e-02
 python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,bioasq,careqa,mmlu --model /niutrans/NEUNLP/rjh/sft/naive_llama3_8b_medquad_alpaca_gpt4_8m4d_bsz256_cosine_lr5e-05_template_warmratio5e-02,/niutrans/NEUNLP/rjh/models/Llama-3-8B --output_path  fuck
+
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,careqa,mmlu --model /niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_medquad_8m5d_0_bsz256_alpha0.8_cosine_lr5e-05_mix0.8_template_warmratio5e-02/checkpoint-267,/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_medquad_8m5d_0_bsz256_alpha0.8_cosine_lr5e-05_mix0.8_template_warmratio5e-02/checkpoint-534,/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_medquad_8m5d_0_bsz256_alpha0.8_cosine_lr5e-05_mix0.8_template_warmratio5e-02/checkpoint-801 --output_path  fuck
+
+
+
+
+python -m sft.eval.gsm8k  --mode 0 --shot --dp --dataset medqa,medmcqa,pubmedqa,careqa,mmlu --model /niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_medquad_8m5d_0_bsz256_alpha0.8_cosine_lr5e-05_mix0.8_template_warmratio5e-02/checkpoint-267,/niutrans/NEUNLP/rjh/sft/llama3_8b_alpaca_gpt4_medquad_8m5d_0_bsz256_alpha0.8_cosine_lr5e-05_mix0.8_template_warmratio5e-02/checkpoint-534 --output_path  fuck
+
+/data/lxy/llama_magpie_300k_template

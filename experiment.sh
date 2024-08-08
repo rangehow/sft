@@ -106,4 +106,15 @@ python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --tot
 
 python naive_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad,alpaca_gpt4 --w_template True --num_train_epochs 2 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.05
 
-python special_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset medquad,alpaca_gpt4 --w_template True --num_train_epochs 2 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template llama --mono True --mono_dataset pubmed_abstract
+python special_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset alpaca_gpt4,medquad --w_template True --num_train_epochs 2 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.05  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template llama --mono True --mono_dataset pubmed_abstract
+
+
+# 8/5
+python preprocess_trie.py --model qwen2_7b --dataset alpaca_gpt4,medquad --template qwen2 --mono True --mono_dataset pubmed_abstract,redpajama --ngram 1
+
+python preprocess_trie.py --model llama3_8b --dataset alpaca_gpt4,medquad --template llama --ngram 4 && python special_train.py --model llama3_8b --gradient_accumulation_steps 128 --total_bsz 256  --dataset alpaca_gpt4,medquad --w_template True --num_train_epochs 2 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.05  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template llama 
+
+# 8/6
+
+这个
+python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset alpaca_gpt4,medquad --w_template True --num_train_epochs 2 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template qwen2 --mono True --mono_dataset pubmed_abstract,redpajama

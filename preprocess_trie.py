@@ -66,6 +66,7 @@ class Trie:
         _print(self.root, [])
 
 def parse_args():
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="gemma_2b")
     parser.add_argument(
@@ -322,6 +323,7 @@ def main():
             break
         elif a=='n':
             test(args)
+ 
             break
 
     
@@ -428,6 +430,7 @@ def test(args):
     # assert cnt_list == target_cnt_list
     
 
+
 if __name__ == "__main__":
     main()
-    # test()
+

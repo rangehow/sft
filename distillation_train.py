@@ -1,3 +1,4 @@
+
 from functools import partial
 import json
 import sys
@@ -19,7 +20,7 @@ from eval.load_func import dname2load
 import torch
 import ast
 import os
-
+from kd_trainer import KDTrainer
 
 class MyCollator:
     def __init__(self, tokenizer) -> None:
@@ -124,9 +125,9 @@ tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
     model_dir,
     torch_dtype="auto",
-    device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
+    # device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
     attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
-)
+).to('cuda:0')
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
 # config = AutoConfig.from_pretrained(model_dir)
@@ -251,33 +252,36 @@ if args.output_dir is None:
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 
-trainer = Trainer(
-    model=model,
-    args=TrainingArguments(
-        # optim="adamw_apex_fused",
-        output_dir=args.output_dir,
-        overwrite_output_dir=True,
-        # learning_rate=args.learning_rate,  # 学习率
-        per_device_train_batch_size=real_bsz,  # 每个设备的训练批量大小
-        num_train_epochs=args.num_train_epochs,  # 训练的轮次
-        # weight_decay=args.weight_decay,
-        # evaluation_strategy="epoch",
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
-        learning_rate=args.learning_rate,
-        lr_scheduler_type=args.lr_scheduler_type,
-        warmup_steps=args.warmup_steps,
-        dataloader_num_workers=8,
-        bf16=True,
-        logging_steps=1,
-        remove_unused_columns=True,
-        save_strategy="no",
-        warmup_ratio=args.warmup_ratio,
-        label_smoothing_factor=args.label_smoothing_factor,
-    ),
-    train_dataset=train_dataset,
-    tokenizer=tokenizer,
-    data_collator=my_collator,
-)
+teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
+teacher_model=AutoModelForCausalLM.from_pretrained(teacher_model_dir,low_cpu_mem_usage=True,torch_dtype='auto').to('cuda:1')
+trainer= KDTrainer(
+        teacher_model=teacher_model,
+        model=model,
+        args=TrainingArguments(
+            # optim="adamw_apex_fused",
+            output_dir=args.output_dir,
+            overwrite_output_dir=True,
+            # learning_rate=args.learning_rate,  # 学习率
+            per_device_train_batch_size=real_bsz,  # 每个设备的训练批量大小
+            num_train_epochs=args.num_train_epochs,  # 训练的轮次
+            # weight_decay=args.weight_decay,
+            # evaluation_strategy="epoch",
+            gradient_accumulation_steps=args.gradient_accumulation_steps,
+            learning_rate=args.learning_rate,
+            lr_scheduler_type=args.lr_scheduler_type,
+            warmup_steps=args.warmup_steps,
+            dataloader_num_workers=8,
+            bf16=True,
+            logging_steps=1,
+            remove_unused_columns=True,
+            save_strategy="no",
+            warmup_ratio=args.warmup_ratio,
+            label_smoothing_factor=args.label_smoothing_factor,
+        ),
+        train_dataset=train_dataset,
+        tokenizer=tokenizer,
+        data_collator=my_collator,
+    )
 # dataloader=trainer.get_train_dataloader()
 # for d in dataloader:
 #     input_ids=d['input_ids']

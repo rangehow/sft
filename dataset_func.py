@@ -42,6 +42,7 @@ def register2dict():
         if func.__name__ not in dname2func:
             dname2func[func.__name__] = func
         else:
+            print(f'{func.__name__}重复了')
             exit()
         return func
 
@@ -387,16 +388,6 @@ def magpie(instances, **kwargs):
 
 dname2func['magpie_300k']=magpie
 
-@register2dict()
-def redpajama(instances, template, test=False, **kwargs):
-    labels = []
-    for text in instances["text"]:
-        text_id = template.tokenizer.encode(
-            text + template.tokenizer.eos_token,
-            add_special_tokens=False,
-        )
-        labels.append(text_id)
-    return {"labels": labels}
 
 
 @register2dict()
@@ -814,6 +805,19 @@ def multimedqa(instances, **kwargs):
     )
 
 
+@register2dict()
+def redpajama(instances, template, test=False, mode=0):
+
+    return _process(
+        real_input=None,
+        output=instances["text"],
+        template=template,
+        test=test,
+        mode=mode,
+        pt=True,
+    )
+    
+
 if __name__ == "__main__":
     import datasets
     from template import modelType2Template
@@ -822,36 +826,40 @@ if __name__ == "__main__":
     from loguru import logger
     from eval.load_func import dname2load
 
-    dataset = dname2load["medqa"](None)
+    dataset_name='pubmed_abstract'
+    dataset = dname2load[dataset_name](None)
     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     template = modelType2Template["gemma"](tokenizer)
     dataset = dataset.map(
         partial(
-            dname2func["medqa"],
+            dname2func[dataset_name],
             template=template,
             mode=1,
             test=False,
         ),
         batched=True,
-        num_proc=1,
-        # remove_columns=train_dataset.features.keys(),
+        num_proc=30,
+        remove_columns=dataset.features.keys(),
         load_from_cache_file=False,
         desc="tokenize",
     )
-    for d in dataset["train"]:
+    token_nums=0
+    for d in dataset:
 
         input_ids = d["input_ids"]
-        labels = d["labels"]
+        token_nums += len(input_ids)
+        # labels = d["labels"]
 
-        if -100 in labels:
-            filtered_tensor = labels[labels.index(-100) + labels.count(-100) :]
-        else:
-            filtered_tensor = labels
-        logger.debug("input_ids")
-        print(tokenizer.decode(input_ids))
-        print(tokenizer.convert_ids_to_tokens(input_ids))
-        logger.debug("labels")
-        print(tokenizer.convert_ids_to_tokens(filtered_tensor))
-        import pdb
+        # if -100 in labels:
+        #     filtered_tensor = labels[labels.index(-100) + labels.count(-100) :]
+        # else:
+        #     filtered_tensor = labels
+        # logger.debug("input_ids")
+        # print(tokenizer.decode(input_ids))
+        # print(tokenizer.convert_ids_to_tokens(input_ids))
+        # logger.debug("labels")
+        # print(tokenizer.convert_ids_to_tokens(filtered_tensor))
+        # import pdb
 
-        pdb.set_trace()
+        # pdb.set_trace()
+    print(token_nums)
