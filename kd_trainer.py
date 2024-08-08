@@ -27,8 +27,8 @@ class KDTrainer(Trainer):
 
         with torch.no_grad():
             teacher_outputs = self.teacher_model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
+                input_ids=input_ids.to(self.teacher_model.device),
+                attention_mask=attention_mask.to(self.teacher_model.device),
             )
             teacher_logits = teacher_outputs.logits.to(student_logits.device)
 

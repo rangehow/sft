@@ -114,8 +114,8 @@ else:
     )
 
 
-model_dir = model_dir.get(args.model, args.model)
-tokenizer = AutoTokenizer.from_pretrained(model_dir)
+student_model_dir = model_dir.get(args.model, args.model)
+tokenizer = AutoTokenizer.from_pretrained(student_model_dir)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 
 
@@ -123,7 +123,7 @@ if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
 model = AutoModelForCausalLM.from_pretrained(
-    model_dir,
+    student_model_dir,
     torch_dtype="auto",
     # device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
     attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',

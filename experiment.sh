@@ -118,3 +118,8 @@ python preprocess_trie.py --model llama3_8b --dataset alpaca_gpt4,medquad --temp
 
 这个
 python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --total_bsz 256  --dataset alpaca_gpt4,medquad --w_template True --num_train_epochs 2 --learning_rate 2e-5 --lr_scheduler_type cosine --warmup_ratio 0.05  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template qwen2 --mono True --mono_dataset pubmed_abstract,redpajama
+
+
+# 8/8 知识蒸馏
+
+CUDA_VISIBLE_DEVICES=2,3 python distillation_train.py --model gemma_2b --teacher_model gemma2_27b_it --total_bsz 512 --gradient_accumulation_steps 256 --dataset alpaca_gpt4,code,math
