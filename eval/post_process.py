@@ -87,7 +87,8 @@ def mmlu(prediciton, reference):
 
         generated_text = p.outputs[0].text
 
-        # print(f"generate_text:\n {generated_text}\n")
+        if generated_text =="":
+            continue
         all_responses = generated_text[1]
         # import pdb
         # pdb.set_trace()

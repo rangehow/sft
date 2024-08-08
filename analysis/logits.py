@@ -278,9 +278,7 @@ def main():
                 label_tensor = F.one_hot(real_label, model.lm_head.weight.size()[0]).to(
                     last_logits.device
                 )
-                # import pdb
-
-                # pdb.set_trace()
+                
                 all_prob_supervised = d["all_prob_supervised"].to(last_logits.device)
                 all_prob_clm = d["all_prob_clm"].to(last_logits.device)
                 all_prob_mix = (

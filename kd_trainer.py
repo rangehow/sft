@@ -13,7 +13,7 @@ class KDTrainer(Trainer):
         self.temperature = temperature
         self.alpha = alpha
         super().__init__(**kwargs)
-        self.args._n_gpu=1
+        self.args._n_gpu = 2
 
     def compute_loss(self, model, inputs, return_outputs=False):
         # print("model's device",model.device)
@@ -41,16 +41,18 @@ class KDTrainer(Trainer):
         kd_loss = F.kl_div(
             F.log_softmax(student_logits / self.temperature, dim=-1),
             F.softmax(teacher_logits / self.temperature, dim=-1),
-            reduction='none'
+            reduction="none",
         )
-        kd_loss = kd_loss.sum(-1) * (self.temperature ** 2)
+        kd_loss = kd_loss.sum(-1) * (self.temperature**2)
         kd_loss = (kd_loss * label_mask).sum() / label_mask.sum()
 
         # 计算标准交叉熵损失
-        ce_loss = F.cross_entropy(student_logits.view(-1, student_logits.size(-1)), 
-                                  labels.view(-1), 
-                                  ignore_index=-100, 
-                                  reduction='mean')
+        ce_loss = F.cross_entropy(
+            student_logits.view(-1, student_logits.size(-1)),
+            labels.view(-1),
+            ignore_index=-100,
+            reduction="mean",
+        )
 
         # 组合损失
         loss = self.alpha * kd_loss + (1 - self.alpha) * ce_loss

@@ -1,4 +1,3 @@
-
 from functools import partial
 import json
 import sys
@@ -21,6 +20,9 @@ import torch
 import ast
 import os
 from kd_trainer import KDTrainer
+import accelerate
+from accelerate import infer_auto_device_map
+
 
 class MyCollator:
     def __init__(self, tokenizer) -> None:
@@ -58,7 +60,7 @@ def parse_args():
     parser.add_argument("--total_bsz", default=64, type=int)
     parser.add_argument("--label_smoothing_factor", default=0, type=float)
     parser.add_argument("--w_template", default=True, type=ast.literal_eval)
-    parser.add_argument('--teacher_model', default=None)
+    parser.add_argument("--teacher_model", default=None)
     parser.add_argument("--warmup_steps", type=int, default=0)
     parser.add_argument("--warmup_ratio", type=float, default=0)
     parser.add_argument("--lr_scheduler_type", default="linear")
@@ -72,9 +74,9 @@ args = parse_args()
 def is_torchrun():
     """
     检查是否通过 torchrun 启动。
-    
+
     通过检查命令行参数，判断是否包含 torchrun 相关的参数。
-    
+
     返回值：
     - 如果命令行参数包含 torchrun 相关的参数，返回 True。
     - 否则返回 False。
@@ -83,19 +85,20 @@ def is_torchrun():
     args = sys.argv
     return "torchrun" in args or any(arg.startswith("--nproc_per_node") for arg in args)
 
+
 def is_accelerate():
     """
     检查是否通过 torchrun 启动。
-    
+
     通过检查命令行参数，判断是否包含 torchrun 相关的参数。
-    
+
     返回值：
     - 如果命令行参数包含 torchrun 相关的参数，返回 True。
     - 否则返回 False。
     """
     # 检查命令行参数中是否包含 torchrun 相关的参数
     args = sys.argv
-    return "accelerate" in args 
+    return "accelerate" in args
 
 
 if is_torchrun():
@@ -122,12 +125,61 @@ tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
+
+with accelerate.init_empty_weights():
+    model = AutoModelForCausalLM.from_pretrained(
+        student_model_dir,
+        torch_dtype="auto",
+    )
+
+from collections import OrderedDict
+
+
+def create_manual_device_map(model, num_devices):
+
+    num_layers = model.config.num_hidden_layers
+    layers = [f"model.layers.{i}" for i in range(num_layers)]  # 假设有28层
+    layers_per_device = len(layers) // num_devices
+    remainder = len(layers) % num_devices
+
+    device_map = OrderedDict()
+    current_device = 0
+    current_layer = 0
+
+    # 分配层到设备
+    for layer in layers:
+        device_map[layer] = current_device
+        current_layer += 1
+        if current_layer >= layers_per_device + (1 if remainder > 0 else 0):
+            current_device += 1
+            current_layer = 0
+            remainder -= 1
+
+    # 分配其他模块
+    device_map["model.embed_tokens"] = 0
+    device_map["model.norm"] = num_devices - 1
+    device_map["lm_head"] = num_devices - 1
+
+    return device_map
+
+
+# 使用手动创建的device_map
+device_map = create_manual_device_map(model, 2)
+
+device_map["model.embed_tokens"] = device_map["lm_head"]
+# 打印device_map结果
+for module, device in device_map.items():
+    print(f"{module}: {device}")
+
+
+del model
+
 model = AutoModelForCausalLM.from_pretrained(
     student_model_dir,
     torch_dtype="auto",
-    # device_map="balanced_low_0" if (not is_torchrun() and not is_accelerate()) else None,
-    attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
-).to('cuda:0')
+    device_map=device_map,
+    # attn_implementation="eager" if "gemma2" in args.model else "sdpa",
+)
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
 # config = AutoConfig.from_pretrained(model_dir)
@@ -253,35 +305,37 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-teacher_model=AutoModelForCausalLM.from_pretrained(teacher_model_dir,low_cpu_mem_usage=True,torch_dtype=torch.bfloat16).to('cuda:1')
-trainer= KDTrainer(
-        teacher_model=teacher_model,
-        model=model,
-        args=TrainingArguments(
-            # optim="adamw_apex_fused",
-            output_dir=args.output_dir,
-            overwrite_output_dir=True,
-            # learning_rate=args.learning_rate,  # 学习率
-            per_device_train_batch_size=real_bsz,  # 每个设备的训练批量大小
-            num_train_epochs=args.num_train_epochs,  # 训练的轮次
-            # weight_decay=args.weight_decay,
-            # evaluation_strategy="epoch",
-            gradient_accumulation_steps=args.gradient_accumulation_steps,
-            learning_rate=args.learning_rate,
-            lr_scheduler_type=args.lr_scheduler_type,
-            warmup_steps=args.warmup_steps,
-            dataloader_num_workers=8,
-            bf16=True,
-            logging_steps=1,
-            remove_unused_columns=True,
-            save_strategy="no",
-            warmup_ratio=args.warmup_ratio,
-            label_smoothing_factor=args.label_smoothing_factor,
-        ),
-        train_dataset=train_dataset,
-        tokenizer=tokenizer,
-        data_collator=my_collator,
-    )
+teacher_model = AutoModelForCausalLM.from_pretrained(
+    teacher_model_dir, low_cpu_mem_usage=True, torch_dtype=torch.bfloat16
+).to("cuda:2")
+trainer = KDTrainer(
+    teacher_model=teacher_model,
+    model=model,
+    args=TrainingArguments(
+        # optim="adamw_apex_fused",
+        output_dir=args.output_dir,
+        overwrite_output_dir=True,
+        # learning_rate=args.learning_rate,  # 学习率
+        per_device_train_batch_size=real_bsz,  # 每个设备的训练批量大小
+        num_train_epochs=args.num_train_epochs,  # 训练的轮次
+        # weight_decay=args.weight_decay,
+        # evaluation_strategy="epoch",
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        learning_rate=args.learning_rate,
+        lr_scheduler_type=args.lr_scheduler_type,
+        warmup_steps=args.warmup_steps,
+        dataloader_num_workers=8,
+        bf16=True,
+        logging_steps=1,
+        remove_unused_columns=True,
+        save_strategy="no",
+        warmup_ratio=args.warmup_ratio,
+        label_smoothing_factor=args.label_smoothing_factor,
+    ),
+    train_dataset=train_dataset,
+    tokenizer=tokenizer,
+    data_collator=my_collator,
+)
 # dataloader=trainer.get_train_dataloader()
 # for d in dataloader:
 #     input_ids=d['input_ids']

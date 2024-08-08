@@ -11,3 +11,4 @@ train_dataset/
 wandb
 data
 results
+analysis/output
