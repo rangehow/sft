@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 定义模型数组
-models=("gemma-2-9b-it" "gemma-2-27b-it" )
+models=("gemma-2-9b-it" "gemma-2-27b-it")
 GPU_PAIRS=("4,5,6,7")
 OUTPUT_PATH="/mnt/rangehow/rangehow/sft/analysis/result.json"
 LOG_DIR="/mnt/rangehow/rangehow/sft/analysis/output"

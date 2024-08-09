@@ -1,14 +1,13 @@
 #!/bin/bash
 
 # 定义模型数组
-models=("Qwen1.5-4B-Chat" "Qwen2-1.5B-Instruct" "Qwen1.5-1.8B-Chat")
-GPU_PAIRS=("2,3")
+models=("Qwen1.5-1.8B-Chat" "Qwen2-1.5B-Instruct")
 OUTPUT_PATH="/mnt/rangehow/rangehow/sft/analysis/result.json"
 LOG_DIR="/mnt/rangehow/rangehow/sft/analysis/output"
 
 # 遍历模型数组并运行命令
 for model in "${models[@]}"; do
-    CUDA_VISIBLE_DEVICES="${GPU_PAIRS[0]}" \
+    CUDA_VISIBLE_DEVICES=2,3 \
     python -m sft.analysis.kurtosis \
     --model "$model" \
     --output_path "$OUTPUT_PATH" \
