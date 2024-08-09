@@ -19,8 +19,9 @@ from ..eval.load_func import dname2load
 import torch
 import ast
 import os
-from ..distillation_train import balanced_load
+from ..model_utils import balanced_load
 import numpy as np
+
 
 
 class MyCollator:
@@ -104,7 +105,26 @@ for dname in dataset_name_list:
         desc="tokenize",
     )
     dataset_list.append(train_dataset)
-train_dataset = datasets.concatenate_datasets(dataset_list)
+    
+    
+    
+def merge_dicts(dataset_list):
+    # Initialize a new dictionary to store the merged data
+    merged_dict = {'input_ids': [] ,'labels':[]}
+    
+    # Define how many items to take from each dictionary
+    num_items = [8000, 1000, 1000]
+    
+    for idx, data_dict in enumerate(dataset_list):
+        for key in ['input_ids','labels']:
+            # Take the specified number of items from each dictionary
+            merged_dict[key].extend(data_dict[key][:num_items[idx]])
+            
+    return merged_dict
+
+
+
+train_dataset = datasets.Dataset.from_dict(merge_dicts(dataset_list))
 
 input_ids = train_dataset[0]["input_ids"]
 labels = train_dataset[0]["labels"]
@@ -141,10 +161,12 @@ def kurtosis_pytorch(data, dim=-1):
     # Calculate mean and standard deviation without Bessel's correction
     mean = torch.mean(data_tensor, dim=dim, keepdim=True)
     std = torch.std(data_tensor, dim=dim, unbiased=False, keepdim=True)
-    
+
+
+
     # Calculate kurtosis
     n = data_tensor.size(dim)
-    kurtosis_value = torch.sum(((data_tensor - mean) / std) ** 4, dim=dim) / n
+    kurtosis_value = torch.sum(((data_tensor - mean) / (std + 1e-12)) ** 4, dim=dim) / n
     
     # Adjust for normal distribution kurtosis
     kurtosis_value = kurtosis_value - 3
@@ -156,7 +178,9 @@ for instance in tqdm(dataloader):
     input_ids = instance["input_ids"].to(model.device)
     attention_mask = instance["attention_mask"].to(model.device)
     labels = instance["labels"].to(model.device)
+    # print(attention_mask.device)
     with torch.no_grad():
+       
         logit = model(input_ids=input_ids, attention_mask=attention_mask).logits[
             labels != -100
         ]

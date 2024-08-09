@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 定义模型数组
-models=("Qwen2-0.5B-Instruct")
-GPU_PAIRS=("1")
+models=("gemma-2b-it" "gemma-7b-it")
+GPU_PAIRS=("4,5,6,7")
 OUTPUT_PATH="/mnt/rangehow/rangehow/sft/analysis/result.json"
 LOG_DIR="/mnt/rangehow/rangehow/sft/analysis/output"
 

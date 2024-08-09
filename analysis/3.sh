@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 定义模型数组
-models=("Qwen1.5-1.8B-Chat" "Qwen2-1.5B-Instruct")
+models=("gemma-1.1-2b-it" "gemma-1.1-7b-it")
 OUTPUT_PATH="/mnt/rangehow/rangehow/sft/analysis/result.json"
 LOG_DIR="/mnt/rangehow/rangehow/sft/analysis/output"
 
