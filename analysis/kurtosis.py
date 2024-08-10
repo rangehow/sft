@@ -70,14 +70,14 @@ if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
 
-model=balanced_load(model_dir,num_devices=torch.cuda.device_count())
-# model = AutoModelForCausalLM.from_pretrained(
-#     model_dir,
-#     torch_dtype="auto",
-#     device_map="auto",
-#     low_cpu_mem_usage=True,
-#     # attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
-# )
+# model=balanced_load(model_dir,num_devices=torch.cuda.device_count())
+model = AutoModelForCausalLM.from_pretrained(
+    model_dir,
+    torch_dtype="auto",
+    device_map="auto",
+    low_cpu_mem_usage=True,
+    # attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
+)
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
 # config = AutoConfig.from_pretrained(model_dir)

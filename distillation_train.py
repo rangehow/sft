@@ -24,6 +24,7 @@ import accelerate
 from accelerate import infer_auto_device_map
 from model_utils import balanced_load
 
+
 class MyCollator:
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
@@ -127,12 +128,8 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 
 
+model = balanced_load(model_dir=student_model_dir, num_devices=2)
 
-
-
-
-
-model =balanced_load(model_dir=student_model_dir,num_devices=2)
 # model(torch.tensor([[1,2,3]]).to(model.device))
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
@@ -259,9 +256,16 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
+from transformers import GPTQConfig
+
+gptq_config = (GPTQConfig(bits=4, dataset=train_dataset, tokenizer=tokenizer),)
 teacher_model = AutoModelForCausalLM.from_pretrained(
-    teacher_model_dir, low_cpu_mem_usage=True, torch_dtype=torch.bfloat16
+    teacher_model_dir,
+    low_cpu_mem_usage=True,
+    # torch_dtype=torch.bfloat16,
+    quantization_config=gptq_config,
 ).to("cuda:2")
+
 trainer = KDTrainer(
     teacher_model=teacher_model,
     model=model,

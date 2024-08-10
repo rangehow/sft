@@ -1,14 +1,16 @@
 import accelerate
 from transformers import AutoModelForCausalLM
 
-def balanced_load(model_dir,num_devices):
+
+def balanced_load(model_dir, num_devices):
     from collections import OrderedDict
+
     with accelerate.init_empty_weights():
         model = AutoModelForCausalLM.from_pretrained(
             model_dir,
             torch_dtype="auto",
-            
         )
+
     def create_manual_device_map(model, num_devices):
 
         num_layers = model.config.num_hidden_layers
@@ -31,12 +33,10 @@ def balanced_load(model_dir,num_devices):
 
         # 分配其他模块
         device_map["model.embed_tokens"] = 0
-        device_map["lm_head"] = 0
+        device_map["lm_head"] = num_devices - 1
         device_map["model.norm"] = num_devices - 1
-        
 
         return device_map
-
 
     # 使用手动创建的device_map
     device_map = create_manual_device_map(model, num_devices)
@@ -53,6 +53,6 @@ def balanced_load(model_dir,num_devices):
         model_dir,
         torch_dtype="auto",
         device_map=device_map,
-        attn_implementation="eager" if "gemma2" in model_dir else "sdpa",
+        attn_implementation="eager" if "gemma" in model_dir else "sdpa",
     )
     return model

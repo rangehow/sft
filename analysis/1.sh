@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 定义模型数组
-models=("Qwen2-72B-Instruct")
+models=("Phi-3-mini-4k-instruct" "Phi-3-small-8k-instruct" "Phi-3-medium-4k-instruct")
    
 GPU_PAIRS=("0,1,2,3,4,5,6,7")
 OUTPUT_PATH="/mnt/rangehow/rangehow/sft/analysis/result.json"
