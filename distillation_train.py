@@ -258,7 +258,7 @@ if args.output_dir is None:
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
 from transformers import GPTQConfig
 
-quantization_config = GPTQConfig(bits=4,dataset=['quantization test only'],tokenizer=tokenizer)
+quantization_config = GPTQConfig(bits=4,dataset=['Quantization test only','One sentence is not enough for knowledge distillation.','I hate GPU OOM issues!'],tokenizer=tokenizer)
 teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
