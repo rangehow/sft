@@ -33,7 +33,7 @@ def balanced_load(model_dir, num_devices):
 
         # 分配其他模块
         device_map["model.embed_tokens"] = 0
-        device_map["lm_head"] = num_devices - 1
+        device_map["lm_head"] = 0
         device_map["model.norm"] = num_devices - 1
 
         return device_map

@@ -158,7 +158,7 @@ for dname in dataset_name_list:
         batched=True,
         num_proc=30,
         remove_columns=train_dataset.features.keys(),
-        load_from_cache_file=False,
+        # load_from_cache_file=False,
         desc="tokenize",
     )
     dataset_list.append(train_dataset)
@@ -258,7 +258,7 @@ if args.output_dir is None:
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
 from transformers import GPTQConfig
 
-gptq_config = (GPTQConfig(bits=4, dataset=train_dataset, tokenizer=tokenizer),)
+gptq_config = (GPTQConfig(bits=4, dataset='c4', tokenizer=tokenizer),)
 teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
