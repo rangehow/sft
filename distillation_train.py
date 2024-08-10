@@ -256,11 +256,9 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-from transformers import GPTQConfig
+from transformers import AwqConfig
 
-quantization_config = GPTQConfig(
-    bits=4, dataset="wikitext2", tokenizer=tokenizer, damp_percent=0.5
-)
+quantization_config = AwqConfig()
 teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
