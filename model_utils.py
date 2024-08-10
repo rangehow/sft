@@ -32,23 +32,24 @@ def balanced_load(model_dir, num_devices):
         #         remainder -= 1
 
         for layer in layers:
-            if current_device == 0 and current_layer == layers_per_device:
+            if current_device == 0 and current_layer == layers_per_device - 1:
                 current_device += 1
                 current_layer = 0
-                
+
             device_map[layer] = current_device
             current_layer += 1
-            
+
             if current_layer >= layers_per_device + (1 if remainder > 0 else 0):
                 current_device += 1
                 current_layer = 0
                 remainder -= 1
-        
-        
+
         # 分配其他模块
         device_map["model.embed_tokens"] = 0
         device_map["lm_head"] = 0
-        device_map["model.norm"] = num_devices - 1 if num_devices<=2 else num_devices-2
+        device_map["model.norm"] = (
+            num_devices - 1 if num_devices <= 2 else num_devices - 2
+        )
 
         return device_map
 
