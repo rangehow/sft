@@ -256,15 +256,16 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-from transformers import AwqConfig
+from transformers import BitsAndBytesConfig
 
-quantization_config = AwqConfig()
+quantization_config = BitsAndBytesConfig(load_in_4bit=True)
 teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
     # torch_dtype=torch.bfloat16,
+    device_map="cuda:2"
     quantization_config=quantization_config,
-).to("cuda:2")
+)
 
 trainer = KDTrainer(
     teacher_model=teacher_model,
