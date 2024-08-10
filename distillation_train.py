@@ -256,14 +256,14 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-from transformers import GPTQConfig
+from transformers import BitsAndBytesConfig
 
-gptq_config = GPTQConfig(bits=4, dataset="c4", tokenizer=tokenizer)
+quantization_config = BitsAndBytesConfig(load_in_4bit=True)
 teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
     # torch_dtype=torch.bfloat16,
-    quantization_config=gptq_config,
+    quantization_config=quantization_config,
 ).to("cuda:2")
 
 trainer = KDTrainer(
