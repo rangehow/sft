@@ -263,7 +263,7 @@ teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
     # torch_dtype=torch.bfloat16,
-    device_map="cuda:2"
+    device_map="cuda:2",
     quantization_config=quantization_config,
 )
 
