@@ -62,7 +62,7 @@ args = parse_args()
 
 
 model_dir = model_dir.get(args.model, args.model)
-tokenizer = AutoTokenizer.from_pretrained(model_dir)
+tokenizer = AutoTokenizer.from_pretrained(model_dir,trust_remote_code=True)
 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
 
 
@@ -76,6 +76,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype="auto",
     device_map="auto",
     low_cpu_mem_usage=True,
+    trust_remote_code=True,
     # attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
 )
 

@@ -222,6 +222,21 @@ class Phi3Template(Template):
             efficient_eos=True,
         )
 
+@register_template
+class Phi3SamllTemplate(Template):
+    model_type = "phi3small"
+
+    def __init__(self, tokenizer) -> None:
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<|user|>\n{content}<|end|>\n<|assistant|>\n",
+            assistant_token="{content}<|end|>\n",
+            start_token_id=tokenizer.eos_token_id,
+            end_token_id=tokenizer.eos_token_id,
+            efficient_eos=True,
+        )
+
+
 
 def test(tokenizer_name, template):
     access_token = "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"
@@ -230,9 +245,9 @@ def test(tokenizer_name, template):
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         token=access_token,
+        trust_remote_code=True
     )
-    import pdb
-    pdb.set_trace()
+
     g = modelType2Template[template](tokenizer)
     message = [
         {"role": "user", "content": "aaa"},
@@ -280,7 +295,8 @@ if __name__ == "__main__":
         # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
         # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
         # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
-        ("google/gemma-2-27b-it", "gemma2"),
+        ("microsoft/Phi-3-small-8k-instruct", "phi3small"),
+        ('microsoft/Phi-3-mini-4k-instruct',"phi3"),
         # ("google/gemma-7b-it", "gemma"),
         ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
         # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
