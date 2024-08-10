@@ -89,8 +89,8 @@ def truthfulqa(local_dir):
 @register2dict()
 def math(local_dir):
     if local_dir is not None:
-        a = datasets.load_dataset(local_dir, "all")["train"]
-        b = datasets.load_dataset(local_dir, "all")["test"]
+        a = datasets.load_dataset(local_dir, "default")["train"]
+        b = datasets.load_dataset(local_dir, "default")["test"]
     else:
         a = datasets.load_dataset("lighteval/MATH", "all")["train"]  # 7.5k
         b = datasets.load_dataset("lighteval/MATH", "all")["test"]  # 5k

@@ -256,9 +256,9 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-from transformers import BitsAndBytesConfig
+from transformers import GPTQConfig
 
-quantization_config = BitsAndBytesConfig(load_in_4bit=True)
+quantization_config = GPTQConfig(bits=4)
 teacher_model = AutoModelForCausalLM.from_pretrained(
     teacher_model_dir,
     low_cpu_mem_usage=True,
