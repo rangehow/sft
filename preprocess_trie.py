@@ -366,13 +366,13 @@ def main():
 
     save_chunks(
         synthesis_dict,
-        chunk_size=1024,
+        chunk_size=1000,
         base_dir=output_base_dir,
         name="synthesis",
     )
     save_chunks(
         cnt_list,
-        chunk_size=1024,
+        chunk_size=1000,
         base_dir=output_base_dir,
         name="index",
     )

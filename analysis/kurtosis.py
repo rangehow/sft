@@ -77,7 +77,7 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
     low_cpu_mem_usage=True,
     trust_remote_code=True,
-    # attn_implementation="eager" if 'gemma2' in args.model else 'sdpa',
+    attn_implementation="eager" ,
 )
 
 # NOTE 从config.json中读取模型的类型，从而自动获取合适的模板类型
@@ -171,7 +171,8 @@ def kurtosis_pytorch(data, dim=-1):
     
     # Adjust for normal distribution kurtosis
     kurtosis_value = kurtosis_value - 3
-    
+    # import pdb
+    # pdb.set_trace()
     return kurtosis_value
 
 kurtosis_values = 0

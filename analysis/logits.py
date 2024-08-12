@@ -97,7 +97,7 @@ def main():
     import time
 
     for m in model_list:
-
+        m=model_dir.get(m)
         tokenizer = AutoTokenizer.from_pretrained(m)
         tokenizer.padding_side = "left"
         template = modelType2Template[args.template](tokenizer)
@@ -216,7 +216,7 @@ def main():
             )
             dataloader = DataLoader(
                 dataset=train_dataset,
-                batch_size=1,
+                batch_size=2,
                 collate_fn=collator,
                 num_workers=16,
                 pin_memory=True,

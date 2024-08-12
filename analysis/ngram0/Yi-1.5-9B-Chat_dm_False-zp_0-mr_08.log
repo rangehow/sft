@@ -1,0 +1,10 @@
+WARNING 08-10 12:12:06 _custom_ops.py:14] Failed to import from vllm._C with ImportError('/mnt/rangehow/miniconda3/envs/mamba/lib/python3.10/site-packages/vllm/_C.abi3.so: undefined symbol: _ZN5torch3jit11parseSchemaERKSs')
+script_path /mnt/rangehow/rangehow/sft/analysis
+开始加载数据
+
+['/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part0.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part1.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part130.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part131.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part132.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part133.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part134.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/synthesis_part3.msgpack']
+['/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part0.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part1.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part130.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part131.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part132.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part133.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part134.msgpack', '/mnt/rangehow/rangehow/sft/train_dataset/yi_alpaca_gpt4,math,code_template/index_part3.msgpack']
+数据集长度是= 8192
+数据加载时间为= 25.28212809562683 
+
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:03<00:09,  3.01s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:58<01:07, 33.65s/it]

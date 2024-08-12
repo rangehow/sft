@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # 定义模型数组
-models=("gemma-1.1-2b-it" "gemma-1.1-7b-it")
+models=("gemma-2-2b-it")
 OUTPUT_PATH="/mnt/rangehow/rangehow/sft/analysis/result.json"
 LOG_DIR="/mnt/rangehow/rangehow/sft/analysis/output"
 
 # 遍历模型数组并运行命令
 for model in "${models[@]}"; do
-    CUDA_VISIBLE_DEVICES=2,3 \
+    CUDA_VISIBLE_DEVICES=0,1,2,3 \
     python -m sft.analysis.kurtosis \
     --model "$model" \
     --output_path "$OUTPUT_PATH" \
