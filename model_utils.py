@@ -26,8 +26,8 @@ def balanced_load(model_dir, num_devices, is_distillation=False):
         
         if num_devices>=2:
             # 分摊一点给第二张卡
-            layers_per_device[0]-=2 if is_distillation else 1
-            layers_per_device[1]+=2 if is_distillation else 1
+            layers_per_device[0]-=6 if is_distillation else 1
+            layers_per_device[1]+=6 if is_distillation else 1
         
         device_map = OrderedDict()
         current_device = 0
