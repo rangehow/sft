@@ -16,23 +16,31 @@ def balanced_load(model_dir, num_devices):
 
         num_layers = model.config.num_hidden_layers
         layers = [f"model.layers.{i}" for i in range(num_layers)]  # 假设有28层
-        layers_per_device = len(layers) // num_devices
+        layers_per_device = [len(layers) // num_devices for _ in range(num_devices)]
         remainder = len(layers) % num_devices
-
+        for i in range(len(layers_per_device)-1,-1,-1):
+            if remainder==0:
+                break
+            layers_per_device[i]+=1
+            remainder-=1
+        
+        if num_devices>=2:
+            # 分摊一点给第二张卡
+            layers_per_device[0]-=1
+            layers_per_device[1]+=1
+        
         device_map = OrderedDict()
         current_device = 0
         current_layer = 0
 
         # 分配层到设备
         for layer in layers:
+            while layers_per_device[current_device] ==0 :
+                current_device+=1
+            
+            layers_per_device[current_device] -= 1
             device_map[layer] = current_device
-            current_layer += 1
-            if current_layer >= layers_per_device + (1 if remainder > 0 else 0):
-                current_device += 1
-                current_layer = 0
-                remainder -= 1
 
-        
 
         # 分配其他模块
         device_map["model.embed_tokens"] = 0
