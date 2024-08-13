@@ -2,7 +2,7 @@ import accelerate
 from transformers import AutoModelForCausalLM
 
 
-def balanced_load(model_dir, num_devices):
+def balanced_load(model_dir, num_devices, is_distillation=False):
     from collections import OrderedDict
 
     with accelerate.init_empty_weights():
@@ -12,7 +12,7 @@ def balanced_load(model_dir, num_devices):
             trust_remote_code=True,
         )
 
-    def create_manual_device_map(model, num_devices):
+    def create_manual_device_map(model, num_devices, is_distillation=False):
 
         num_layers = model.config.num_hidden_layers
         layers = [f"model.layers.{i}" for i in range(num_layers)]  # 假设有28层
@@ -26,8 +26,8 @@ def balanced_load(model_dir, num_devices):
         
         if num_devices>=2:
             # 分摊一点给第二张卡
-            layers_per_device[0]-=1
-            layers_per_device[1]+=1
+            layers_per_device[0]-=2 if is_distillation else 1
+            layers_per_device[1]+=2 if is_distillation else 1
         
         device_map = OrderedDict()
         current_device = 0
@@ -54,7 +54,7 @@ def balanced_load(model_dir, num_devices):
         return device_map
 
     # 使用手动创建的device_map
-    device_map = create_manual_device_map(model, num_devices)
+    device_map = create_manual_device_map(model, num_devices,is_distillation)
 
     # device_map["model.embed_tokens"] = device_map["lm_head"]
     # 打印device_map结果

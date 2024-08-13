@@ -128,7 +128,7 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 
 
-model = balanced_load(model_dir=student_model_dir, num_devices=2)
+model = balanced_load(model_dir=student_model_dir, num_devices=2,is_distillation=True)
 
 # model(torch.tensor([[1,2,3]]).to(model.device))
 
