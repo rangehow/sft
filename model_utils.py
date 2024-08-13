@@ -48,14 +48,7 @@ def balanced_load(model_dir, num_devices):
         device_map["model.norm"] = (
             num_devices - 1 if num_devices <= 2 else num_devices - 2
         )
-        # 因为
-        max_layer_with_zero = max(
-            (layer for layer, device in device_map.items() if device == 0 and "model.layers." in layer),
-            key=lambda x: int(x.split(".")[-1])
-        )
 
-        # 将其 value 改为 1
-        device_map[max_layer_with_zero] = 1
         
         
         return device_map
