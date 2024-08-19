@@ -12,3 +12,4 @@ wandb
 data
 results
 analysis/output
+regression/
