@@ -128,7 +128,13 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 
 
-model = balanced_load(model_dir=student_model_dir, num_devices=2,is_distillation=True)
+model = balanced_load(
+    model_dir=student_model_dir,
+    num_devices=3,
+    ratio=[1, 1],
+    devices_idx=[2, 3],
+    is_distillation=True,
+)
 
 # model(torch.tensor([[1,2,3]]).to(model.device))
 
@@ -256,18 +262,28 @@ if args.output_dir is None:
 
 
 teacher_model_dir = model_dir.get(args.teacher_model, args.teacher_model)
-from transformers import BitsAndBytesConfig
 
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True, bnb_4bit_compute_dtype=torch.bfloat16
+teacher_model = balanced_load(
+    model_dir=teacher_model_dir,
+    num_devices=2,
+    ratio=[0.5, 1],
+    devices_idx=[0, 1],
+    is_distillation=False,
 )
-teacher_model = AutoModelForCausalLM.from_pretrained(
-    teacher_model_dir,
-    low_cpu_mem_usage=True,
-    torch_dtype=torch.bfloat16,
-    device_map="cuda:2",
-    quantization_config=quantization_config,
-)
+
+
+# from transformers import BitsAndBytesConfig
+
+# quantization_config = BitsAndBytesConfig(
+#     load_in_4bit=True, bnb_4bit_compute_dtype=torch.bfloat16
+# )
+# teacher_model = AutoModelForCausalLM.from_pretrained(
+#     teacher_model_dir,
+#     low_cpu_mem_usage=True,
+#     torch_dtype=torch.bfloat16,
+#     device_map="cuda:2",
+#     quantization_config=quantization_config,
+# )
 
 trainer = KDTrainer(
     teacher_model=teacher_model,
