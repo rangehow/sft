@@ -130,7 +130,7 @@ tokenizer.padding_side = "left"
 
 model = balanced_load(
     model_dir=student_model_dir,
-    num_devices=3,
+    num_devices=2,
     ratio=[1, 1],
     devices_idx=[2, 3],
     is_distillation=True,
