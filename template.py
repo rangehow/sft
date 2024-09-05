@@ -5,9 +5,9 @@ modelType2Template = {}
 
 
 def register_template(cls):
-    if isinstance(cls.model_type,list):
+    if isinstance(cls.model_type, list):
         for name in cls.model_type:
-            modelType2Template[name]=cls
+            modelType2Template[name] = cls
     else:
         modelType2Template[cls.model_type] = cls
     return
@@ -22,6 +22,7 @@ class Template:
         start_token_id=None,
         end_token_id=None,
         system_token=None,
+        tool_token=None,
         efficient_eos=False,
         default_system=None,
     ) -> None:
@@ -29,13 +30,15 @@ class Template:
         self.user_token = user_token if user_token else []
         self.assistant_token = assistant_token if assistant_token else []
         self.system_token = system_token if system_token else []
+        self.tool_token = tool_token if tool_token else []
+
         self.efficient_eos = efficient_eos
         self.start_token_id = start_token_id if start_token_id else None
         self.end_token_id = end_token_id if end_token_id else None
         self.default_system = default_system if default_system else None
-        self.base_eos_token_id=tokenizer.eos_token_id
-        self.chat_eos_token_id=tokenizer.eos_token_id
-        
+        self.base_eos_token_id = tokenizer.eos_token_id
+        self.chat_eos_token_id = tokenizer.eos_token_id
+
     def apply(self, messages: list[dict[str, str]]):
 
         if self.start_token_id:
@@ -49,10 +52,18 @@ class Template:
         if messages[0]["role"] == "system":
             exit()  # 还没实现
         elif self.default_system:
-            system_token = self.tokenizer.encode(
-                self.system_token.format_map({"content": self.default_system}),
-                add_special_tokens=False,
-            )
+            if self.model_type == "llama31" and self.tool_token != []:
+                system_token = self.tokenizer.encode(
+                    self.system_token.format_map(
+                        {"content": "Environment: ipython\n" + self.default_system}
+                    ),
+                    add_special_tokens=False,
+                )
+            else:
+                system_token = self.tokenizer.encode(
+                    self.system_token.format_map({"content": self.default_system}),
+                    add_special_tokens=False,
+                )
             input_id += system_token
             label += [-100] * len(system_token)
         for i in range(start_idx, len(messages)):
@@ -105,14 +116,14 @@ class Template:
 
 @register_template
 class GemmaTemplate(Template):
-    model_type = ["gemma","gemma2"]
+    model_type = ["gemma", "gemma2"]
 
     def __init__(self, tokenizer) -> None:
 
         super().__init__(
             tokenizer=tokenizer,
             user_token="<start_of_turn>user\n{content}<end_of_turn>\n<start_of_turn>model\n",
-            assistant_token="{content}<eos>\n",
+            assistant_token="{content}<end_of_turn>\n",
             start_token_id=tokenizer.bos_token_id,
             # end_token_id=tokenizer.eos_token_id,
             efficient_eos=True,
@@ -124,7 +135,7 @@ class Qwen2Template(Template):
     model_type = "qwen2"
 
     def __init__(self, tokenizer) -> None:
-        
+
         super().__init__(
             tokenizer=tokenizer,
             user_token="<|im_start|>user\n{content}<|im_end|>\n<|im_start|>assistant\n",
@@ -136,8 +147,8 @@ class Qwen2Template(Template):
             default_system="You are a helpful assistant.",
         )
         # 必须写在后面不然会被默认值覆盖
-        self.base_eos_token_id=151643
-        self.chat_eos_token_id=151645
+        self.base_eos_token_id = 151643
+        self.chat_eos_token_id = 151645
 
 
 @register_template
@@ -145,7 +156,7 @@ class LlamaTemplate(Template):
     model_type = "llama"
 
     def __init__(self, tokenizer) -> None:
-        
+
         super().__init__(
             tokenizer=tokenizer,
             user_token="<|start_header_id|>user<|end_header_id|>\n\n{content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
@@ -154,8 +165,8 @@ class LlamaTemplate(Template):
             end_token_id=tokenizer.eos_token_id,
             efficient_eos=False,
         )
-        self.base_eos_token_id=128001
-        self.chat_eos_token_id=128009
+        self.base_eos_token_id = 128001
+        self.chat_eos_token_id = 128009
 
 
 @register_template
@@ -172,6 +183,27 @@ class Llama2Template(Template):
             end_token_id=tokenizer.eos_token_id,
             efficient_eos=False,
         )
+
+
+@register_template
+class Llama31Template(Template):
+    model_type = "llama31"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<|start_header_id|>user<|end_header_id|>\n\n{content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            assistant_token="{content}<|eot_id|>",
+            start_token_id=tokenizer.bos_token_id,
+            end_token_id=tokenizer.eos_token_id,
+            efficient_eos=False,
+            system_token="<|start_header_id|>system<|end_header_id|>\n\n{content}\n\n<|eot_id|>",
+            default_system="""Cutting Knowledge Date: December 2023\nToday Date: 26 Jul 2024""",
+            tool_token=None,
+        )
+        self.base_eos_token_id = 128001
+        self.chat_eos_token_id = 128009
 
 
 @register_template
@@ -209,6 +241,22 @@ class MistralTemplate(Template):
 
 
 @register_template
+class MistralNemoTemplate(Template):
+    model_type = "mistral_nemo"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="[INST]{content}[/INST]",
+            assistant_token="{content}</s>",
+            start_token_id=tokenizer.bos_token_id,
+            end_token_id=None,
+            efficient_eos=True,
+        )
+
+
+@register_template
 class Phi3Template(Template):
     model_type = "phi3"
 
@@ -221,6 +269,7 @@ class Phi3Template(Template):
             end_token_id=32000,
             efficient_eos=True,
         )
+
 
 @register_template
 class Phi3SamllTemplate(Template):
@@ -237,16 +286,13 @@ class Phi3SamllTemplate(Template):
         )
 
 
+# def test_tool_function():
+
 
 def test(tokenizer_name, template):
-    access_token = "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"
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name,
-        token=access_token,
-        trust_remote_code=True
-    )
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
 
     g = modelType2Template[template](tokenizer)
     message = [
@@ -291,17 +337,18 @@ def test(tokenizer_name, template):
 
 if __name__ == "__main__":
     test_list = [
-        # ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
-        # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral"),
-        # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
-        # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
+        ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
+        ("mistralai/Mistral-Nemo-Instruct-2407", "mistral_nemo"),
+        ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
+        ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
         ("microsoft/Phi-3-small-8k-instruct", "phi3small"),
-        ('microsoft/Phi-3-mini-4k-instruct',"phi3"),
-        # ("google/gemma-7b-it", "gemma"),
-        ("meta-llama/Meta-Llama-3-8B-Instruct", "llama"),
-        # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
-        # ("01-ai/Yi-1.5-34B-Chat", "yi"),
-        # ("Qwen/Qwen2-72B-Instruct", "qwen2"),
+        ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
+        ("google/gemma-7b-it", "gemma"),
+        ("google/gemma-2-2b-it", "gemma2"),
+        ("/mnt/rangehow/models/Meta-Llama-3.1-8B-Instruct", "llama31"),
+        ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
+        ("01-ai/Yi-1.5-34B-Chat", "yi"),
+        ("Qwen/Qwen2-72B-Instruct", "qwen2"),
     ]
     result = {}
     for instance in test_list:
