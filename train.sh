@@ -39,7 +39,7 @@ CUDA_VISIBLE_DEVICES=0 torchrun --nproc_per_node 1 special_train.py --model llam
 
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node 2 special_train.py --model llama3_8b --lora --gradient_accumulation_steps 256 --total_bsz 512 --zero_prob 0.1 --div_mode False --weighted False --dataset alpaca_gpt4,math,code --mix True --mix_ratio 0.7 --template llama
 
-python  distillation_train.py --dataset alpaca_gpt4,code,math --gradient_accumulation_steps 512 --total_bsz 512 --model gemma2_9b --teacher_model   gemma2_27b_it 
+python  distillation_train.py --dataset alpaca_gpt4,code,math --gradient_accumulation_steps 512 --total_bsz 512 --model gemma_2b --teacher_model   gemma2_27b_it 
 
 
 
