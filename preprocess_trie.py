@@ -2,6 +2,7 @@ from functools import partial
 import os
 from collections import Counter, defaultdict
 from transformers import AutoTokenizer, AutoConfig
+from itertools import islice
 import pickle
 import warnings
 import datasets
@@ -14,7 +15,6 @@ from tqdm import tqdm
 from loguru import logger
 import argparse
 
-warnings.filterwarnings("ignore", "The iteration is not making good progress")
 
 
 class TrieNode:
@@ -65,6 +65,7 @@ class Trie:
 
         _print(self.root, [])
 
+
 def parse_args():
 
     parser = argparse.ArgumentParser()
@@ -73,7 +74,7 @@ def parse_args():
         "--dataset",
     )
     parser.add_argument("--clm", default=True, type=ast.literal_eval)
-    parser.add_argument("--ngram", default=0,type=int)
+    parser.add_argument("--ngram", default=4, type=int)
     parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
     parser.add_argument("--template", type=str)
     parser.add_argument("--mono", default=False, type=ast.literal_eval)
@@ -86,7 +87,7 @@ def find_ranges(lst, target=-100):
     ranges = []
     start = None
     multiTurnOnlyOnceInfoFlag = True
-    have_target=False
+    have_target = False
     for i, num in enumerate(lst):
         if num==target:
             have_target=True
@@ -118,7 +119,7 @@ def find_ranges(lst, target=-100):
     return ranges
 
 
-from itertools import islice
+
 
 
 def chunk_data(data, chunk_size):
@@ -298,8 +299,12 @@ def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
                         ):  # trie的返回不稳定，现在是空counter
                                 
                             clm_value = supervised_value
-                    assert clm_value is not None
-                    synthesis_dict[key].append([supervised_value, clm_value])
+                    try:
+                        assert clm_value is not None
+                        synthesis_dict[key].append([supervised_value, clm_value])
+                    except:
+                        import pdb
+                        pdb.set_trace()
 
                 elif args.clm and flag4LossArea:
                     flag4LossArea = False
@@ -315,6 +320,7 @@ def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
 
 @logger.catch
 def main():
+    
     args = parse_args()
 
     while True:
@@ -429,7 +435,6 @@ def test(args):
     # assert target_synthesis_dict==synthesis_dict 
     # assert cnt_list == target_cnt_list
     
-
 
 if __name__ == "__main__":
     main()

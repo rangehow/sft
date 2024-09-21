@@ -9,6 +9,7 @@ def register2dict():
         if func.__name__ not in dname2load:
             dname2load[func.__name__] = func
         else:
+            print("重名了",func.__name__)
             exit()
         return func
 
@@ -97,12 +98,6 @@ def math(local_dir):
     return datasets.concatenate_datasets([a, b])
 
 
-@register2dict()
-def magpie(local_dir):
-    if local_dir is not None:
-        return datasets.load_dataset(local_dir)["train"]
-    else:
-        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-1M-v0.1")["train"]
 
 
 
@@ -241,6 +236,14 @@ def multimedqa(local_dir):
 
 
 @register2dict()
+def magpie(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("Magpie-Align/MagpieLM-SFT-Data-v0.1")["train"]
+
+
+@register2dict()
 def magpie_300k(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
@@ -253,7 +256,6 @@ def redpajama(local_dir):
         return datasets.load_dataset(local_dir)["train"]
     else:
         return datasets.load_dataset("togethercomputer/RedPajama-Data-1T-Sample")["train"]
-
 
 if __name__ == "__main__":
     d = datasets.load_dataset("/mnt/rangehow/rangehow/medqa")['test']

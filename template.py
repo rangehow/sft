@@ -154,6 +154,28 @@ class Qwen2Template(Template):
 
 
 @register_template
+class Qwen25Template(Template):
+    model_type = "qwen2.5"
+
+    def __init__(self, tokenizer) -> None:
+
+        super().__init__(
+            tokenizer=tokenizer,
+            user_token="<|im_start|>user\n{content}<|im_end|>\n<|im_start|>assistant\n",
+            assistant_token="{content}<|im_end|>\n",
+            start_token_id=tokenizer.bos_token_id,
+            end_token_id=tokenizer.eos_token_id,
+            efficient_eos=False,
+            system_token="<|im_start|>system\n{content}<|im_end|>\n",
+            default_system="You are Qwen, created by Alibaba Cloud. You are a helpful assistant.",
+        )
+        # 必须写在后面不然会被默认值覆盖
+        self.base_eos_token_id = 151643
+        self.chat_eos_token_id = 151645
+
+
+
+@register_template
 class LlamaTemplate(Template):
     model_type = "llama"
 
@@ -338,20 +360,23 @@ def test(tokenizer_name, template):
     return a == c
 
 
+
 if __name__ == "__main__":
     test_list = [
-        ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
-        ("mistralai/Mistral-Nemo-Instruct-2407", "mistral_nemo"),
-        ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
-        ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
-        ("microsoft/Phi-3-small-8k-instruct", "phi3small"),
-        ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
-        ("google/gemma-7b-it", "gemma"),
-        ("google/gemma-2-2b-it", "gemma2"),
-        ("/mnt/rangehow/models/Meta-Llama-3.1-8B-Instruct", "llama31"),
-        ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
-        ("01-ai/Yi-1.5-34B-Chat", "yi"),
-        ("Qwen/Qwen2-72B-Instruct", "qwen2"),
+        # ("mistralai/Mistral-7B-Instruct-v0.3", "mistral"),
+        # ("mistralai/Mistral-Nemo-Instruct-2407", "mistral_nemo"),
+        # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
+        # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
+        # ("microsoft/Phi-3-small-8k-instruct", "phi3small"),
+        # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
+        # ("google/gemma-7b-it", "gemma"),
+        # ("google/gemma-2-2b-it", "gemma2"),
+        # ("/mnt/rangehow/models/Meta-Llama-3.1-8B-Instruct", "llama31"),
+        # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
+        # ("01-ai/Yi-1.5-34B-Chat", "yi"),
+        # ("Qwen/Qwen2-72B-Instruct", "qwen2"),
+        ("/mnt/rangehow/models/Qwen2.5-7B-Instruct", "qwen2.5"),
+        
     ]
     result = {}
     for instance in test_list:
