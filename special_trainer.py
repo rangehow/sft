@@ -37,8 +37,8 @@ class KLTrainer(Trainer):
 
         # print(clm_cnt.dtype)
         result = model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
+            input_ids=input_ids.to(model.device),
+            attention_mask=attention_mask.to(model.device),
         )
         model_logits = result.logits  # bsz x seqlen x dim
         # 

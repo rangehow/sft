@@ -140,7 +140,7 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 
 from niuload import balanced_load
-model = balanced_load(model_dir,ratio=[0.3,1,1,1])
+model = balanced_load(model_dir,ratio=[0.5,1,1,1])
 # model = AutoModelForCausalLM.from_pretrained(
 #     model_dir,
 #     torch_dtype="auto",
