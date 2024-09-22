@@ -140,7 +140,7 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 
 from niuload import balanced_load
-model = balanced_load(model_dir,ratio=[0.5,1,1,1])
+model = balanced_load(model_dir,ratio=[0.3,1,1,1])
 # model = AutoModelForCausalLM.from_pretrained(
 #     model_dir,
 #     torch_dtype="auto",
@@ -179,9 +179,6 @@ import concurrent.futures
 
 def load_msgpack_chunks(chunk_files):
 
-    # print(chunk_files)
-    # cpu_count = multiprocessing.cpu_count()
-    # logger.debug(f"加载数据集使用CPU 核心数：{cpu_count//2}")  cpu_count // 2
     with concurrent.futures.ProcessPoolExecutor() as executor:
         results = list(
             tqdm(

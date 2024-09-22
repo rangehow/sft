@@ -86,8 +86,8 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
                     text,
                     add_special_tokens=False,
                 ) + [template.base_eos_token_id]
-            if len(temp_label) > 8192 or len(temp_label) < 20:
-                continue
+            # if len(temp_label) > 8192 or len(temp_label) < 20:
+            #     continue
             labels.append(temp_label)
 
         return {"input_ids": labels, "labels": labels}

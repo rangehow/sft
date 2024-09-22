@@ -1,65 +1,37 @@
 import pickle
-from collections import Counter
+import msgpack
+from collections import defaultdict
+import random
+import timeit
 
-# 定义 TrieNode 和 Trie 类
-class TrieNode:
-    def __init__(self):
-        self.children = {}
-        self.value = Counter()
+# 生成带有随机数据的 defaultdict(list)
+def generate_random_defaultdict(size=1000, list_size=10):
+    d = defaultdict(list)
+    for i in range(size):
+        key = f"key_{i}"
+        d[(key)] = [random.randint(0, 1000) for _ in range(list_size)]
+    return d
 
-class Trie:
-    def __init__(self):
-        self.root = TrieNode()
+# pickle 序列化和反序列化测试
+def pickle_test(data):
+    # 使用 protocol 5
+    pickled_data = pickle.dumps(data, protocol=5)
+    unpickled_data = pickle.loads(pickled_data)
 
-    def insert(self, key_list, value):
-        node = self.root
-        for key in key_list:
-            if key not in node.children:
-                node.children[key] = TrieNode()
-            node = node.children[key]
-        node.value[value] += 1
+# msgpack 序列化和反序列化测试
+def msgpack_test(data):
+    # 使用 msgpack 序列化和反序列化
+    packed_data = msgpack.packb(data, use_bin_type=True)
+    unpacked_data = msgpack.unpackb(packed_data, raw=False)
 
-    def search(self, key_list):
-        node = self.root
-        for key in key_list:
-            if key not in node.children:
-                return None
-            node = node.children[key]
-        return node.value
+if __name__ == "__main__":
+    # 生成测试数据
+    data = generate_random_defaultdict(size=10000, list_size=1000)
 
-    def merge(self, other):
-        self._merge_nodes(self.root, other.root)
+    # 测试 pickle 的序列化和反序列化性能
+    pickle_time = timeit.timeit(lambda: pickle_test(data), number=100)
+    print(f"Pickle (protocol 5) 100次序列化和反序列化时间: {pickle_time:.3f} 秒")
 
-    def _merge_nodes(self, node1, node2):
-        # 合并 values
-        node1.value.update(node2.value)
-        # 合并 children
-        for key, child_node2 in node2.children.items():
-            if key in node1.children:
-                self._merge_nodes(node1.children[key], child_node2)
-            else:
-                node1.children[key] = child_node2
-
-# 创建并插入数据到 Trie
-trie = Trie()
-trie.insert(['a', 'b', 'c'], 'value1')
-trie.insert(['a', 'b', 'd'], 'value2')
-
-# 检查插入是否成功
-print("Before pickling:")
-print(trie.search(['a', 'b', 'c']))  # 应该输出 Counter({'value1': 1})
-print(trie.search(['a', 'b', 'd']))  # 应该输出 Counter({'value2': 1})
-
-# 尝试使用 pickle 序列化和反序列化
-try:
-    serialized_trie = pickle.dumps(trie)  # 序列化
-    deserialized_trie = pickle.loads(serialized_trie)  # 反序列化
-    
-    print("After pickling:")
-    print(deserialized_trie.search(['a', 'b', 'c']))  # 应该输出 Counter({'value1': 1})
-    print(deserialized_trie.search(['a', 'b', 'd']))  # 应该输出 Counter({'value2': 1})
-
-except pickle.PicklingError as e:
-    print(f"PicklingError: {e}")
-except Exception as e:
-    print(f"An error occurred: {e}")
+    # 测试 msgpack 的序列化和反序列化性能
+    msgpack_time = timeit.timeit(lambda: msgpack_test(data), number=100)
+    print(f"Msgpack 100次序列化和反序列化时间: {msgpack_time:.3f} 秒")
