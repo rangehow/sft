@@ -138,14 +138,17 @@ logger.debug(f"模型路径是:{model_dir}")
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
-model = AutoModelForCausalLM.from_pretrained(
-    model_dir,
-    torch_dtype="auto",
-    device_map=(
-        "auto" if not is_torchrun() else None
-    ),  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
-    attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
-)
+
+from niuload import balanced_load
+model = balanced_load(model_dir,ratio=[0.5,1,1,1])
+# model = AutoModelForCausalLM.from_pretrained(
+#     model_dir,
+#     torch_dtype="auto",
+#     device_map=(
+#         "auto" if not is_torchrun() else None
+#     ),  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
+#     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
+# )
 
 embedding_size = model.lm_head.weight.size()[
     0

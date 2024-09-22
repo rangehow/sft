@@ -345,8 +345,12 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
                         ):  # trie的返回不稳定，现在是空counter
                                 
                             clm_value = supervised_value
-                    assert clm_value is not None
-                    synthesis_dict[key].append([supervised_value, clm_value])
+                    try:
+                        assert clm_value is not None
+                        synthesis_dict[key].append([supervised_value, clm_value])
+                    except:
+                        import pdb
+                        pdb.set_trace()
 
                 elif args.clm and flag4LossArea:
                     flag4LossArea = False

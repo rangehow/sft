@@ -1,0 +1,1 @@
+python special_train.py --gradient_accumulation_steps 128 --total_bsz 128 --zero_prob 0 --div_mode False --weighted False --dataset magpie --mix True --mix_ratio 0.8 --learning_rate 2e-5 --template qwen2.5 --w_template --lr_scheduler_type cosine --warmup_ratio 0.01 &
