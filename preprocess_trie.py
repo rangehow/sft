@@ -369,7 +369,14 @@ def main():
         output_base_dir,
         exist_ok=True,
     )
-
+    
+    from datasets import Dataset
+    regular_dict = dict(synthesis_dict)
+    from ipdb import set_trace
+    set_trace()
+    # 创建Dataset对象
+    dataset = Dataset.from_dict(regular_dict)
+    
     save_chunks(
         synthesis_dict,
         chunk_size=1000,

@@ -1,8 +1,0 @@
-sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.5_div,sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.8_div,sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha1_div
-triviaqa
-agieval
-sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.5_div,sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha0.8_div,sft/gemma_2b_alpaca_gpt4_6m14d_0_bsz256_alpha1_div
-???
-triviaqa
-agieval
-truthfulqa_mc2
