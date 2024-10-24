@@ -55,6 +55,7 @@ def parse_args():
 
 
 class my(BaseModel):
+    
     answer: Literal["A", "B", "C", "D", "E"]
 
 

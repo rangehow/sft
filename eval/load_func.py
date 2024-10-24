@@ -116,6 +116,12 @@ def test(local_dir):
     else:
         return datasets.load_dataset("JesusCrist/SimpleData")["train"]
 
+@register2dict()
+def iepile(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir)["train"]
+    else:
+        return datasets.load_dataset("JesusCrist/IEPILE")["train"]
 
 @register2dict()
 def wiki_medical(local_dir):

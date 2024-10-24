@@ -668,6 +668,19 @@ def medical(instances, template, shot=False, test=False, mode=0):
 
 
 @register2dict()
+def iepile(instances, template, shot=False, test=False, mode=0):
+
+    return _process(
+        real_input=instances["instruction"],
+        output=instances["output"],
+        template=template,
+        test=test,
+        mode=mode,
+    )
+
+
+
+@register2dict()
 def pubmedqa(instances, **kwargs):
     real_input = []
     answer = []
