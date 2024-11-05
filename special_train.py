@@ -130,30 +130,6 @@ if args.output_dir is None:
         args.output_dir = args.output_dir + f"_warmratio{args.warmup_ratio:.0e}"
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
-model_dir = model_dir.get(args.model, args.model)
-tokenizer = AutoTokenizer.from_pretrained(model_dir)
-tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
-logger.debug(f"模型路径是:{model_dir}")
-
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
-tokenizer.padding_side = "left"
-
-from niuload import balanced_load
-model = balanced_load(model_dir,ratio=[0.5,1,1,1])
-# model = AutoModelForCausalLM.from_pretrained(
-#     model_dir,
-#     torch_dtype="auto",
-#     device_map=(
-#         "auto" if not is_torchrun() else None
-#     ),  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
-#     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
-# )
-
-embedding_size = model.lm_head.weight.size()[
-    0
-]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
-
 
 def load_msgpack_file(filename):
     with open(filename, "rb") as f:
@@ -221,9 +197,11 @@ def load_dataset():
         base_dir = base_dir + f"_mono_{args.mono_dataset.replace(',','_')}"
     if args.w_template:
         base_dir = base_dir + f"_template"
+
     synthesis = load_msgpack_chunks(
         find_msgpack_chunk_files(base_dir, name="synthesis")
     )
+
     if not args.offline:
         index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
 
@@ -239,6 +217,32 @@ def load_dataset():
             pt=args.pt,
         )
     return train_dataset
+
+
+model_dir = model_dir.get(args.model, args.model)
+tokenizer = AutoTokenizer.from_pretrained(model_dir)
+tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+logger.debug(f"模型路径是:{model_dir}")
+
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "left"
+
+from niuload import balanced_load
+
+model = balanced_load(model_dir, ratio=[0.5, 1, 1, 1])
+# model = AutoModelForCausalLM.from_pretrained(
+#     model_dir,
+#     torch_dtype="auto",
+#     device_map=(
+#         "auto" if not is_torchrun() else None
+#     ),  # 在显存不够的时候优先考虑流水线并行吧。 这样不需要考虑变化的总bsz
+#     attn_implementation="flash_attention_2" if args.fa2 else "sdpa",
+# )
+
+embedding_size = model.lm_head.weight.size()[
+    0
+]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
 
 
 train_dataset = load_dataset()
