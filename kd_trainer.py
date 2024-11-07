@@ -8,7 +8,7 @@ import time
 
 class KDTrainer(Trainer):
 
-    def __init__(self, teacher_model, temperature=1.0, alpha=0.5, **kwargs):
+    def __init__(self, teacher_model, temperature=4.0, alpha=0.5, **kwargs):
         self.teacher_model = teacher_model
         self.temperature = temperature
         self.alpha = alpha
