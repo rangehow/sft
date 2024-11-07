@@ -31,6 +31,7 @@ class KDTrainer(Trainer):
             teacher_outputs = self.teacher_model(
                 input_ids=input_ids.to(self.teacher_model.device),
                 attention_mask=attention_mask.to(self.teacher_model.device),
+                use_cache=False,
             )
             teacher_logits = teacher_outputs.logits.to(student_logits.device)
 
