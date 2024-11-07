@@ -206,7 +206,7 @@ def main():
         bf16=True,
         logging_steps=1,
         remove_unused_columns=True,
-        save_strategy="no",
+        save_strategy="epoch",
         warmup_ratio=args.warmup_ratio,
         label_smoothing_factor=args.label_smoothing_factor,
     )
