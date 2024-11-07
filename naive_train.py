@@ -98,8 +98,8 @@ def main():
         )
 
     # 加载tokenizer
-    model_dir = model_dir.get(args.model, args.model)
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    real_model_dir = model_dir.get(args.model, args.model)
+    tokenizer = AutoTokenizer.from_pretrained(real_model_dir)
     tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -108,7 +108,7 @@ def main():
     # 加载模型
     if args.teacher_model:  # 知识蒸馏模式
         model = balanced_load(
-            model_dir=model_dir,
+            model_dir=real_model_dir,
             num_devices=4,
             ratio=[1, 1, 1, 1],
             devices_idx=[0, 1, 2, 3],
@@ -116,7 +116,7 @@ def main():
         )
     else:  # 普通训练模式
         model = AutoModelForCausalLM.from_pretrained(
-            model_dir,
+            real_model_dir,
             torch_dtype="auto",
             device_map=(
                 "balanced_low_0"

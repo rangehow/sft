@@ -27,7 +27,7 @@ class KDTrainer(Trainer):
         )
         student_logits = student_outputs.logits  # batch_size x seq_len x vocab_size
 
-        with torch.no_grad():
+        with torch.inference_mode():
             teacher_outputs = self.teacher_model(
                 input_ids=input_ids.to(self.teacher_model.device),
                 attention_mask=attention_mask.to(self.teacher_model.device),
