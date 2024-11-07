@@ -25,7 +25,7 @@ import os
 import multiprocessing
 from tqdm import tqdm
 from dataset import directly_softmax
-from preprocess_trie import save_chunks
+from sft.ndp.preprocess_trie import save_chunks
 
 
 def parse_args():
