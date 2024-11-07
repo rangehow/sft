@@ -1,1 +1,0 @@
-python preprocess_trie.py --model qwen2.5-7b --template qwen2.5 --dataset alpaca_gpt4,iepile --clm True

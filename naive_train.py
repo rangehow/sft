@@ -109,9 +109,9 @@ def main():
     if args.teacher_model:  # 知识蒸馏模式
         model = balanced_load(
             model_dir=model_dir,
-            num_devices=2,
-            ratio=[1, 1],
-            devices_idx=[2, 3],
+            num_devices=4,
+            ratio=[1, 1, 1, 1],
+            devices_idx=[0, 1, 2, 3],
             is_distillation=True,
         )
     else:  # 普通训练模式
@@ -215,9 +215,9 @@ def main():
     if args.teacher_model:
         teacher_model = balanced_load(
             model_dir=model_dir.get(args.teacher_model, args.teacher_model),
-            num_devices=2,
-            ratio=[0.5, 1],
-            devices_idx=[0, 1],
+            num_devices=4,
+            ratio=[1, 1, 1, 1],
+            devices_idx=[4, 5, 6, 7],
             is_distillation=False,
         )
         trainer = KDTrainer(
