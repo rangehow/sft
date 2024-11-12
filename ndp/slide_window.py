@@ -106,7 +106,7 @@ class TrieNode:
         return self._counts
 
     def __str__(self):
-        return f"self.children:{self.children}\nself._counts:{self._counts}"
+        return f"self.children:{self.children.keys()}\n"
 
     def __repr__(self):
         return self.__str__()
@@ -140,21 +140,12 @@ class SuffixTrie:
     def insert(self, input_id: list[int], label: list[int], window_size=math.inf):
 
         non_zero_indices = find_ranges(label)
-
         for start, end in non_zero_indices:
-            if end - start + 1 <= window_size:
+            for i in range(start, end):
                 self._insert(
-                    input_id[end - window_size : end],
-                    label[end + 1 - window_size : end + 1],
+                    input_id[i - window_size : i],
+                    label[i - window_size + 1 : i + 1],
                 )
-
-            else:
-                for i in range(start, end):
-
-                    self._insert(
-                        input_id[i - window_size : i],
-                        label[i - window_size + 1 : i + 1],
-                    )
 
     def search(self, key_list, backoff_step):
 
@@ -170,9 +161,12 @@ class SuffixTrie:
                 else:
                     counter_list.append(node._counts)
                     last_not_none_idx = idx
-
+                # print(idx,key)
+            else:
+                break
         # 左侧的解释：有可能有时候backoff_step是0，就会把全部返回，这时候应该返回一个就很好
         # 右侧的解释，有可能需要退避很多步才能找到，这在探测边界会出现
+
 
         return counter_list[
             last_not_none_idx + 1 - max(backoff_step, 1) : last_not_none_idx + 1
@@ -334,8 +328,13 @@ def synthesis(args, train_dataset, trie: SuffixTrie, template):
                         key[max(0, i + 1 - args.window_size) : i + 1],
                         math.floor(args.window_size * args.backoff_ratio),
                     )
-                    synthesis_dict[key].append(counter_list)
-
+                    if counter_list==[]:
+                        merged_counter=CompressedCounter()
+                    else:
+                        merged_counter = counter_list[0]
+                        for counter in counter_list[1:]:
+                            merged_counter.merge(counter)
+                    synthesis_dict[key].append(merged_counter)
     return synthesis_dict, cnt_list
 
 
