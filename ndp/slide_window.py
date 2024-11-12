@@ -264,7 +264,7 @@ def parse_dataset(args, template, dataset_str):
                 test=False,
             ),
             batched=True,
-            num_proc=30,
+            num_proc=1,
             remove_columns=train_dataset.features.keys(),
             # load_from_cache_file=False,
             desc="tokenize",

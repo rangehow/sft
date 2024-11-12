@@ -135,13 +135,10 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
 @register2dict()
 def alma_zhen(instances, template, test=False, mode=0):
 
-    input, output = (
-        instances["zh"],
-        instances["en"],
-    )
+    instances=instances["translation"]
 
-    real_input = ["Translate Chinese into English:" + "\n" + inp for inp in input]
-
+    real_input = ["Translate Chinese into English:" + "\n" + instance['zh'] for instance in instances]
+    output=[instance['en'] for instance in instances]
     return _process(
         real_input=real_input, output=output, template=template, mode=mode, test=test
     )
