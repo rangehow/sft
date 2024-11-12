@@ -9,7 +9,7 @@ def register2dict():
         if func.__name__ not in dname2load:
             dname2load[func.__name__] = func
         else:
-            print("重名了",func.__name__)
+            print("重名了", func.__name__)
             exit()
         return func
 
@@ -98,9 +98,6 @@ def math(local_dir):
     return datasets.concatenate_datasets([a, b])
 
 
-
-
-
 @register2dict()
 def slimpajama(local_dir):
     if local_dir is not None:
@@ -116,12 +113,14 @@ def test(local_dir):
     else:
         return datasets.load_dataset("JesusCrist/SimpleData")["train"]
 
+
 @register2dict()
 def iepile(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
         return datasets.load_dataset("JesusCrist/IEPILE")["train"]
+
 
 @register2dict()
 def wiki_medical(local_dir):
@@ -254,15 +253,29 @@ def magpie_300k(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-300K-Filtered")["train"]
+        return datasets.load_dataset("Magpie-Align/Magpie-Llama-3.1-Pro-300K-Filtered")[
+            "train"
+        ]
+
 
 @register2dict()
 def redpajama(local_dir):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
-        return datasets.load_dataset("togethercomputer/RedPajama-Data-1T-Sample")["train"]
+        return datasets.load_dataset("togethercomputer/RedPajama-Data-1T-Sample")[
+            "train"
+        ]
+
+
+@register2dict()
+def alma_zhen(local_dir):
+    if local_dir is not None:
+        return datasets.load_dataset(local_dir, "zh-en")["train"]
+    else:
+        return datasets.load_dataset("haoranxu/ALMA-Human-Parallel", "zh-en")["train"]
+
 
 if __name__ == "__main__":
-    d = datasets.load_dataset("/mnt/rangehow/rangehow/medqa")['test']
+    d = datasets.load_dataset("/mnt/rangehow/rangehow/medqa")["test"]
     print(d)

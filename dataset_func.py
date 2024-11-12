@@ -42,7 +42,7 @@ def register2dict():
         if func.__name__ not in dname2func:
             dname2func[func.__name__] = func
         else:
-            print(f'{func.__name__}重复了')
+            print(f"{func.__name__}重复了")
             exit()
         return func
 
@@ -130,6 +130,21 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
         else:
             # 返回dict是dataset map的要求，这倒是没办法。
             return {"input_ids": input_ids, "answer": output}
+
+
+@register2dict()
+def alma_zhen(instances, template, test=False, mode=0):
+
+    input, output = (
+        instances["zh"],
+        instances["en"],
+    )
+
+    real_input = ["Translate Chinese into English:" + "\n" + inp for inp in input]
+
+    return _process(
+        real_input=real_input, output=output, template=template, mode=mode, test=test
+    )
 
 
 @register2dict()
@@ -384,10 +399,12 @@ def magpie(instances, **kwargs):
     #     return {"input_ids": input_ids, "labels": labels}
     # else:
     #     return {"input_ids": input_ids}
-    return _process(real_input=instances['instruction'],output=instances['response'],**kwargs)
+    return _process(
+        real_input=instances["instruction"], output=instances["response"], **kwargs
+    )
 
-dname2func['magpie_300k']=magpie
 
+dname2func["magpie_300k"] = magpie
 
 
 @register2dict()
@@ -407,6 +424,7 @@ def wiki_medical(instances, template, test=False, mode=0):
         mode=mode,
         pt=True,
     )
+
 
 @register2dict()
 def slimpajama(instances, template, test=False, mode=0):
@@ -679,7 +697,6 @@ def iepile(instances, template, shot=False, test=False, mode=0):
     )
 
 
-
 @register2dict()
 def pubmedqa(instances, **kwargs):
     real_input = []
@@ -829,7 +846,7 @@ def redpajama(instances, template, test=False, mode=0):
         mode=mode,
         pt=True,
     )
-    
+
 
 if __name__ == "__main__":
     import datasets
@@ -839,7 +856,7 @@ if __name__ == "__main__":
     from loguru import logger
     from eval.load_func import dname2load
 
-    dataset_name='pubmed_abstract'
+    dataset_name = "pubmed_abstract"
     dataset = dname2load[dataset_name](None)
     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     template = modelType2Template["gemma"](tokenizer)
@@ -856,7 +873,7 @@ if __name__ == "__main__":
         load_from_cache_file=False,
         desc="tokenize",
     )
-    token_nums=0
+    token_nums = 0
     for d in dataset:
 
         input_ids = d["input_ids"]
