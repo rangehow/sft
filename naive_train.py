@@ -20,7 +20,7 @@ import torch
 import ast
 import os
 from kd_trainer import KDTrainer
-from model_utils import balanced_load
+from niuload import balanced_load
 
 
 class MyCollator:
@@ -134,7 +134,7 @@ def main():
     dataset_name_list = args.dataset.split(",")
     dataset_list = []
     for dname in dataset_name_list:
-        train_dataset = dname2load[dname](dataset_dir.get(args.dataset, None))
+        train_dataset = dname2load[dname](dataset_dir.get(dname, None))
         train_dataset = train_dataset.map(
             partial(
                 dname2func[dname],

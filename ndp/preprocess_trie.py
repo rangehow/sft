@@ -7,10 +7,10 @@ import pickle
 import warnings
 import datasets
 import ast
-from config import model_dir, dataset_dir
-from dataset_func import dname2func
-from template import modelType2Template
-from eval.load_func import dname2load
+from ..config import model_dir, dataset_dir
+from ..dataset_func import dname2func
+from ..template import modelType2Template
+from ..eval.load_func import dname2load
 from tqdm import tqdm
 from loguru import logger
 import argparse

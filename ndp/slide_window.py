@@ -1,4 +1,6 @@
 from functools import partial
+import json
+import math
 import os
 from collections import Counter, defaultdict
 from transformers import AutoTokenizer, AutoConfig
@@ -7,96 +9,30 @@ import pickle
 import warnings
 import datasets
 import ast
-from config import model_dir, dataset_dir
-from dataset_func import dname2func
-from template import modelType2Template
-from eval.load_func import dname2load
+from ..config import model_dir, dataset_dir
+from ..dataset_func import dname2func
+from ..template import modelType2Template
+from ..eval.load_func import dname2load
 from tqdm import tqdm
 from loguru import logger
 import argparse
+from ipdb import set_trace as bp
 
 
-
-class TrieNode:
-    def __init__(self):
-        self.children = {}
-        self.value = Counter()
-
-
-class Trie:
-    def __init__(self):
-        self.root = TrieNode()
-
-    def insert(self, key_list, value):
-        node = self.root
-        for key in key_list:
-            if key not in node.children:
-                node.children[key] = TrieNode()
-            node = node.children[key]
-        node.value[value] += 1
-
-    def search(self, key_list):
-        node = self.root
-        for key in key_list:
-            if key not in node.children:
-                return None
-            node = node.children[key]
-        return node.value
-
-    def merge(self, other):
-        def _merge_nodes(node1, node2):
-            # Merge the values
-            node1.value.update(node2.value)
-            # Merge the children
-            for key, child_node2 in node2.children.items():
-                if key in node1.children:
-                    _merge_nodes(node1.children[key], child_node2)
-                else:
-                    node1.children[key] = child_node2
-
-        _merge_nodes(self.root, other.root)
-        
-    def __str__(self):
-        def _print(node, prefix):
-            if node.value:
-                print(f"{prefix}: {dict(node.value)}")
-            for key, child in node.children.items():
-                _print(child, prefix + [key])
-
-        _print(self.root, [])
-
-
-def parse_args():
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="gemma_2b")
-    parser.add_argument(
-        "--dataset",
-    )
-    parser.add_argument("--clm", default=True, type=ast.literal_eval)
-    parser.add_argument("--ngram", default=4, type=int)
-    parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
-    parser.add_argument("--template", type=str)
-    parser.add_argument("--mono", default=False, type=ast.literal_eval)
-    parser.add_argument("--mono_dataset", default="wiki_medical")
-    parser.add_argument("--w_template", default=True, type=ast.literal_eval)
-    parser.add_argument("--window-size", default=128, type=int)
-    return parser.parse_args()
-
-
-def find_ranges(lst, target=-100):
+def find_ranges(lst, target=-100, offset=0):
+    # explanation about offset：项目里有两个使用这个函数的地方，一个是找到label里的非0区域，另一个是写入最后数据里用来指示要提取出logits什么区域的，这俩offset差1
     ranges = []
     start = None
     multiTurnOnlyOnceInfoFlag = True
     have_target = False
     for i, num in enumerate(lst):
-        if num==target:
-            have_target=True
-        
+        if num == target:
+            have_target = True
+
         if num != target and start is None:
             start = i
         elif num == target and start is not None:
-            
+
             if multiTurnOnlyOnceInfoFlag:
                 logger.info(
                     "这个分支理论上只有多轮对话的数据集才会进入,确保自己在使用多轮对话数据集"
@@ -105,7 +41,7 @@ def find_ranges(lst, target=-100):
             #  -100（start-1） start ，，，words4predictend(i-2) end(i-1) -100（i） 这个数据结构被用于从model_output里按切片取出logits来预测下一个词
 
             ranges.append(
-                (start - 1, i - 1)
+                (start - offset, i - offset)
             )  # 因为是切片，i-1实际上会取到i-2范围,logits的核心就是不要预测任何-100
             start = None
 
@@ -113,14 +49,174 @@ def find_ranges(lst, target=-100):
         # 这个地方结束位置一般不重要，除非最后有什么不需要预测的特殊标志。
         # 到底什么情况会进这里呢？整句话都不存在-100的时候
         if have_target:
-            ranges.append((start - 1, len(lst) - 1))
+            ranges.append((start - offset, len(lst) - offset))
         else:
-            ranges.append((0, len(lst) - 1))
+            ranges.append((0, len(lst) - offset))
 
     return ranges
 
 
+class CompressedCounter:
+    def __init__(self):
+        self.counts = {}  # 只存储非零计数
+        self.num_values = 0
 
+    def add(self, value):
+        if value in self.counts:
+            self.counts[value] += 1
+        else:
+            self.counts[value] = 1
+            self.num_values += 1
+
+    def get(self, value):
+        return self.counts.get(value, 0)
+
+    def merge(self, other):
+        for value, count in other.counts.items():
+            if value in self.counts:
+                self.counts[value] += count
+            else:
+                self.counts[value] = count
+                self.num_values += 1
+
+    def items(self):
+        return self.counts.items()
+
+    def __len__(self):
+        return self.num_values
+
+    def __str__(self):
+        return f"{self.counts}"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self._counts = None  # 懒初始化
+
+    def add_value(self, value):
+        if self._counts is None:
+            self._counts = CompressedCounter()
+        self._counts.add(value)
+
+    def get_counts(self):
+        return self._counts
+
+    def __str__(self):
+        return f"self.children:{self.children}\nself._counts:{self._counts}"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class SuffixTrie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def _insert(self, input_id: list[int], label: list[int]):
+        """_summary_
+
+        Args:
+            input_id (list[int]): _description_
+            label (list[int]): _description_
+            window_size (_type_, optional): Defaults to infinite window size.
+        """
+        node = self.root
+
+        for i in range(len(input_id) - 1, -1, -1):
+
+            # if input_id[i]==-100:
+            #     # clm 会碰到这种情况
+            #     continue
+            if input_id[i] not in node.children:
+                node.children[input_id[i]] = TrieNode()
+            node = node.children[input_id[i]]
+
+            node.add_value(label[-1])
+
+    def insert(self, input_id: list[int], label: list[int], window_size=math.inf):
+
+        non_zero_indices = find_ranges(label)
+
+        for start, end in non_zero_indices:
+            if end - start + 1 <= window_size:
+                self._insert(
+                    input_id[end - window_size : end],
+                    label[end + 1 - window_size : end + 1],
+                )
+
+            else:
+                for i in range(start, end):
+
+                    self._insert(
+                        input_id[i - window_size : i],
+                        label[i - window_size + 1 : i + 1],
+                    )
+
+    def search(self, key_list, backoff_step):
+
+        counter_list = []
+        node = self.root
+        last_not_none_idx = -1
+        for idx, key in enumerate(reversed(key_list)):
+            if key in node.children:
+                node = node.children[key]
+                if node._counts == None:
+
+                    counter_list.append(CompressedCounter())
+                else:
+                    counter_list.append(node._counts)
+                    last_not_none_idx = idx
+
+        # 左侧的解释：有可能有时候backoff_step是0，就会把全部返回，这时候应该返回一个就很好
+        # 右侧的解释，有可能需要退避很多步才能找到，这在探测边界会出现
+
+        return counter_list[
+            last_not_none_idx + 1 - max(backoff_step, 1) : last_not_none_idx + 1
+        ]
+
+    def __str__(self):
+        return self._print_tree(self.root)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def _print_tree(self, node, level=0, prefix="Root"):
+        """递归打印树的结构，包括计数信息"""
+        # 获取计数信息的字符串表示
+        counts_str = ""
+        if node._counts:
+            # 假设 _counts 有一个 items() 方法返回计数键值对
+            counts_items = (
+                node._counts.items()
+            )  # 或者根据你的 CompressedCounter 实现调整
+            counts_str = (
+                " Counts{" + ", ".join(f"{k}:{v}" for k, v in counts_items) + "}"
+            )
+
+        # 打印当前节点信息
+        result = "  " * level + f"{prefix}{counts_str}\n"
+
+        # 递归打印子节点
+        for key, child in node.children.items():
+            result += self._print_tree(child, level + 1, f"└─ {key}")
+        return result
+
+
+def parse_args():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="gemma_2b", type=str)
+    parser.add_argument("--dataset", type=str)
+    parser.add_argument("--template", type=str)
+    parser.add_argument("--mono", default=False, type=ast.literal_eval)
+    parser.add_argument("--mono_dataset", default="wiki_medical", type=str)
+    parser.add_argument("--window-size", default=256, type=int)
+    parser.add_argument("--backoff-ratio", default=0, type=float)
+    return parser.parse_args()
 
 
 def chunk_data(data, chunk_size):
@@ -137,12 +233,22 @@ def chunk_data(data, chunk_size):
 
 
 def save_chunks(data, chunk_size, base_dir, name, start_idx=0):
-    """将大字典分块并保存到多个文件中。"""
-    for i, chunk in tqdm(enumerate(chunk_data(data, chunk_size))):
-        filename = f"{name}_part{i+start_idx}.msgpack"
+    """将数据分块保存,同时保存元数据"""
+    metadata = {
+        "chunk_size": chunk_size,
+        "total_size": len(data),
+        "num_chunks": math.ceil(len(data) / chunk_size),
+    }
+
+    # 保存元数据
+    with open(os.path.join(base_dir, f"{name}_metadata.json"), "w") as f:
+        json.dump(metadata, f)
+
+    # 保存数据块
+    for i, chunk in enumerate(chunk_data(data, chunk_size)):
+        filename = f"{name}_part{i+start_idx}.pkl"
         with open(os.path.join(base_dir, filename), "wb") as f:
-            pickle.dump(chunk, f, protocol=5)
-        print(f"Saved chunk {i} to {filename}")
+            pickle.dump(chunk, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def parse_dataset(args, template, dataset_str):
@@ -160,180 +266,132 @@ def parse_dataset(args, template, dataset_str):
             partial(
                 dname2func[dname],
                 template=template,
-                mode=1 if args.w_template else 0,
+                mode=1,
                 test=False,
             ),
             batched=True,
             num_proc=30,
             remove_columns=train_dataset.features.keys(),
-            load_from_cache_file=False,
+            # load_from_cache_file=False,
             desc="tokenize",
         )
         dataset_list.append(train_dataset)
     return datasets.concatenate_datasets(dataset_list)
 
-def statistic(args,train_dataset,mono_dataset=None):
 
-        supervised_trie = Trie()
-        # supervised_dict = defaultdict(Counter)
-        if args.clm:
-            clm_trie = Trie()
-            # clm_dict = defaultdict(Counter)   
-        
-        max_target_len=0 # 用于减少mono阶段无意义的统计。
+def statistic(args, train_dataset, mono_dataset=None):
 
-        logger.debug(f"start to make statistic")
-        # 统计begin-----------------------------------------------------------------------------------
-        for j in tqdm(range(len(train_dataset)), desc="statistic stage"):
+    trie = SuffixTrie()
 
-            input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
-            assert len(input_id) == len(label)
-            # 如果是多轮对话,那么label将是穿插着多段连续-100的int list
-            # supervised信号的key是第一段-100结束开始,以后开始递增
-            # clm信号的key应该是非-100区域内独立统计
-            if args.clm:
-                # 用于标志是否到达非-100区域的,这里有个假定就是开头一定是连续的-100区域[通常因为开头是特殊标记,所以总是的]
-                # 这个标记主要的作用就是为了辅助regionBeginIdx更新
-                flag4LossArea = False
-                # 用于辅助ngram测算现在是否可以更新clm了
-                regionBeginIdx = -1
+    logger.debug(f"start to make statistic")
+    # 统计begin-----------------------------------------------------------------------------------
+    for i in tqdm(range(len(train_dataset)), desc="statistic stage"):
 
-            max_target_len=max(max_target_len,len(label))
-            for i in range(len(label) - 1):
+        input_id, label = train_dataset[i]["input_ids"], train_dataset[i]["labels"]
+        assert len(input_id) == len(label)
+        trie.insert(input_id, label, window_size=args.window_size)
 
-                if label[i + 1] != -100:
+    if args.mono:
+        for i in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
+            input_id, label = (
+                mono_dataset[i]["input_ids"],
+                mono_dataset[i]["labels"],
+            )
 
-                    # supervised_key = tuple(input_id[: i + 1])
-                    # supervised_dict[supervised_key].update([label[i + 1]])
-                    supervised_trie.insert(input_id[: i + 1], label[i + 1])
+            trie.insert(input_id, label, window_size=args.window_size)
 
-                    if args.clm:
-                        if flag4LossArea is False:
-                            # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
-                            regionBeginIdx = i
-                            flag4LossArea = True
-
-                        if i - regionBeginIdx >= args.ngram:
-                            # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
-                            # clm_dict[clm_key].update([label[i + 1]])
-                            clm_trie.insert(
-                                label[regionBeginIdx + 1 : i + 1], label[i + 1]
-                            )
-                elif args.clm and flag4LossArea:
-                    flag4LossArea = False
-
-        if args.mono and args.clm:
-
-            for j in tqdm(range(len(mono_dataset)), desc="mono statistic stage"):
-                input_id, label = (
-                    mono_dataset[j]["input_ids"],
-                    mono_dataset[j]["labels"],
-                )
-                index_for_start_area=0
-                for i in range(len(label) - 1):
-                    if label[i]==-100:
-                        index_for_start_area+=1
-                    if label[i + 1] != -100 and i-index_for_start_area>=args.ngram-1 and i-index_for_start_area<= max_target_len+5: # +5没什么实际意义只是随便设置的，怕不准确
-                        # import pdb
-                        # pdb.set_trace()
-                        clm_trie.insert(label[index_for_start_area: i + 1], label[i + 1])
-                        
-
-        return supervised_trie, clm_trie
+    return trie
 
 
-def synthesis(args,train_dataset,supervised_trie,clm_trie,template):
-    tokenizer=template.tokenizer
+def synthesis(args, train_dataset, trie: SuffixTrie, template):
+    tokenizer = template.tokenizer  # debug usage
     synthesis_dict = defaultdict(list)
-    cnt_list = []
+    cnt_list = []  # list[list[tuple]] sentence_idx, -100 area , (start,end)
 
-    for j in tqdm(range(len(train_dataset)), desc="synthesis stage"):
-        
-        input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
+    for i in tqdm(range(len(train_dataset)), desc="synthesis stage"):
 
-        if args.clm:
-            # 用于标志是否到达非-100区域的,这里有个假定就是开头一定是连续的-100区域[通常因为开头是特殊标记,所以总是的]
-            # 这个标记主要的作用就是为了辅助regionBeginIdx更新
-            flag4LossArea = False
-            # 用于辅助ngram测算现在是否可以更新clm了
-            regionBeginIdx = -1
+        input_id, label = train_dataset[i]["input_ids"], train_dataset[i]["labels"]
 
         # 这个地方和encoder-decoder模型还不一样，不需要特地区分编解码的输入，所以只需要一个input_id即可，input_id最后的EOS不需要送给模型
         key = tuple(input_id[:-1])
         length = len(input_id)
-        if synthesis_dict[key] == [] or (
-            template.chat_eos_token_id not in synthesis_dict[key][-1][0]
-            and template.chat_eos_token_id
-            not in synthesis_dict[key][-2][
-                0
-            ]  # qwen的template结尾是\n，我无语了。。
-        ):  # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
+        if synthesis_dict[key] == []:
+            #     or (
+            #     template.chat_eos_token_id not in synthesis_dict[key][-1][0]
+            #     and template.chat_eos_token_id
+            #     not in synthesis_dict[key][-2][
+            #         0
+            #     ]  # qwen/gemma的template结尾是\n，所以还需要再检查一下-2位置
+            # )
+            # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
             # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
-            cnt_list.append(find_ranges(label))
+            ranges_list = find_ranges(label, offset=1)
+            cnt_list.append(ranges_list)
 
-            for i in range(
-                length - 1
-            ):  # 这个地方保证了 比如 -100 // non_-100_start_area ，，，words_4_predict_end(i-1) // end(i)
-                
-                if (
-                    label[i + 1] != -100
-                ):  #  // -100（start-1） non_-100_start_area ，，，words_4_predict_end(i-1) // end(i) -100（i+1） 实际上只统计 //内的区域
-                    
-                    # supervised_key = tuple(input_id[: i + 1])
-                    # supervised_value = supervised_dict[supervised_key]
-                    supervised_value = supervised_trie.search(input_id[: i + 1])
-
-                    if args.clm:
-                        if flag4LossArea is False:
-                            # 此时下一个label不是-100，但是regionBeginIdx本身指向的还是-100
-                            regionBeginIdx = i
-                            flag4LossArea = True
-
-                        # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
-                        # clm_value = clm_dict.get(clm_key, supervised_value)
-                        clm_value = clm_trie.search(
-                            label[regionBeginIdx + 1 : i + 1]
-                        )
-
-                        if (
-                            clm_value == None or len(clm_value) == 0
-                        ):  # trie的返回不稳定，现在是空counter
-                                
-                            clm_value = supervised_value
-                    try:
-                        assert clm_value is not None
-                        synthesis_dict[key].append([supervised_value, clm_value])
-                    except:
-                        import pdb
-                        pdb.set_trace()
-
-                elif args.clm and flag4LossArea:
-                    flag4LossArea = False
-                
-                if len(synthesis_dict) != len(cnt_list):
-                    # llama3-base和it的eos token不一样
-                    import pdb
-
-                    pdb.set_trace()
+            for ranges in ranges_list:
+                for i in range(ranges[0], ranges[1]):
+                    counter_list = trie.search(
+                        key[max(0, i + 1 - args.window_size) : i + 1],
+                        math.floor(args.window_size * args.backoff_ratio),
+                    )
+                    synthesis_dict[key].append(counter_list)
 
     return synthesis_dict, cnt_list
 
 
+def create_save_path(args):
+    """
+    根据参数创建唯一的保存路径
+
+    Args:
+        args: 解析的命令行参数
+    Returns:
+        str: 生成的完整保存路径
+    """
+    # 获取脚本所在目录的绝对路径
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 处理模型名称，提取纯模型名
+    model_name = os.path.basename(args.model)
+
+    # 构建路径组件
+    components = [
+        base_dir,
+        "train_dataset",
+        f"{model_name}",
+        f"{args.template}_{args.dataset}",
+    ]
+
+    # 添加可选组件
+    if args.mono:
+        components.append(f"mono_{args.mono_dataset.replace(',', '_')}")
+
+    # 添加窗口大小和退避率参数
+    components.append(f"w{args.window_size}_b{args.backoff_ratio}")
+
+    # 组合路径
+    save_path = os.path.join(*components)
+
+    # 确保目录存在
+    os.makedirs(save_path, exist_ok=True)
+
+    return save_path
+
+
 @logger.catch
 def main():
-    
+
     args = parse_args()
 
-    while True:
-        a=str(input('你要跳过检查吗？y/n'))
-        if a=='y':
-            break
-        elif a=='n':
-            test(args)
- 
-            break
+    # while True:
+    #     a=str(input('你要跳过检查吗？y/n'))
+    #     if a=='y':
+    #         break
+    #     elif a=='n':
+    #         test(args)
 
-    
+    #         break
+
     tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model, args.model))
     # config = AutoConfig.from_pretrained(model_dir[args.model])
     # model_type = config.model_type
@@ -344,40 +402,19 @@ def main():
     # train_dataset = train_dataset.sort('input_ids')
     if args.mono:
         mono_dataset = parse_dataset(args, template, args.mono_dataset)
-        supervised_trie, clm_trie = statistic(args,train_dataset,mono_dataset)
+        trie = statistic(args, train_dataset, mono_dataset)
     else:
-        supervised_trie, clm_trie = statistic(args,train_dataset)
-    synthesis_dict, cnt_list = synthesis(args,train_dataset,supervised_trie, clm_trie,template)
+        trie = statistic(args, train_dataset)
+
+    synthesis_dict, cnt_list = synthesis(args, train_dataset, trie, template)
 
     logger.debug(
         f"length of synthesis_dict:{len(synthesis_dict)};length of cnt_list:{len(cnt_list)}"
     )
     assert len(synthesis_dict) == len(cnt_list)
 
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    # w_template
-    output_base_dir = os.path.join(
-        script_path,
-        "train_dataset",
-        (f"{args.template}_{args.dataset}"),
-    )
-    if args.mono:
-        output_base_dir += f"_mono_{args.mono_dataset.replace(',','_')}"
-    if args.w_template:
-        output_base_dir += "_template"
+    output_base_dir = create_save_path(args)
 
-    os.makedirs(
-        output_base_dir,
-        exist_ok=True,
-    )
-    
-    from datasets import Dataset
-    regular_dict = dict(synthesis_dict)
-    from ipdb import set_trace
-    set_trace()
-    # 创建Dataset对象
-    dataset = Dataset.from_dict(regular_dict)
-    
     save_chunks(
         synthesis_dict,
         chunk_size=1000,
@@ -398,18 +435,16 @@ def main():
     )
 
 
-
-
 def test(args):
-    tokenizer = AutoTokenizer.from_pretrained(model_dir.get('gemma_2b'))
-    template = modelType2Template['gemma'](tokenizer)
-    mock_dataset=dname2load['test'](None)
-    mono_dataset = parse_dataset(args, template, 'test')
+    tokenizer = AutoTokenizer.from_pretrained(model_dir.get("gemma_2b"))
+    template = modelType2Template["gemma"](tokenizer)
+    mock_dataset = dname2load["test"](None)
+    mono_dataset = parse_dataset(args, template, "test")
     mock_dataset = mock_dataset.map(
         partial(
-            dname2func['test'],
+            dname2func["test"],
             template=template,
-            mode=1 ,
+            mode=1,
             test=False,
         ),
         batched=True,
@@ -418,32 +453,380 @@ def test(args):
         load_from_cache_file=False,
         desc="tokenize",
     )
-    supervised_trie, clm_trie = statistic(args,mock_dataset,mono_dataset)
-    if args.template=='qwen2':
-        if args.ngram==0:
-            target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 4})], [Counter({2182: 1}), Counter({2182: 2, 798: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({604: 1}), Counter({604: 2})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 4})], [Counter({798: 1}), Counter({2182: 2, 798: 2})], [Counter({235303: 1}), Counter({235303: 2})], [Counter({235251: 1}), Counter({235251: 2})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
-        elif args.ngram==4:
-            target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({2182: 1}), Counter({2182: 1})], [Counter({692: 1}), Counter({692: 1})], [Counter({604: 1}), Counter({604: 1})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({798: 1}), Counter({798: 1})], [Counter({235303: 1}), Counter({235303: 1})], [Counter({235251: 1}), Counter({235251: 1})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
-        elif args.ngram==1:
-            target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({2182: 1}), Counter({2182: 2, 798: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({604: 1}), Counter({604: 2})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({798: 1}), Counter({2182: 2, 798: 2})], [Counter({235303: 1}), Counter({235303: 2})], [Counter({235251: 1}), Counter({235251: 2})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
+    supervised_trie, clm_trie = statistic(args, mock_dataset, mono_dataset)
+    if args.template == "qwen2":
+        if args.ngram == 0:
+            target_synthesis_dict = {
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 4})],
+                    [Counter({2182: 1}), Counter({2182: 2, 798: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({604: 1}), Counter({604: 2})],
+                    [Counter({2149: 1}), Counter({2149: 2})],
+                    [Counter({13669: 1}), Counter({13669: 2})],
+                    [Counter({1069: 1}), Counter({1069: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 4})],
+                    [Counter({798: 1}), Counter({2182: 2, 798: 2})],
+                    [Counter({235303: 1}), Counter({235303: 2})],
+                    [Counter({235251: 1}), Counter({235251: 2})],
+                    [Counter({1707: 1}), Counter({1707: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+            }
+        elif args.ngram == 4:
+            target_synthesis_dict = {
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({2182: 1}), Counter({2182: 1})],
+                    [Counter({692: 1}), Counter({692: 1})],
+                    [Counter({604: 1}), Counter({604: 1})],
+                    [Counter({2149: 1}), Counter({2149: 2})],
+                    [Counter({13669: 1}), Counter({13669: 2})],
+                    [Counter({1069: 1}), Counter({1069: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({798: 1}), Counter({798: 1})],
+                    [Counter({235303: 1}), Counter({235303: 1})],
+                    [Counter({235251: 1}), Counter({235251: 1})],
+                    [Counter({1707: 1}), Counter({1707: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+            }
+        elif args.ngram == 1:
+            target_synthesis_dict = {
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({2182: 1}), Counter({2182: 2, 798: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({604: 1}), Counter({604: 2})],
+                    [Counter({2149: 1}), Counter({2149: 2})],
+                    [Counter({13669: 1}), Counter({13669: 2})],
+                    [Counter({1069: 1}), Counter({1069: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({798: 1}), Counter({2182: 2, 798: 2})],
+                    [Counter({235303: 1}), Counter({235303: 2})],
+                    [Counter({235251: 1}), Counter({235251: 2})],
+                    [Counter({1707: 1}), Counter({1707: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+            }
     else:
-        if args.ngram==1:
-            target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({2182: 1}), Counter({2182: 2, 798: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({604: 1}), Counter({604: 2})], [Counter({2149: 1}), Counter({2149: 2})], [Counter({13669: 1}), Counter({13669: 2})], [Counter({1069: 1}), Counter({1069: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({798: 1}), Counter({2182: 2, 798: 2})], [Counter({235303: 1}), Counter({235303: 2})], [Counter({235251: 1}), Counter({235251: 2})], [Counter({1707: 1}), Counter({1707: 2})], [Counter({692: 1}), Counter({692: 2})], [Counter({1: 1}), Counter({1: 2})], [Counter({108: 1}), Counter({108: 2})]]}
-        elif args.ngram==4:
-            target_synthesis_dict={(2, 106, 1645, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 107, 108, 106, 2516, 108, 235285, 2182, 692, 604, 2149, 13669, 1069, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({2182: 1}), Counter({2182: 1, 798: 1})], [Counter({692: 1}), Counter({692: 1})], [Counter({604: 1}), Counter({604: 1})], [Counter({2149: 1}), Counter({2149: 1})], [Counter({13669: 1}), Counter({13669: 1})], [Counter({1069: 1}), Counter({1069: 1})], [Counter({1: 1}), Counter({1: 1})], [Counter({108: 1}), Counter({108: 1})]], (2, 106, 1645, 108, 235285, 798, 235303, 235251, 1707, 692, 107, 108, 106, 2516, 108, 235285, 798, 235303, 235251, 1707, 692, 1): [[Counter({235285: 1}), Counter({235285: 1})], [Counter({798: 1}), Counter({2182: 1, 798: 1})], [Counter({235303: 1}), Counter({235303: 1})], [Counter({235251: 1}), Counter({235251: 1})], [Counter({1707: 1}), Counter({1707: 1})], [Counter({692: 1}), Counter({692: 1})], [Counter({1: 1}), Counter({1: 1})], [Counter({108: 1}), Counter({108: 1})]]}
-    target_cnt_list=[[(15, 24)], [(14, 22)]]
-    synthesis_dict, cnt_list = synthesis(args,mock_dataset,supervised_trie, clm_trie,template)
-    
-    if target_synthesis_dict!=synthesis_dict:
-            exit()
+        if args.ngram == 1:
+            target_synthesis_dict = {
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({2182: 1}), Counter({2182: 2, 798: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({604: 1}), Counter({604: 2})],
+                    [Counter({2149: 1}), Counter({2149: 2})],
+                    [Counter({13669: 1}), Counter({13669: 2})],
+                    [Counter({1069: 1}), Counter({1069: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({798: 1}), Counter({2182: 2, 798: 2})],
+                    [Counter({235303: 1}), Counter({235303: 2})],
+                    [Counter({235251: 1}), Counter({235251: 2})],
+                    [Counter({1707: 1}), Counter({1707: 2})],
+                    [Counter({692: 1}), Counter({692: 2})],
+                    [Counter({1: 1}), Counter({1: 2})],
+                    [Counter({108: 1}), Counter({108: 2})],
+                ],
+            }
+        elif args.ngram == 4:
+            target_synthesis_dict = {
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    2182,
+                    692,
+                    604,
+                    2149,
+                    13669,
+                    1069,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({2182: 1}), Counter({2182: 1, 798: 1})],
+                    [Counter({692: 1}), Counter({692: 1})],
+                    [Counter({604: 1}), Counter({604: 1})],
+                    [Counter({2149: 1}), Counter({2149: 1})],
+                    [Counter({13669: 1}), Counter({13669: 1})],
+                    [Counter({1069: 1}), Counter({1069: 1})],
+                    [Counter({1: 1}), Counter({1: 1})],
+                    [Counter({108: 1}), Counter({108: 1})],
+                ],
+                (
+                    2,
+                    106,
+                    1645,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    107,
+                    108,
+                    106,
+                    2516,
+                    108,
+                    235285,
+                    798,
+                    235303,
+                    235251,
+                    1707,
+                    692,
+                    1,
+                ): [
+                    [Counter({235285: 1}), Counter({235285: 1})],
+                    [Counter({798: 1}), Counter({2182: 1, 798: 1})],
+                    [Counter({235303: 1}), Counter({235303: 1})],
+                    [Counter({235251: 1}), Counter({235251: 1})],
+                    [Counter({1707: 1}), Counter({1707: 1})],
+                    [Counter({692: 1}), Counter({692: 1})],
+                    [Counter({1: 1}), Counter({1: 1})],
+                    [Counter({108: 1}), Counter({108: 1})],
+                ],
+            }
+    target_cnt_list = [[(15, 24)], [(14, 22)]]
+    synthesis_dict, cnt_list = synthesis(
+        args, mock_dataset, supervised_trie, clm_trie, template
+    )
 
-        
-            
-                
-    # assert target_synthesis_dict==synthesis_dict 
+    if target_synthesis_dict != synthesis_dict:
+        exit()
+
+    # assert target_synthesis_dict==synthesis_dict
     # assert cnt_list == target_cnt_list
-    
+
 
 if __name__ == "__main__":
     main()
-
