@@ -157,28 +157,28 @@ tokenizer.padding_side = "left"
 
 
 # 检查数据的调试代码----------------------------------
-train_dataset = load_dataset()
-collator = SlideDataCollator(
-    tokenizer,
-    zero_prob=args.zero_prob,
-    embedding_size=160000,
-    div_mode=args.div_mode,
-)
+# train_dataset = load_dataset()
+# collator = SlideDataCollator(
+#     tokenizer,
+#     zero_prob=args.zero_prob,
+#     embedding_size=160000,
+#     div_mode=args.div_mode,
+# )
 
 
-dataloader = DataLoader(
-    dataset=train_dataset,
-    batch_size=8,
-    collate_fn=collator,
-    num_workers=0,
-    pin_memory=False,
-)
+# dataloader = DataLoader(
+#     dataset=train_dataset,
+#     batch_size=8,
+#     collate_fn=collator,
+#     num_workers=0,
+#     pin_memory=False,
+# )
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
 
-for d in tqdm(dataloader):
-    bp()
+# for d in tqdm(dataloader):
+#     bp()
 
 
 model = balanced_load(model_dir)
