@@ -110,16 +110,16 @@ def find_temperature(x, target_index, zero_prob=0.05, tol=1e-6, max_iter=100):
     return T
 
 
-def normalized_distribution(supervised, embedding_size, alpha=1e-20):
+def normalized_distribution(supervised, embedding_size, alpha=1e-10):
     x = torch.zeros(len(supervised), embedding_size)
     for i, counter in enumerate(supervised):
         indices = torch.tensor(list(counter.keys()), dtype=torch.long)
         values = torch.tensor(list(counter.values()), dtype=torch.float32)
         x[i].scatter_(0, indices, values)
-    from ipdb import set_trace
-    set_trace()
-    smoothed = freq_tensor + alpha
-    return smoothed / torch.sum(smoothed)
+    
+    smoothed = x + alpha
+    result = smoothed / torch.sum(smoothed,dim=-1,keepdim=True)
+    return result
 
 # 6月28日下午的优化版本
 def directly_softmax(supervised, embedding_size, div=False, zero_prob=0):
@@ -352,44 +352,26 @@ class SlideDataCollator:
                 temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
 
         else:
-            # from ipdb import set_trace
-            # set_trace()
+
             all_prob_supervised = normalized_distribution(
                 supervised, self.embedding_size,
             )
                
 
-        if not self.pt:
-            supervised_cnt = torch.tensor(
-                [frequency(sum(xx.values()), xmax=10) for xx in supervised]
-            )
-        clm_cnt = torch.tensor([frequency(sum(xx.values())) for xx in clm])
+        
+        # supervised_cnt = torch.tensor(
+        #     [frequency(sum(xx.values()), xmax=10) for xx in supervised]
+        # )
+        from ipdb import set_trace
+        set_trace()
 
-        if self.mix:
-            if self.pt:
-                logger.debug("不允许结合mix和预训练")
-                exit()
-            all_prob_supervised = (
-                self.mix_ratio * all_prob_supervised
-                + (1 - self.mix_ratio) * all_prob_clm
-            )
-            # supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt 627日晚上注释
-            supervised_cnt = supervised_cnt + clm_cnt
-
-            return {
-                "input_ids": input_ids.input_ids,
-                "attention_mask": input_ids.attention_mask,
-                "all_prob_mix": all_prob_supervised,
-                "valid_label_index_list": valid_label_index_list,
-                "mix_cnt": supervised_cnt,
-            }
         
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,
             "all_prob_supervised": all_prob_supervised,
             "valid_label_index_list": valid_label_index_list,
-            "supervised_cnt": supervised_cnt,
+            # "supervised_cnt": supervised_cnt,
         }
         
     

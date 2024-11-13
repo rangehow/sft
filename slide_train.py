@@ -13,7 +13,7 @@ from transformers import (
 from torch.utils.data import Dataset, DataLoader
 import datasets
 from .dataset import SlideDataset, SlideDataCollator
-from .special_trainer import KLTrainer
+from .ndp_trainer import NDPTrainer
 import pickle
 from .config import model_dir, dataset_dir
 import torch
@@ -27,6 +27,7 @@ from .shm_utils import get_shm_info
 from ipdb import set_trace as bp
 from multiprocessing import Pool
 from niuload import balanced_load
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -91,8 +92,6 @@ else:
     )
 
 
-
-
 def load_single_chunk(args):
     base_dir, name, i = args
     filename = f"{name}_part{i}.pkl"
@@ -140,11 +139,12 @@ def load_dataset():
     train_dataset = SlideDataset(
         synthesis,
         index,
-        embedding_size=150000,
+        embedding_size=160000,
         zero_prob=args.zero_prob,
         div_mode=args.div_mode,
     )
     return train_dataset
+
 
 model_dir = model_dir.get(args.model, args.model)
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
@@ -156,7 +156,7 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "left"
 
 
-
+# 检查数据的调试代码----------------------------------
 train_dataset = load_dataset()
 collator = SlideDataCollator(
     tokenizer,
@@ -166,7 +166,6 @@ collator = SlideDataCollator(
 )
 
 
-# 检查数据的调试代码----------------------------------
 dataloader = DataLoader(
     dataset=train_dataset,
     batch_size=8,
@@ -180,15 +179,6 @@ from tqdm import tqdm
 
 for d in tqdm(dataloader):
     bp()
-
-
-
-
-
-
-
-
-
 
 
 model = balanced_load(model_dir)
@@ -206,7 +196,7 @@ embedding_size = model.lm_head.weight.size()[
 ]  # 取lm_head比较安全，因为有些模型embedding layer会取不同的名字
 train_dataset = load_dataset()
 
-collator = SpecialDataCollator(
+collator = SlideDataCollator(
     tokenizer,
     zero_prob=args.zero_prob,
     embedding_size=embedding_size,
@@ -270,23 +260,23 @@ def get_output_dir(args):
     Generate output directory path based on training arguments.
     """
     from datetime import datetime
-    
+
     if args.output_dir is not None:
         return args.output_dir
-        
+
     # Basic components
     current_time = datetime.now()
     base_name = f"{args.model}_{args.dataset.replace(',','_')}"
     date_str = f"{current_time.month}m{current_time.day}d"
-    
+
     # Core training parameters
     train_params = [
         f"zp{args.zero_prob}",
         f"bsz{args.total_bsz}",
         f"{args.lr_scheduler_type}",
-        f"lr{args.learning_rate:.0e}"
+        f"lr{args.learning_rate:.0e}",
     ]
-    
+
     # Optional components based on flags
     optional_components = []
     if args.div_mode:
@@ -301,23 +291,17 @@ def get_output_dir(args):
         optional_components.append("pt")
     if args.mono:
         optional_components.append("mono")
-        
+
     # Combine all components
     components = [base_name, date_str] + train_params + optional_components
     output_dir = "_".join(components)
-    
+
     print(f"Auto-generated output directory: {output_dir}")
     return output_dir
 
 
-
-
 # torch.backends.cudnn.benchmark = False
-trainer = KLTrainer(
-    pt_mode=args.pt,
-    weight_mode=args.weighted,
-    mix_mode=args.mix,
-    alpha=args.alpha,
+trainer = NDPTrainer(
     model=model,
     train_dataset=train_dataset,
     tokenizer=tokenizer,
