@@ -222,7 +222,7 @@ def main():
                 score = dname2post[d](
                     prediciton=response,
                     reference=[t["answer"] for t in test_dataset],
-                    input=[t["input_ids"] for t in test_dataset]
+                    input_ids=[t["input_ids"] for t in test_dataset]
                 )
             except TypeError: # 用来过渡一下，因为有些评估不需要输入，我还不想先都加上kwargs
                 score = dname2post[d](
