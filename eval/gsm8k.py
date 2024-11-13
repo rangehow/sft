@@ -56,13 +56,8 @@ def parse_args():
         "--dp",
         action="store_true",
     )
-
     parser.add_argument(
-        "--logprob",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--output_path",
+        "--output_dir",
     )
     parser.add_argument(
         "--timestamp",  # 不要用默认值，因为和lm eval的就不能放在一起了？
@@ -77,13 +72,13 @@ def main():
     model_list = args.model.split(",")
     dataset_list = args.dataset.split(",")
 
-    # os.makedirs(args.output_path,exist_ok=True)
+    # os.makedirs(args.output_dir,exist_ok=True)
     script_path = os.path.dirname(os.path.abspath(__file__))  # gsm8k文件的所在目录
 
     print("script_path", script_path)
 
     for m in model_list:
-        os.makedirs(os.path.join(os.path.dirname(args.output_path), m), exist_ok=True)
+        os.makedirs(os.path.join(os.path.dirname(args.output_dir), m), exist_ok=True)
         model_type = AutoConfig.from_pretrained(m).model_type
 
         tokenizer = AutoTokenizer.from_pretrained(m)
@@ -242,7 +237,7 @@ def main():
         try:
             with open(
                 os.path.join(
-                    os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+                    os.path.dirname(args.output_dir), m, f"{args.timestamp}.jsonl"
                 ),
                 "w",
                 encoding="utf-8",
@@ -251,18 +246,18 @@ def main():
         except FileNotFoundError as e:
             print(f"Error: {e}")
             os.makedirs(
-                os.path.join(os.path.dirname(args.output_path), m), exist_ok=True
+                os.path.join(os.path.dirname(args.output_dir), m), exist_ok=True
             )
             with open(
                 os.path.join(
-                    os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+                    os.path.dirname(args.output_dir), m, f"{args.timestamp}.jsonl"
                 ),
                 "w",
                 encoding="utf-8",
             ) as o:
                 json.dump(record_list, o, indent=2, ensure_ascii=False)
         output_str = os.path.join(
-            os.path.dirname(args.output_path), m, f"{args.timestamp}.jsonl"
+            os.path.dirname(args.output_dir), m, f"{args.timestamp}.jsonl"
         )
         logger.debug(f"model:{m}的结果已保存至{output_str}")
 
