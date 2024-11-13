@@ -12,10 +12,10 @@ from transformers import (
 )
 from torch.utils.data import Dataset, DataLoader
 import datasets
-from dataset import SpecialDataset, SpecialDataCollator, OfflineDataset
-from special_trainer import KLTrainer
+from .dataset import SpecialDataset, SpecialDataCollator
+from .special_trainer import KLTrainer
 import pickle
-from config import model_dir, dataset_dir
+from .config import model_dir, dataset_dir
 import torch
 from argparse import ArgumentParser
 from loguru import logger
@@ -23,7 +23,7 @@ import warnings
 import os
 import multiprocessing
 from tqdm import tqdm
-from shm_utils import get_shm_info
+from .shm_utils import get_shm_info
 
 
 def parse_args():
