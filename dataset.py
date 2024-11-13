@@ -318,41 +318,11 @@ class SlideDataCollator:
         
         # ----------------------------------------------------------------
         sum_diff = sum(t[1] - t[0] for sublist in valid_label_index_list for t in sublist)
-        if self.div_mode:
+        
 
-            x_sup = optimized_stack(supervised, self.embedding_size)
-            
-            if self.zero_prob == 0:
-
-                all_prob_supervised = directly_softmax(
-                    supervised, self.embedding_size, div=True
-                )
-    
-
-            else:
-
-                all_prob_supervised = (
-                    (1 - self.zero_prob)
-                    * x_sup
-                    / torch.sum(x_sup, dim=-1, keepdim=True)
-                )
-                non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
-                temp_zero_prob = self.zero_prob / (
-                    self.embedding_size - non_zero_cnt
-                )
-                all_prob_supervised = torch.where(
-                    all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
-                )
-
-               
-                zero_cnt = torch.sum(x_clm != 0, keepdim=True, dim=-1)
-                temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
-
-        else:
-
-            all_prob_supervised = normalized_distribution(
-                supervised, self.embedding_size,
-            )
+        all_prob_supervised = normalized_distribution(
+            supervised, self.embedding_size,
+        )
                
 
         
