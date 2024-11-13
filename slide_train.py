@@ -198,12 +198,8 @@ train_dataset = load_dataset()
 
 collator = SlideDataCollator(
     tokenizer,
-    zero_prob=args.zero_prob,
     embedding_size=embedding_size,
-    div_mode=args.div_mode,
-    mix=args.mix,
-    mix_ratio=args.mix_ratio,
-    pt=args.pt,
+
 )
 
 

@@ -266,14 +266,11 @@ class SlideDataCollator:
     def __init__(
         self,
         tokenizer,
-        zero_prob,
-        embedding_size,
-        div_mode,
+        embedding_size
     ) -> None:
         self.tokenizer = tokenizer
-        self.zero_prob = zero_prob
         self.embedding_size = embedding_size
-        self.div_mode = div_mode
+        
 
     
     def __call__(self, batch) -> torch.Any:
