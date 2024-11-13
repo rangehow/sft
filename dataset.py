@@ -362,8 +362,8 @@ class SlideDataCollator:
         # supervised_cnt = torch.tensor(
         #     [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         # )
-        from ipdb import set_trace
-        set_trace()
+        # from ipdb import set_trace
+        # set_trace()
 
         
         return {
