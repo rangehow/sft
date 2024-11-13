@@ -23,3 +23,5 @@ t3 = timeit.timeit(lambda: method3(test_list), number=1)
 print(f"filter方法: {t1:.4f}秒")
 print(f"生成器方法: {t2:.4f}秒")
 print(f"简单循环: {t3:.4f}秒")
+
+
