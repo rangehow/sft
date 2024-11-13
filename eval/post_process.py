@@ -4,6 +4,11 @@ import re
 import numpy as np
 from .json_utils import *
 
+from loguru import logger
+from ..config import *
+from comet import load_from_checkpoint
+
+
 dname2post = {}
 
 
@@ -15,38 +20,24 @@ def register2dict(name):
     return decorator
 
 
-def comet_eval(input,ref,hyp):
-    
+def comet_eval(input, ref, hyp):
+    model = load_from_checkpoint(comet_path)
+    data = [{"src": s, "mt": m, "ref": r} for s, m, r in zip(input, hyp, ref)]
+    model_output = model.predict(data, batch_size=16, gpus=8)[-1]
+    logger.debug(f"comet22\n", model_output)
+    return model_output
 
 
 @register2dict(name="alma_zhen")
-def alma_zhen(prediciton, reference,input_ids):
+def alma_zhen(prediciton, reference, input_ids):
 
-    for p, r,inp in zip(prediciton, reference,input_ids):
-        generated_text = p.outputs[0].text
-        input_ids = inp.split("Translate Chinese into English:\n")[-1]
-        all_responses = generated_text.split("\nQ:")[0]
+    hyp, inp, ref = [], [], []
+    for p, r, i in zip(prediciton, reference, input_ids):
+        hyp.append(p.outputs[0].text)
+        inp.append(i.split("Translate Chinese into English:\n")[-1])
+        ref.append(r)
 
-        try:
-            correct += float(maybe_remove_comma(find_number(r))) == float(
-                short_responses
-            )
-        except:
-            correct += maybe_remove_comma(find_number(r)) == maybe_remove_comma(
-                find_number(short_responses)
-            )
-
-        # print("-" * 40)
-        # print(f"generated answer {all_responses}")
-        # print(f"Short ground truth answer {find_number(r)}")
-        # print(f"correct {correct}")
-        # # print(f"Correct: {correct} out of {idx+1}")
-        # print("=" * 40)
-
-    return correct / len(reference) * 100
-
-
-
+    return comet_eval(input=inp, ref=ref, hyp=hyp) * 100
 
 
 
@@ -122,7 +113,7 @@ def mmlu(prediciton, reference):
 
         generated_text = p.outputs[0].text
 
-        if generated_text =="":
+        if generated_text == "":
             continue
         all_responses = generated_text[1]
         # import pdb

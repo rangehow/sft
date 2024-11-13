@@ -10,3 +10,5 @@ dataset_dir = {
     "code": "m-a-p/CodeFeedback-Filtered-Instruction",
     "math": "lighteval/MATH",
 }
+
+comet_path="/niutrans/NEUNLP/rjh/models/wmt22-comet-da/checkpoints/model.ckpt"
