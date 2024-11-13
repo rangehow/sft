@@ -3,6 +3,7 @@ import json
 import math
 import os
 from collections import Counter, defaultdict
+from typing import Dict, List, Optional, Tuple, Union
 from transformers import AutoTokenizer, AutoConfig
 from itertools import islice
 import pickle
@@ -16,59 +17,133 @@ from ..eval.load_func import dname2load
 from tqdm import tqdm
 from loguru import logger
 import argparse
-
+from ipdb import set_trace as bp
 
 class TrieNode:
+    __slots__ = ['_children', '_value']
+    
     def __init__(self):
-        self.children = {}
-        self.value = None
-
+        self._children = None  # 懒初始化children
+        self._value = None     # 懒初始化value
+    
+    @property
+    def children(self) -> Dict:
+        if self._children is None:
+            self._children = {}
+        return self._children
+    
+    def add_value(self, value: str) -> None:
+        if self._value is None:
+            # 第一个值，使用tuple存储
+            self._value = (value, 1)
+        elif isinstance(self._value, tuple):
+            key, count = self._value
+            if key == value:
+                # 相同值，更新计数
+                self._value = (key, count + 1)
+            else:
+                # 不同值，转换为Counter
+                counter = Counter()
+                counter[key] = count
+                counter[value] = 1
+                self._value = counter
+        else:
+            # 已经是Counter，直接更新
+            self._value[value] += 1
+    
+    def get_value(self) -> Optional[Union[Counter, Tuple[str, int]]]:
+        return self._value
+    
+    def get_value_as_counter(self) -> Counter:
+        if self._value is None:
+            return Counter()
+        if isinstance(self._value, tuple):
+            key, count = self._value
+            return Counter({key: count})
+        return self._value
 
 class Trie:
     def __init__(self):
         self.root = TrieNode()
-
-    def insert(self, key_list, value):
+        self._size = 0
+    
+    def insert(self, key_list: List[str], value: str) -> None:
         node = self.root
         for key in key_list:
+            if node._children is None:
+                node._children = {}
             if key not in node.children:
                 node.children[key] = TrieNode()
+                self._size += 1
             node = node.children[key]
-        if node.value == None:
-            node.value = Counter()
-            node.value[value] += 1
-
-    def search(self, key_list):
+        node.add_value(value)
+    
+    def search(self, key_list: List[str]) -> Optional[Counter]:
         node = self.root
         for key in key_list:
-            if key not in node.children:
+            if node._children is None or key not in node.children:
                 return None
             node = node.children[key]
-        return node.value
-
-    def merge(self, other):
-        def _merge_nodes(node1, node2):
-            # Merge the values
-            node1.value.update(node2.value)
-            # Merge the children
-            for key, child_node2 in node2.children.items():
-                if key in node1.children:
-                    _merge_nodes(node1.children[key], child_node2)
+        return node.get_value_as_counter() if node._value is not None else None
+    
+    def merge(self, other: 'Trie') -> None:
+        def _merge_nodes(node1: TrieNode, node2: TrieNode) -> None:
+            # 合并值
+            if node2._value is not None:
+                if isinstance(node2._value, tuple):
+                    key, count = node2._value
+                    for _ in range(count):
+                        node1.add_value(key)
                 else:
-                    node1.children[key] = child_node2
+                    for key, count in node2._value.items():
+                        for _ in range(count):
+                            node1.add_value(key)
+            
+            # 合并子节点
+            if node2._children is not None:
+                for key, child_node2 in node2.children.items():
+                    if node1._children is None:
+                        node1._children = {}
+                    if key not in node1.children:
+                        node1.children[key] = child_node2
+                    else:
+                        _merge_nodes(node1.children[key], child_node2)
 
         _merge_nodes(self.root, other.root)
-
-    def __str__(self):
-        def _print(node, prefix):
-            if node.value:
-                print(f"{prefix}: {dict(node.value)}")
-            for key, child in node.children.items():
-                _print(child, prefix + [key])
-
+    
+    def __str__(self) -> str:
+        result = []
+        
+        def _print(node: TrieNode, prefix: List[str]) -> None:
+            if node._value is not None:
+                result.append(f"{prefix}: {dict(node.get_value_as_counter())}")
+            if node._children is not None:
+                for key, child in node.children.items():
+                    _print(child, prefix + [key])
+        
         _print(self.root, [])
-
-
+        return '\n'.join(result)
+    
+    def memory_usage(self) -> int:
+        """估算内存使用量（字节）"""
+        total = 0
+        
+        def _count_node(node: TrieNode) -> int:
+            size = 48  # TrieNode基础大小（预估）
+            if node._children is not None:
+                size += 64 + len(node.children) * 36  # 字典开销
+                for child in node.children.values():
+                    size += _count_node(child)
+            if node._value is not None:
+                if isinstance(node._value, tuple):
+                    size += 32  # tuple开销
+                else:
+                    size += 64 + len(node._value) * 36  # Counter开销
+            return size
+        
+        return _count_node(self.root)
+    
+    
 def parse_args():
 
     parser = argparse.ArgumentParser()
@@ -257,6 +332,7 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
     synthesis_dict = defaultdict(list)
     cnt_list = []
 
+    supervised_cnt, clm_cnt, total_cnt = 0, 0, 0
     for j in tqdm(range(len(train_dataset)), desc="synthesis stage"):
 
         input_id, label = train_dataset[j]["input_ids"], train_dataset[j]["labels"]
@@ -289,7 +365,11 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
 
                     # supervised_key = tuple(input_id[: i + 1])
                     # supervised_value = supervised_dict[supervised_key]
+                    total_cnt += 1
                     supervised_value = supervised_trie.search(input_id[: i + 1])
+
+                    if len(supervised_value) > 1:
+                        supervised_cnt += 1
 
                     if args.clm:
                         if flag4LossArea is False:
@@ -299,8 +379,13 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
 
                         # clm_key = tuple(label[regionBeginIdx + 1 : i + 1])
                         # clm_value = clm_dict.get(clm_key, supervised_value)
+                        
                         clm_value = clm_trie.search(label[regionBeginIdx + 1 : i + 1])
-
+                        try:
+                            if len(clm_value) > 1:
+                                clm_cnt += 1
+                        except:
+                            ...
                         if (
                             clm_value == None or len(clm_value) == 0
                         ):  # trie的返回不稳定，现在是空counter
@@ -322,7 +407,7 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
                     import pdb
 
                     pdb.set_trace()
-
+    logger.debug(f"{supervised_cnt*100/total_cnt},{clm_cnt*100/total_cnt}")
     return synthesis_dict, cnt_list
 
 
@@ -374,14 +459,14 @@ def main():
 
     args = parse_args()
 
-    while True:
-        a = str(input("你要跳过检查吗？y/n"))
-        if a == "y":
-            break
-        elif a == "n":
-            test(args)
+    # while True:
+    #     a = str(input("你要跳过检查吗？y/n"))
+    #     if a == "y":
+    #         break
+    #     elif a == "n":
+    #         test(args)
 
-            break
+    #         break
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir.get(args.model, args.model))
     # config = AutoConfig.from_pretrained(model_dir[args.model])
@@ -396,6 +481,8 @@ def main():
         supervised_trie, clm_trie = statistic(args, train_dataset, mono_dataset)
     else:
         supervised_trie, clm_trie = statistic(args, train_dataset)
+    
+
     synthesis_dict, cnt_list = synthesis(
         args, train_dataset, supervised_trie, clm_trie, template
     )
