@@ -95,7 +95,7 @@ def main():
         record_list = []
         for d in dataset_list:
 
-            dataset = dname2load[d](dataset_dir.get(d, None))
+            dataset = dname2load[d](dataset_dir.get(d, None), test=True)
             test_dataset = dataset.map(
                 partial(
                     dname2func[d],
@@ -109,8 +109,8 @@ def main():
                 load_from_cache_file=False,
                 remove_columns=dataset.features.keys(),
             )
-
-            print(test_dataset[0])
+            print("origin data:", dataset[0])
+            print("after map data:", test_dataset[0])
 
             save_str = (
                 f"{model_name}_{d}_vllm_{args.mode}_shot"
@@ -222,11 +222,19 @@ def main():
             # os.makedirs(os.path.join(script_path, "generated"), exist_ok=True)
             # with open(target_file, "wb") as o:
             #     pickle.dump(response, o)
-
-            score = dname2post[d](
-                prediciton=response,
-                reference=[t["answer"] for t in test_dataset],
-            )
+            try:
+                
+                score = dname2post[d](
+                    prediciton=response,
+                    reference=[t["answer"] for t in test_dataset],
+                    input=[t["input_ids"] for t in test_dataset]
+                )
+            except TypeError: # 用来过渡一下，因为有些评估不需要输入，我还不想先都加上kwargs
+                score = dname2post[d](
+                    prediciton=response,
+                    reference=[t["answer"] for t in test_dataset],
+                    
+                )
 
             logger.debug(f"task:{d},model:{m},score :{score}")
 

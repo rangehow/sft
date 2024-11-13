@@ -65,10 +65,30 @@ def parse_args():
     parser.add_argument("--warmup_ratio", type=float, default=0)
     parser.add_argument("--lr_scheduler_type", default="linear")
     parser.add_argument("--learning_rate", default=5e-5, type=ast.literal_eval)
-    return parser.parse_args()
 
+    args = parser.parse_args()
+    if args.output_dir is None:
+        # 从model路径中提取模型名称
+        model_name = args.model.split("/")[-1]
+
+        # 构建主要标识符
+        main_config = f"{model_name}_bsz{args.total_bsz}_e{args.num_train_epochs}"
+
+        # 添加重要的可选参数
+        if args.lora:
+            main_config += "_lora"
+        if args.template:
+            main_config += f"_t{args.template}"
+
+        # 输出目录直接在dataset下
+        args.output_dir = os.path.join(args.dataset, main_config)
+
+    return args
 
 args = parse_args()
+logger.info(f"模型的保存路径推断为{args.output_dir}")
+
+
 
 
 def is_torchrun():
@@ -199,7 +219,6 @@ train_dataset = load_dataset()
 collator = SlideDataCollator(
     tokenizer,
     embedding_size=embedding_size,
-
 )
 
 
@@ -251,49 +270,49 @@ if args.lora:
     model.print_trainable_parameters()
 
 
-def get_output_dir(args):
-    """
-    Generate output directory path based on training arguments.
-    """
-    from datetime import datetime
+# def get_output_dir(args):
+#     """
+#     Generate output directory path based on training arguments.
+#     """
+#     from datetime import datetime
 
-    if args.output_dir is not None:
-        return args.output_dir
+#     if args.output_dir is not None:
+#         return args.output_dir
 
-    # Basic components
-    current_time = datetime.now()
-    base_name = f"{args.model}_{args.dataset.replace(',','_')}"
-    date_str = f"{current_time.month}m{current_time.day}d"
+#     # Basic components
+#     current_time = datetime.now()
+#     base_name = f"{args.model}_{args.dataset.replace(',','_')}"
+#     date_str = f"{current_time.month}m{current_time.day}d"
 
-    # Core training parameters
-    train_params = [
-        f"zp{args.zero_prob}",
-        f"bsz{args.total_bsz}",
-        f"{args.lr_scheduler_type}",
-        f"lr{args.learning_rate:.0e}",
-    ]
+#     # Core training parameters
+#     train_params = [
+#         f"zp{args.zero_prob}",
+#         f"bsz{args.total_bsz}",
+#         f"{args.lr_scheduler_type}",
+#         f"lr{args.learning_rate:.0e}",
+#     ]
 
-    # Optional components based on flags
-    optional_components = []
-    if args.div_mode:
-        optional_components.append("div")
-    if args.lora:
-        optional_components.append("lora")
-    if args.w_template:
-        optional_components.append("template")
-    if args.warmup_ratio > 0:
-        optional_components.append(f"warmratio{args.warmup_ratio:.0e}")
-    if args.pt:
-        optional_components.append("pt")
-    if args.mono:
-        optional_components.append("mono")
+#     # Optional components based on flags
+#     optional_components = []
+#     if args.div_mode:
+#         optional_components.append("div")
+#     if args.lora:
+#         optional_components.append("lora")
+#     if args.w_template:
+#         optional_components.append("template")
+#     if args.warmup_ratio > 0:
+#         optional_components.append(f"warmratio{args.warmup_ratio:.0e}")
+#     if args.pt:
+#         optional_components.append("pt")
+#     if args.mono:
+#         optional_components.append("mono")
 
-    # Combine all components
-    components = [base_name, date_str] + train_params + optional_components
-    output_dir = "_".join(components)
+#     # Combine all components
+#     components = [base_name, date_str] + train_params + optional_components
+#     output_dir = "_".join(components)
 
-    print(f"Auto-generated output directory: {output_dir}")
-    return output_dir
+#     print(f"Auto-generated output directory: {output_dir}")
+#     return output_dir
 
 
 # torch.backends.cudnn.benchmark = False
@@ -303,7 +322,7 @@ trainer = NDPTrainer(
     tokenizer=tokenizer,
     args=TrainingArguments(
         overwrite_output_dir=True,
-        output_dir=args.output_dir if args.output_dir else get_output_dir(args),
+        output_dir=args.output_dir ,
         logging_steps=1,
         remove_unused_columns=False,
         gradient_accumulation_steps=args.gradient_accumulation_steps,

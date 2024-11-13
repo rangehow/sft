@@ -15,6 +15,41 @@ def register2dict(name):
     return decorator
 
 
+def comet_eval(input,ref,hyp):
+    
+
+
+@register2dict(name="alma_zhen")
+def alma_zhen(prediciton, reference,input_ids):
+
+    for p, r,inp in zip(prediciton, reference,input_ids):
+        generated_text = p.outputs[0].text
+        input_ids = inp.split("Translate Chinese into English:\n")[-1]
+        all_responses = generated_text.split("\nQ:")[0]
+
+        try:
+            correct += float(maybe_remove_comma(find_number(r))) == float(
+                short_responses
+            )
+        except:
+            correct += maybe_remove_comma(find_number(r)) == maybe_remove_comma(
+                find_number(short_responses)
+            )
+
+        # print("-" * 40)
+        # print(f"generated answer {all_responses}")
+        # print(f"Short ground truth answer {find_number(r)}")
+        # print(f"correct {correct}")
+        # # print(f"Correct: {correct} out of {idx+1}")
+        # print("=" * 40)
+
+    return correct / len(reference) * 100
+
+
+
+
+
+
 @register2dict(name="gsm8k")
 def gsm8k(prediciton, reference):
 

@@ -17,7 +17,7 @@ def register2dict():
 
 
 @register2dict()
-def gsm8k(local_dir):
+def gsm8k(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "main")["test"]
 
@@ -25,7 +25,7 @@ def gsm8k(local_dir):
 
 
 @register2dict()
-def bbh(local_dir):
+def bbh(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
 
@@ -33,14 +33,14 @@ def bbh(local_dir):
 
 
 @register2dict()
-def code(local_dir):
+def code(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     return datasets.load_dataset("m-a-p/CodeFeedback-Filtered-Instruction")["train"]
 
 
 @register2dict()
-def apps(local_dir):
+def apps(local_dir, **kwargs):
     exit()  # '***数据集，不许用'
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "all")["train"]
@@ -48,21 +48,21 @@ def apps(local_dir):
 
 
 @register2dict()
-def alpaca_gpt4(local_dir):
+def alpaca_gpt4(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     return datasets.load_dataset("vicgalle/alpaca-gpt4")["train"]
 
 
 @register2dict()
-def mmlu(local_dir):
+def mmlu(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "all")["test"]
     return datasets.load_dataset("cais/mmlu", "all")["test"]
 
 
 @register2dict()
-def humaneval(local_dir):
+def humaneval(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["test"]
     # from human_eval.data import write_jsonl, read_problems
@@ -80,7 +80,7 @@ def humaneval(local_dir):
 
 
 @register2dict()
-def truthfulqa(local_dir):
+def truthfulqa(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir, "multiple_choice")["validation"]
     else:
@@ -88,7 +88,7 @@ def truthfulqa(local_dir):
 
 
 @register2dict()
-def math(local_dir):
+def math(local_dir, **kwargs):
     if local_dir is not None:
         a = datasets.load_dataset(local_dir, "default")["train"]
         b = datasets.load_dataset(local_dir, "default")["test"]
@@ -99,7 +99,7 @@ def math(local_dir):
 
 
 @register2dict()
-def slimpajama(local_dir):
+def slimpajama(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -107,7 +107,7 @@ def slimpajama(local_dir):
 
 
 @register2dict()
-def test(local_dir):
+def test(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -115,7 +115,7 @@ def test(local_dir):
 
 
 @register2dict()
-def iepile(local_dir):
+def iepile(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -123,7 +123,7 @@ def iepile(local_dir):
 
 
 @register2dict()
-def wiki_medical(local_dir):
+def wiki_medical(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -131,7 +131,7 @@ def wiki_medical(local_dir):
 
 
 @register2dict()
-def pubmed(local_dir):
+def pubmed(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -141,7 +141,7 @@ def pubmed(local_dir):
 
 
 @register2dict()
-def pubmed_abstract(local_dir):
+def pubmed_abstract(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -151,7 +151,7 @@ def pubmed_abstract(local_dir):
 
 
 @register2dict()
-def medical_transcription(local_dir):
+def medical_transcription(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -159,7 +159,7 @@ def medical_transcription(local_dir):
 
 
 @register2dict()
-def textbooks(local_dir):
+def textbooks(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -167,7 +167,7 @@ def textbooks(local_dir):
 
 
 @register2dict()
-def medpt(local_dir):
+def medpt(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -177,7 +177,7 @@ def medpt(local_dir):
 
 
 @register2dict()
-def medqa(local_dir):
+def medqa(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["test"]
     else:
@@ -185,7 +185,7 @@ def medqa(local_dir):
 
 
 @register2dict()
-def medquad(local_dir):
+def medquad(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -193,7 +193,7 @@ def medquad(local_dir):
 
 
 @register2dict()
-def medmcqa(local_dir):
+def medmcqa(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["validation"]
     else:
@@ -201,7 +201,7 @@ def medmcqa(local_dir):
 
 
 @register2dict()
-def medical(local_dir):
+def medical(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -209,7 +209,7 @@ def medical(local_dir):
 
 
 @register2dict()
-def pubmedqa(local_dir):
+def pubmedqa(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -217,7 +217,7 @@ def pubmedqa(local_dir):
 
 
 @register2dict()
-def bioasq(local_dir):
+def bioasq(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["test"]
     else:
@@ -225,7 +225,7 @@ def bioasq(local_dir):
 
 
 @register2dict()
-def careqa(local_dir):
+def careqa(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["test"]
     else:
@@ -233,7 +233,7 @@ def careqa(local_dir):
 
 
 @register2dict()
-def multimedqa(local_dir):
+def multimedqa(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["test"]
     else:
@@ -241,7 +241,7 @@ def multimedqa(local_dir):
 
 
 @register2dict()
-def magpie(local_dir):
+def magpie(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -249,7 +249,7 @@ def magpie(local_dir):
 
 
 @register2dict()
-def magpie_300k(local_dir):
+def magpie_300k(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -259,7 +259,7 @@ def magpie_300k(local_dir):
 
 
 @register2dict()
-def redpajama(local_dir):
+def redpajama(local_dir, **kwargs):
     if local_dir is not None:
         return datasets.load_dataset(local_dir)["train"]
     else:
@@ -269,11 +269,22 @@ def redpajama(local_dir):
 
 
 @register2dict()
-def alma_zhen(local_dir):
-    if local_dir is not None:
-        return datasets.load_dataset(local_dir, "zh-en")["train"]
+def alma_zhen(local_dir, **kwargs):
+    test_flag = kwargs.pop("test", False)
+    if test_flag:
+        if local_dir is not None:
+            return datasets.load_dataset(local_dir, "zh-en")["validation"]
+        else:
+            return datasets.load_dataset("haoranxu/ALMA-Human-Parallel", "zh-en")[
+                "validation"
+            ]
     else:
-        return datasets.load_dataset("haoranxu/ALMA-Human-Parallel", "zh-en")["train"]
+        if local_dir is not None:
+            return datasets.load_dataset(local_dir, "zh-en")["train"]
+        else:
+            return datasets.load_dataset("haoranxu/ALMA-Human-Parallel", "zh-en")[
+                "train"
+            ]
 
 
 if __name__ == "__main__":
