@@ -78,7 +78,6 @@ def parse_args():
     )
     parser.add_argument("--clm", default=True, type=ast.literal_eval)
     parser.add_argument("--ngram", default=4, type=int)
-    parser.add_argument("--cache_statistic", default=True, type=ast.literal_eval)
     parser.add_argument("--template", type=str)
     parser.add_argument("--mono", default=False, type=ast.literal_eval)
     parser.add_argument("--mono_dataset", default="wiki_medical")
@@ -122,10 +121,6 @@ def find_ranges(lst, target=-100):
     return ranges
 
 
-
-
-
-
 def chunk_data(data, chunk_size):
     """将大字典或大列表拆分成多个较小的部分，每个包含不超过 chunk_size 个元素。"""
     if isinstance(data, dict):
@@ -156,8 +151,6 @@ def save_chunks(data, chunk_size, base_dir, name, start_idx=0):
         filename = f"{name}_part{i+start_idx}.pkl"
         with open(os.path.join(base_dir, filename), "wb") as f:
             pickle.dump(chunk, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-
 
 
 def parse_dataset(args, template, dataset_str):
@@ -333,6 +326,49 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
     return synthesis_dict, cnt_list
 
 
+def create_save_path(args):
+    """
+    根据参数创建唯一的保存路径
+
+    Args:
+        args: 解析的命令行参数
+    Returns:
+        str: 生成的完整保存路径
+    """
+    # 获取脚本所在目录的绝对路径
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 处理模型名称，提取纯模型名
+    model_name = os.path.basename(args.model)
+
+    # 构建基础路径组件
+    components = [base_dir, "train_dataset", f"{model_name}"]
+
+    # 添加数据集和模板信息
+    if args.w_template and args.template:
+        components.append(f"{args.template}_{args.dataset}")
+    else:
+        components.append(args.dataset)
+
+    # 添加单语言训练相关配置
+    if args.mono:
+        components.append(f"mono_{args.mono_dataset}")
+
+    # 添加 CLM 和 n-gram 信息
+    if args.clm:
+        components.append(f"clm_ngram{args.ngram}")
+    else:
+        components.append(f"ngram{args.ngram}")
+
+    # 组合路径
+    save_path = os.path.join(*components)
+
+    # 确保目录存在
+    os.makedirs(save_path, exist_ok=True)
+
+    return save_path
+
+
 @logger.catch
 def main():
 
@@ -369,41 +405,31 @@ def main():
     )
     assert len(synthesis_dict) == len(cnt_list)
 
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    # w_template
-    output_base_dir = os.path.join(
-        script_path,
-        "train_dataset",
-        (f"{args.template}_{args.dataset}"),
-    )
-    if args.mono:
-        output_base_dir += f"_mono_{args.mono_dataset.replace(',','_')}"
-    if args.w_template:
-        output_base_dir += "_template"
+    output_base_dir = create_save_path(args)
 
     os.makedirs(
         output_base_dir,
         exist_ok=True,
     )
 
-    from datasets import Dataset
+    # from datasets import Dataset
 
-    regular_dict = dict(synthesis_dict)
-    from ipdb import set_trace
+    # regular_dict = dict(synthesis_dict)
+    # from ipdb import set_trace
 
-    set_trace()
-    # 创建Dataset对象
-    dataset = Dataset.from_dict(regular_dict)
+    # set_trace()
+    # # 创建Dataset对象
+    # dataset = Dataset.from_dict(regular_dict)
 
     save_chunks(
         synthesis_dict,
-        chunk_size=1000,
+        chunk_size=len(synthesis_dict) // 96,
         base_dir=output_base_dir,
         name="synthesis",
     )
     save_chunks(
         cnt_list,
-        chunk_size=1000,
+        chunk_size=len(cnt_list) // 96,
         base_dir=output_base_dir,
         name="index",
     )
