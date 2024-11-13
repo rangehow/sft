@@ -110,6 +110,17 @@ def find_temperature(x, target_index, zero_prob=0.05, tol=1e-6, max_iter=100):
     return T
 
 
+def normalized_distribution(supervised, embedding_size, alpha=1e-20):
+    x = torch.zeros(len(supervised), embedding_size)
+    for i, counter in enumerate(supervised):
+        indices = torch.tensor(list(counter.keys()), dtype=torch.long)
+        values = torch.tensor(list(counter.values()), dtype=torch.float32)
+        x[i].scatter_(0, indices, values)
+    from ipdb import set_trace
+    set_trace()
+    smoothed = freq_tensor + alpha
+    return smoothed / torch.sum(smoothed)
+
 # 6月28日下午的优化版本
 def directly_softmax(supervised, embedding_size, div=False, zero_prob=0):
     x = torch.zeros(len(supervised), embedding_size)
@@ -143,6 +154,50 @@ import torch
 from collections import Counter
 
 
+class SlideDataset(Dataset):
+    def __init__(
+        self,
+        synthesis_dict: list[tuple[tuple,list[Counter]]],
+        cnt_list: list[list[tuple]],  # 在单轮对话里每个list里应该只有一个tuple
+        embedding_size,
+        zero_prob,
+        div_mode=False,
+    ):
+
+        synthesis_dict = [data_sample for data_sample in synthesis_dict.items()]
+        self.input_ids = [
+            list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
+        ]
+        
+
+        self.supervised = [
+            [synthesis_dict[i][1][j] for j in range(len(synthesis_dict[i][1]))]
+            for i in range(len(synthesis_dict))
+        ]
+
+        self.valid_label_index_list = cnt_list
+
+        self.embedding_size = embedding_size
+        self.div_mode = div_mode
+        self.zero_prob = zero_prob
+
+    def __getitem__(self, index):
+        
+        return {
+            "input_ids": self.input_ids[index],
+            "supervised": self.supervised[index],
+            "embedding_size": self.embedding_size,
+            "div_mode": self.div_mode,
+            "valid_label_index_list": self.valid_label_index_list[index],
+        }
+        
+
+    def __len__(self):
+        return len(self.input_ids)
+
+    
+        
+        
 class SpecialDataset(Dataset):
     def __init__(
         self,
@@ -207,21 +262,137 @@ class SpecialDataset(Dataset):
         return len(self.input_ids)
 
 
-class OfflineDataset(Dataset):
+class SlideDataCollator:
     def __init__(
         self,
-        synthesis_list,
-    ):
+        tokenizer,
+        zero_prob,
+        embedding_size,
+        div_mode,
+    ) -> None:
+        self.tokenizer = tokenizer
+        self.zero_prob = zero_prob
+        self.embedding_size = embedding_size
+        self.div_mode = div_mode
 
-        self.synthesis_list = synthesis_list
+    
+    def __call__(self, batch) -> torch.Any:
 
-    def __getitem__(self, index):
+        input_ids = [d["input_ids"] for d in batch]
+        input_ids_len = list(len(input_id) for input_id in input_ids)
+        input_ids = self.tokenizer.pad(
+            {"input_ids": input_ids}, return_tensors="pt", padding=True
+        )
+        input_ids_max_len = input_ids["input_ids"].shape[-1]
 
-        return self.synthesis_list[index]
+        # temp_for_debug = [i["valid_label_index_list"] for i in batch]
+        # print(input_ids.input_ids.shape)
+        # print(temp_for_debug)
+        # print(input_ids_max_len, input_ids_len)
+        valid_label_index_list = []
+        # 这个东西很复杂……，因为pad之后前面会变长，所以前面还要去掉pad的位置。
+        # 不要就地改动原batch的内容，不然会与auto_find_bsz冲突。
+        # 不耗时。e-5
+        for i, d in enumerate(batch):
+            length_diff = input_ids_max_len - input_ids_len[i]
+            temp_index_list = []
+            for j in range(len(d["valid_label_index_list"])):
+                temp_index_list.append(
+                    (
+                        length_diff + d["valid_label_index_list"][j][0],
+                        length_diff + d["valid_label_index_list"][j][1],
+                    )
+                )
+            valid_label_index_list.append(temp_index_list)
 
-    def __len__(self):
-        return len(self.synthesis_list)
+        
 
+        # TIME --------------------------------------------------------------
+        # e-4 不算耗时
+
+        # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
+        supervised = [item for d in batch for item in d["supervised"]]
+        
+        # if not all(len(counter) == 1 for counter in supervised):
+        #     import pdb
+        #     pdb.set_trace()
+        # else:
+        #     return {}
+        
+        # ----------------------------------------------------------------
+        sum_diff = sum(t[1] - t[0] for sublist in valid_label_index_list for t in sublist)
+        if self.div_mode:
+
+            x_sup = optimized_stack(supervised, self.embedding_size)
+            
+            if self.zero_prob == 0:
+
+                all_prob_supervised = directly_softmax(
+                    supervised, self.embedding_size, div=True
+                )
+    
+
+            else:
+
+                all_prob_supervised = (
+                    (1 - self.zero_prob)
+                    * x_sup
+                    / torch.sum(x_sup, dim=-1, keepdim=True)
+                )
+                non_zero_cnt = torch.sum(x_sup != 0, keepdim=True, dim=-1)
+                temp_zero_prob = self.zero_prob / (
+                    self.embedding_size - non_zero_cnt
+                )
+                all_prob_supervised = torch.where(
+                    all_prob_supervised == 0, temp_zero_prob, all_prob_supervised
+                )
+
+               
+                zero_cnt = torch.sum(x_clm != 0, keepdim=True, dim=-1)
+                temp_zero_prob = self.zero_prob / (self.embedding_size - zero_cnt)
+
+        else:
+            # from ipdb import set_trace
+            # set_trace()
+            all_prob_supervised = normalized_distribution(
+                supervised, self.embedding_size,
+            )
+               
+
+        if not self.pt:
+            supervised_cnt = torch.tensor(
+                [frequency(sum(xx.values()), xmax=10) for xx in supervised]
+            )
+        clm_cnt = torch.tensor([frequency(sum(xx.values())) for xx in clm])
+
+        if self.mix:
+            if self.pt:
+                logger.debug("不允许结合mix和预训练")
+                exit()
+            all_prob_supervised = (
+                self.mix_ratio * all_prob_supervised
+                + (1 - self.mix_ratio) * all_prob_clm
+            )
+            # supervised_cnt=self.mix_ratio*supervised_cnt+(1-self.mix_ratio)*clm_cnt 627日晚上注释
+            supervised_cnt = supervised_cnt + clm_cnt
+
+            return {
+                "input_ids": input_ids.input_ids,
+                "attention_mask": input_ids.attention_mask,
+                "all_prob_mix": all_prob_supervised,
+                "valid_label_index_list": valid_label_index_list,
+                "mix_cnt": supervised_cnt,
+            }
+        
+        return {
+            "input_ids": input_ids.input_ids,
+            "attention_mask": input_ids.attention_mask,
+            "all_prob_supervised": all_prob_supervised,
+            "valid_label_index_list": valid_label_index_list,
+            "supervised_cnt": supervised_cnt,
+        }
+        
+    
 
 class SpecialDataCollator:
     def __init__(
@@ -233,7 +404,7 @@ class SpecialDataCollator:
         mix,
         mix_ratio,
         pt,
-        offline,
+
     ) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
@@ -242,7 +413,7 @@ class SpecialDataCollator:
         self.mix = mix
         self.mix_ratio = mix_ratio
         self.pt = pt
-        self.offline = offline  # this flag only useful for data loading, don't set it to true while offline process
+        
 
     def __call__(self, batch) -> torch.Any:
 
@@ -275,45 +446,7 @@ class SpecialDataCollator:
                 )
             valid_label_index_list.append(temp_index_list)
 
-        if self.offline:
-
-            if self.mix:
-                all_prob_mix = torch.cat([d["all_prob_mix"] for d in batch], dim=0)
-                mix_cnt = torch.cat([d["mix_cnt"] for d in batch], dim=0)
-                return {
-                    "input_ids": input_ids.input_ids,
-                    "attention_mask": input_ids.attention_mask,
-                    "all_prob_mix": all_prob_supervised,
-                    "valid_label_index_list": valid_label_index_list,
-                    "mix_cnt": supervised_cnt,
-                }
-            else:
-                all_prob_clm = torch.cat([d["all_prob_clm"] for d in batch], dim=0)
-                clm_cnt = torch.cat([d["clm_cnt"] for d in batch], dim=0)
-                if not self.pt:
-                    all_prob_supervised = torch.cat(
-                        [d["all_prob_supervised"] for d in batch], dim=0
-                    )
-                    supervised_cnt = torch.cat(
-                        [d["supervised_cnt"] for d in batch], dim=0
-                    )
-                    return {
-                        "input_ids": input_ids.input_ids,
-                        "attention_mask": input_ids.attention_mask,
-                        "all_prob_supervised": all_prob_supervised,
-                        "all_prob_clm": all_prob_clm,
-                        "valid_label_index_list": valid_label_index_list,
-                        "supervised_cnt": supervised_cnt,
-                        "clm_cnt": clm_cnt,
-                    }
-
-                return {
-                    "input_ids": input_ids.input_ids,
-                    "attention_mask": input_ids.attention_mask,
-                    "all_prob_clm": all_prob_clm,
-                    "valid_label_index_list": valid_label_index_list,
-                    "clm_cnt": clm_cnt,
-                }
+        
 
         # TIME --------------------------------------------------------------
         # e-4 不算耗时

@@ -56,51 +56,51 @@ def find_ranges(lst, target=-100, offset=0):
     return ranges
 
 
-class CompressedCounter:
-    def __init__(self):
-        self.counts = {}  # 只存储非零计数
-        self.num_values = 0
+# class CompressedCounter:
+#     def __init__(self):
+#         self.counts = {}  # 只存储非零计数
+#         self.num_values = 0
 
-    def add(self, value):
-        if value in self.counts:
-            self.counts[value] += 1
-        else:
-            self.counts[value] = 1
-            self.num_values += 1
+#     def add(self, value):
+#         if value in self.counts:
+#             self.counts[value] += 1
+#         else:
+#             self.counts[value] = 1
+#             self.num_values += 1
 
-    def get(self, value):
-        return self.counts.get(value, 0)
+#     def get(self, value):
+#         return self.counts.get(value, 0)
 
-    def merge(self, other):
-        for value, count in other.counts.items():
-            if value in self.counts:
-                self.counts[value] += count
-            else:
-                self.counts[value] = count
-                self.num_values += 1
+#     def merge(self, other):
+#         for value, count in other.counts.items():
+#             if value in self.counts:
+#                 self.counts[value] += count
+#             else:
+#                 self.counts[value] = count
+#                 self.num_values += 1
 
-    def items(self):
-        return self.counts.items()
+#     def items(self):
+#         return self.counts.items()
 
-    def __len__(self):
-        return self.num_values
+#     def __len__(self):
+#         return self.num_values
 
-    def __str__(self):
-        return f"{self.counts}"
+#     def __str__(self):
+#         return f"{self.counts}"
 
-    def __repr__(self):
-        return self.__str__()
+#     def __repr__(self):
+#         return self.__str__()
 
 
 class TrieNode:
     def __init__(self):
         self.children = {}
-        self._counts = None  # 懒初始化
+        self._counts: Counter = None  # 懒初始化
 
     def add_value(self, value):
         if self._counts is None:
-            self._counts = CompressedCounter()
-        self._counts.add(value)
+            self._counts = Counter()
+        self._counts[value] += 1
 
     def get_counts(self):
         return self._counts
@@ -115,6 +115,7 @@ class TrieNode:
 class SuffixTrie:
     def __init__(self):
         self.root = TrieNode()
+        self._size = 1
 
     def _insert(self, input_id: list[int], label: list[int]):
         """_summary_
@@ -132,6 +133,7 @@ class SuffixTrie:
             #     # clm 会碰到这种情况
             #     continue
             if input_id[i] not in node.children:
+                self._size += 1
                 node.children[input_id[i]] = TrieNode()
             node = node.children[input_id[i]]
 
@@ -146,6 +148,13 @@ class SuffixTrie:
                     input_id[i - window_size : i],
                     label[i - window_size + 1 : i + 1],
                 )
+        # start,end=
+        # for start, end in non_zero_indices:
+        #     for i in range(start, end):
+        #         self._insert(
+        #             input_id[i - window_size : i],
+        #             label[i - window_size + 1 : i + 1],
+        #         )
 
     def search(self, key_list, backoff_step):
 
@@ -157,20 +166,23 @@ class SuffixTrie:
                 node = node.children[key]
                 if node._counts == None:
 
-                    counter_list.append(CompressedCounter())
+                    counter_list.append(Counter())
                 else:
                     counter_list.append(node._counts)
                     last_not_none_idx = idx
                 # print(idx,key)
+
             else:
                 break
         # 左侧的解释：有可能有时候backoff_step是0，就会把全部返回，这时候应该返回一个就很好
         # 右侧的解释，有可能需要退避很多步才能找到，这在探测边界会出现
 
-
         return counter_list[
             last_not_none_idx + 1 - max(backoff_step, 1) : last_not_none_idx + 1
         ]
+
+    def __len__(self):
+        return self._size
 
     def __str__(self):
         return self._print_tree(self.root)
@@ -264,7 +276,7 @@ def parse_dataset(args, template, dataset_str):
                 test=False,
             ),
             batched=True,
-            num_proc=1,
+            num_proc=30,
             remove_columns=train_dataset.features.keys(),
             # load_from_cache_file=False,
             desc="tokenize",
@@ -302,23 +314,16 @@ def synthesis(args, train_dataset, trie: SuffixTrie, template):
     synthesis_dict = defaultdict(list)
     cnt_list = []  # list[list[tuple]] sentence_idx, -100 area , (start,end)
 
-    for i in tqdm(range(len(train_dataset)), desc="synthesis stage"):
+    # 添加计数器
+    total_counter = 0
+    single_element_counter = 0
 
+    for i in tqdm(range(len(train_dataset)), desc="synthesis stage"):
         input_id, label = train_dataset[i]["input_ids"], train_dataset[i]["labels"]
 
-        # 这个地方和encoder-decoder模型还不一样，不需要特地区分编解码的输入，所以只需要一个input_id即可，input_id最后的EOS不需要送给模型
         key = tuple(input_id[:-1])
         length = len(input_id)
         if synthesis_dict[key] == []:
-            #     or (
-            #     template.chat_eos_token_id not in synthesis_dict[key][-1][0]
-            #     and template.chat_eos_token_id
-            #     not in synthesis_dict[key][-2][
-            #         0
-            #     ]  # qwen/gemma的template结尾是\n，所以还需要再检查一下-2位置
-            # )
-            # 防止重复示例. 情况1，这条数据没有被添加过了，情况2，这条数据没有被添加到结束符
-            # cnt list必须在这里，不然对synthesis_dict的去重会导致长度不匹配
             ranges_list = find_ranges(label, offset=1)
             cnt_list.append(ranges_list)
 
@@ -328,13 +333,24 @@ def synthesis(args, train_dataset, trie: SuffixTrie, template):
                         key[max(0, i + 1 - args.window_size) : i + 1],
                         math.floor(args.window_size * args.backoff_ratio),
                     )
-                    if counter_list==[]:
-                        merged_counter=CompressedCounter()
+                    if counter_list == []:
+                        merged_counter = Counter()
                     else:
                         merged_counter = counter_list[0]
                         for counter in counter_list[1:]:
-                            merged_counter.merge(counter)
+                            merged_counter.update(counter)
+
+                    # 统计merged_counter的元素个数
+                    total_counter += 1
+                    if len(merged_counter) == 1:
+                        single_element_counter += 1
+
                     synthesis_dict[key].append(merged_counter)
+
+    # 计算比例
+    ratio = 1 - (single_element_counter / total_counter) if total_counter > 0 else 0
+    print(f"Proportion of merged_counter with more than one element: {ratio:.2%}")
+
     return synthesis_dict, cnt_list
 
 
@@ -405,6 +421,8 @@ def main():
     else:
         trie = statistic(args, train_dataset)
 
+    logger.debug(f"node cnt in trie: {len(trie)}")
+
     synthesis_dict, cnt_list = synthesis(args, train_dataset, trie, template)
 
     logger.debug(
@@ -416,13 +434,13 @@ def main():
 
     save_chunks(
         synthesis_dict,
-        chunk_size=1000,
+        chunk_size=len(synthesis_dict) // 100,
         base_dir=output_base_dir,
         name="synthesis",
     )
     save_chunks(
         cnt_list,
-        chunk_size=1000,
+        chunk_size=len(cnt_list) // 100,
         base_dir=output_base_dir,
         name="index",
     )
