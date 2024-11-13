@@ -23,7 +23,7 @@ def register2dict(name):
 def comet_eval(input, ref, hyp):
     model = load_from_checkpoint(comet_path)
     data = [{"src": s, "mt": m, "ref": r} for s, m, r in zip(input, hyp, ref)]
-    model_output = model.predict(data, batch_size=16, gpus=8)[-1]
+    model_output = model.predict(data, batch_size=16, gpus=4)[-1]
     logger.debug(f"comet22\n", model_output)
     return model_output
 
