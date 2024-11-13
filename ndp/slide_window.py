@@ -3,6 +3,7 @@ import json
 import math
 import os
 from collections import Counter, defaultdict
+import numpy as np
 from transformers import AutoTokenizer, AutoConfig
 from itertools import islice
 import pickle
@@ -148,13 +149,6 @@ class SuffixTrie:
                     input_id[i - window_size : i],
                     label[i - window_size + 1 : i + 1],
                 )
-        # start,end=
-        # for start, end in non_zero_indices:
-        #     for i in range(start, end):
-        #         self._insert(
-        #             input_id[i - window_size : i],
-        #             label[i - window_size + 1 : i + 1],
-        #         )
 
     def search(self, key_list, backoff_step):
 
@@ -222,6 +216,7 @@ def parse_args():
     parser.add_argument("--mono_dataset", default="wiki_medical", type=str)
     parser.add_argument("--window-size", default=256, type=int)
     parser.add_argument("--backoff-ratio", default=0, type=float)
+    parser.add_argument("--weighted", default=False, type=ast.literal_eval)
     return parser.parse_args()
 
 
@@ -337,7 +332,25 @@ def synthesis(args, train_dataset, trie: SuffixTrie, template):
                         merged_counter = Counter()
                     else:
                         merged_counter = counter_list[0]
-                        for counter in counter_list[1:]:
+                        for i, counter in enumerate(counter_list[1:]):
+                            if args.weighted:
+                                weighted_score = 1 / (
+                                    1
+                                    + np.exp(
+                                        2
+                                        * (
+                                            (i + 1)
+                                            - math.floor(
+                                                args.window_size * args.backoff_ratio
+                                            )
+                                            // 2
+                                        )
+                                    )
+                                )
+                                counter = Counter(
+                                    {k: v * weighted_score for k, v in counter.items()}
+                                )
+
                             merged_counter.update(counter)
 
                     # 统计merged_counter的元素个数
@@ -381,6 +394,8 @@ def create_save_path(args):
     if args.mono:
         components.append(f"mono_{args.mono_dataset.replace(',', '_')}")
 
+    if args.weighted:
+        components.append("weighted")
     # 添加窗口大小和退避率参数
     components.append(f"w{args.window_size}_b{args.backoff_ratio}")
 
