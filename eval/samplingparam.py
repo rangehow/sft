@@ -29,6 +29,24 @@ def gsm8k():
     )
 
 
+@register2dict(name="alma_zhen")
+def alma_zhen():
+    return SamplingParams(
+        max_tokens=256,
+        temperature=0,
+        stop=[
+            "}\n",
+            "<|endoftext|>",
+            "<|im_end|>",
+            "</s>",
+            "## Question:",
+            "<|eot_id|>",
+            "\n\nQuestion:",
+            "Q:",
+        ],
+    )
+
+
 @register2dict(name="humaneval")
 def humaneval():
     return SamplingParams(
