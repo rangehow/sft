@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=int,
-        default=0,
+        default=1,
         help="0: base model(wo chat template),1:instruct model",
     )
     parser.add_argument(
@@ -62,6 +62,9 @@ def parse_args():
     parser.add_argument(
         "--timestamp",  # 不要用默认值，因为和lm eval的就不能放在一起了？
     )
+    parser.add_argument(
+        "--template",  # 不要用默认值，因为和lm eval的就不能放在一起了？
+    )
     return parser.parse_args()
 
 
@@ -79,11 +82,11 @@ def main():
 
     for m in model_list:
         os.makedirs(os.path.join(os.path.dirname(args.output_dir), m), exist_ok=True)
-        model_type = AutoConfig.from_pretrained(m).model_type
+        
 
         tokenizer = AutoTokenizer.from_pretrained(m)
         tokenizer.padding_side = "left"
-        template = modelType2Template[model_type](tokenizer)
+        template = modelType2Template[args.template](tokenizer)
         model_name = os.path.basename(
             m.rstrip(os.sep)
         )  # 不去掉sep，碰到 a/b/ 就会读到空。
