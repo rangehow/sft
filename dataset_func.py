@@ -97,7 +97,7 @@ def _process(real_input, output, template, test=False, mode=0, pt=False, **kwarg
                 if test:
                     chat_dict = reformate(i, None)
                     input_id = template.tokenizer.apply_chat_template(
-                        chat_dict, tokenize=False, add_generation_prompt=True
+                        chat_dict, tokenize=False, add_generation_prompt=True, chat_template = template.jinja_template
                     )
                     input_ids.append(input_id)
                 else:
