@@ -40,7 +40,7 @@ class Template:
         self.base_eos_token_id = tokenizer.eos_token_id
         self.chat_eos_token_id = tokenizer.eos_token_id
 
-        self.jinja_template = None
+        self.jinja_template = jinja_template
         
     def apply(self, messages: list[dict[str, str]]):
 
