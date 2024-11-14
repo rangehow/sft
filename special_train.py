@@ -24,7 +24,7 @@ import os
 import multiprocessing
 from tqdm import tqdm
 from .shm_utils import get_shm_info
-
+from niuload import balanced_load
 
 def parse_args():
     parser = ArgumentParser()
@@ -198,9 +198,10 @@ if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "left"
 
-from niuload import balanced_load
-
-model = balanced_load(model_dir, ratio=[0.5, 1, 1, 1])
+if is_torchrun:
+    model = AutoModelForCausalLM.from_pretrained(model_dir)
+else:
+    model = balanced_load(model_dir, ratio=[0.5] + [1] * (torch.-1))
 # model = AutoModelForCausalLM.from_pretrained(
 #     model_dir,
 #     torch_dtype="auto",
