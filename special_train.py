@@ -63,12 +63,7 @@ def parse_args():
         type=ast.literal_eval,
         help="pt mode or not?",
     )
-    parser.add_argument(
-        "--offline",
-        default=False,
-        type=ast.literal_eval,
-        help="offline mode or not?",
-    )
+    
     parser.add_argument(
         "--mono",
         default=False,
@@ -148,7 +143,7 @@ def load_chunks_parallel(base_dir, name, num_processes=None):
     args = [(base_dir, name, i) for i in range(metadata["num_chunks"])]
 
     # 使用进程池并行加载
-    with Pool(processes=num_processes) as pool:
+    with multiprocessing.Pool(processes=num_processes) as pool:
         chunks = pool.map(load_single_chunk, args)
 
     # 合并所有列表数据
