@@ -201,7 +201,7 @@ tokenizer.padding_side = "left"
 if is_torchrun:
     model = AutoModelForCausalLM.from_pretrained(model_dir)
 else:
-    model = balanced_load(model_dir, ratio=[0.5] + [1] * (torch.-1))
+    model = balanced_load(model_dir, ratio=[0.5] + [1] * (torch.cuda.device_count()-1))
 # model = AutoModelForCausalLM.from_pretrained(
 #     model_dir,
 #     torch_dtype="auto",
