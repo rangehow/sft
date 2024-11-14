@@ -328,7 +328,7 @@ def test(tokenizer_name, template):
     c = tokenizer.apply_chat_template(message, tokenize=True)
     d = tokenizer.apply_chat_template(message, tokenize=False)
     a, b = g.apply(message)
-
+    
     if c[-1] != tokenizer.eos_token_id:
         print(tokenizer_name, "这个tokenizer的template不以eos结尾")
 
@@ -369,8 +369,8 @@ if __name__ == "__main__":
         # ("Qwen/Qwen1.5-32B-Chat", "qwen2"),
         # ("microsoft/Phi-3-small-8k-instruct", "phi3small"),
         # ("microsoft/Phi-3-mini-4k-instruct", "phi3"),
-        ("google/gemma-7b-it", "gemma2"),
-        ("google/gemma-2-2b-it", "gemma2"),
+        # ("google/gemma-7b-it", "gemma2"),
+        # ("google/gemma-2-2b-it", "gemma2"),
         # ("/mnt/rangehow/models/Meta-Llama-3.1-8B-Instruct", "llama31"),
         # ("meta-llama/Llama-2-7b-chat-hf", "llama2"),
         # ("01-ai/Yi-1.5-34B-Chat", "yi"),
