@@ -131,91 +131,61 @@ if args.output_dir is None:
     logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
 
 
-def load_msgpack_file(filename):
-    with open(filename, "rb") as f:
-        return pickle.load(f)  # ,strict_map_key=False,strict_types =True
+def load_single_chunk(args):
+    base_dir, name, i = args
+    filename = f"{name}_part{i}.pkl"
+    with open(os.path.join(base_dir, filename), "rb") as f:
+        chunk = pickle.load(f)
+    return chunk
 
 
-def find_msgpack_chunk_files(
-    base_dir,
-    name,
-):
-    """查找与基准文件名匹配的所有 msgpack 分块文件。"""
+def load_chunks_parallel(base_dir, name, num_processes=None):
+    # 读取元数据
+    with open(os.path.join(base_dir, f"{name}_metadata.json")) as f:
+        metadata = json.load(f)
 
-    chunk_files = [
-        os.path.join(base_dir, f)
-        for f in os.listdir(base_dir)
-        if f.startswith(name) and f.endswith(".msgpack")
-    ]
-    return sorted(chunk_files)
+    # 准备进程池参数
+    args = [(base_dir, name, i) for i in range(metadata["num_chunks"])]
 
+    # 使用进程池并行加载
+    with Pool(processes=num_processes) as pool:
+        chunks = pool.map(load_single_chunk, args)
 
-import concurrent.futures
-
-
-def load_msgpack_chunks(chunk_files):
-
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = list(
-            tqdm(
-                executor.map(load_msgpack_file, chunk_files),
-                total=len(chunk_files),
-                desc="loading files",
-            )
-        )
-    if isinstance(results[0], dict):
-        merged_data = {}
-        for chunk in results:
-            merged_data.update(chunk)
-        return merged_data
-    elif isinstance(results[0], list):
-        merged_data = []
-        for chunk in results:
-            merged_data.extend(chunk)
-        return merged_data
+    # 合并所有列表数据
+    # 合并chunks
+    combined_data = {}
+    # 检查第一个chunk的类型来确定原始数据类型
+    if isinstance(chunks[0], dict):
+        # 如果是字典，将所有chunks合并成一个字典
+        for chunk in chunks:
+            combined_data.update(chunk)
+    elif isinstance(chunks[0], list):
+        # 如果是列表，将所有chunks串联成一个列表
+        combined_data = []
+        for chunk in chunks:
+            combined_data.extend(chunk)
     else:
-        raise TypeError("data must be a dictionary or a list")
+        raise TypeError("Unsupported data type in chunks")
+    return combined_data
+
 
 
 @logger.catch
 def load_dataset():
-    script_path = os.path.dirname(os.path.abspath(__file__).rstrip(os.sep))
-    # with open(
-    #     f"{script_path}/train_dataset/{model_type}_{args.dataset}_synthesis.pkl", "rb"
-    # ) as f:
-    #     synthesis = pickle.load(f)
+    
 
-    # with open(
-    #     f"{script_path}/train_dataset/{model_type}_{args.dataset}_index.pkl", "rb"
-    # ) as f:
-    #     index = pickle.load(f)
+    synthesis = load_chunks_parallel(args.dataset, name="synthesis")
+    index = load_chunks_parallel(args.dataset, name="index")
 
-    base_dir = f"{script_path}/train_dataset/{args.template}_{args.dataset}"
-    if args.offline:
-        base_dir = base_dir + "_offline"
-    if args.mono:
-        base_dir = base_dir + f"_mono_{args.mono_dataset.replace(',','_')}"
-    if args.w_template:
-        base_dir = base_dir + f"_template"
-
-    synthesis = load_msgpack_chunks(
-        find_msgpack_chunk_files(base_dir, name="synthesis")
+    
+    train_dataset = SpecialDataset(
+        synthesis,
+        index,
+        embedding_size,
+        zero_prob=args.zero_prob,
+        div_mode=args.div_mode,
+        pt=args.pt,
     )
-
-    if not args.offline:
-        index = load_msgpack_chunks(find_msgpack_chunk_files(base_dir, name="index"))
-
-    if args.offline:
-        train_dataset = OfflineDataset(synthesis)
-    else:
-        train_dataset = SpecialDataset(
-            synthesis,
-            index,
-            embedding_size,
-            zero_prob=args.zero_prob,
-            div_mode=args.div_mode,
-            pt=args.pt,
-        )
     return train_dataset
 
 
