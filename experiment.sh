@@ -125,4 +125,4 @@ python special_train.py --model qwen2_7b --gradient_accumulation_steps 128 --tot
 CUDA_VISIBLE_DEVICES=2,3 python distillation_train.py --model gemma_2b --teacher_model gemma2_27b_it --total_bsz 512 --gradient_accumulation_steps 256 --dataset alpaca_gpt4,code,math
 
 
-CUDA_VISIBLE_DEVICES=2 python -m sft.special_train  --model qwen2.5-1.5b --gradient_accumulation_steps 64 --total_bsz 128  --dataset alma_zhen --w_template True --num_train_epochs 3 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.01  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template qwen2.5
+CUDA_VISIBLE_DEVICES=2 python -m sft.special_train  --model qwen2.5-1.5b --gradient_accumulation_steps 64 --total_bsz 128  --dataset /niutrans/NEUNLP/rjh/sft/ndp/train_dataset/qwen2.5-1.5b/qwen2.5_alma_zhen/clm_ngram4 --w_template True --num_train_epochs 3 --learning_rate 5e-5 --lr_scheduler_type cosine --warmup_ratio 0.01  --mix True --mix_ratio 0.8 --div_mode False --weighted False --template qwen2.5

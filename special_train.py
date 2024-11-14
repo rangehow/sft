@@ -226,7 +226,7 @@ collator = SpecialDataCollator(
     mix=args.mix,
     mix_ratio=args.mix_ratio,
     pt=args.pt,
-    offline=args.offline,
+
 )
 
 
