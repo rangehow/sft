@@ -215,8 +215,10 @@ class SpecialDataset(Dataset):
             if isinstance(synthesis_dict[0][1][0][0], int):
                 # 短期方案
                 self.supervised = [
-                    Counter([synthesis_dict[i][1][j][0]])
-                    for j in range(len(synthesis_dict[i][1]))
+                    [
+                        Counter([synthesis_dict[i][1][j][0]])
+                        for j in range(len(synthesis_dict[i][1]))
+                    ]
                     for i in range(len(synthesis_dict))
                 ]
             else:
@@ -233,7 +235,6 @@ class SpecialDataset(Dataset):
                 [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
                 for i in range(len(synthesis_dict))
             ]
-            
 
         else:
             self.clm = [
