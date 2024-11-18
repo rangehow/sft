@@ -1,4 +1,7 @@
-本仓库使用指南
+This is the official code of [NDP: Next Distribution Prediction as a More Broad Target](https://arxiv.org/abs/2408.17377)
+
+# Brief introduction of repositry structure
+
 
 > 未在仓库内提供，需要自行处理/下载的部分：
 

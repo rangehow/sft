@@ -369,6 +369,7 @@ def synthesis(args, train_dataset, supervised_trie, clm_trie, template):
                     supervised_value = supervised_trie.search(input_id[: i + 1])
 
                     if len(supervised_value) > 1:
+                        bp()
                         supervised_cnt += 1
 
                     if args.clm:

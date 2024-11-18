@@ -106,24 +106,35 @@ else:
 
 if args.output_dir is None:
     from datetime import datetime
+    import os
+
+    # 获取dataset的父目录
+    dataset_parent = os.path.dirname(args.dataset)
+    # 在dataset同级创建outputs目录
+    output_base = os.path.join(os.path.dirname(dataset_parent), "outputs")
+    os.makedirs(output_base, exist_ok=True)
+
+    # 获取dataset的最后一级目录名作为数据集标识
+    dataset_name = os.path.basename(args.dataset)
 
     current_time = datetime.now()
-    current_month = current_time.month
-    current_day = current_time.day
-    args.output_dir = f"{args.model}_{args.dataset.replace(',','_')}_{current_month}m{current_day}d_{args.zero_prob}_bsz{args.total_bsz}_alpha{args.alpha}_{args.lr_scheduler_type}_lr{args.learning_rate:.0e}"
-    if args.weighted:
-        args.output_dir = args.output_dir + "_weighted"
-    if args.div_mode:
-        args.output_dir = args.output_dir + "_div"
+    date_str = f"{current_time.month:02d}{current_time.day:02d}"
+    
+    # 构建更简洁的输出路径
+    args.output_dir = os.path.join(output_base, 
+        f"{args.model}_{dataset_name}_{date_str}_bsz{args.total_bsz}")
+
+    # 添加关键训练参数
     if args.mix:
         args.output_dir = args.output_dir + f"_mix{args.mix_ratio}"
-    if args.lora:
-        args.output_dir = args.output_dir + "_lora"
     if args.w_template:
         args.output_dir = args.output_dir + "_template"
     if args.warmup_ratio > 0:
-        args.output_dir = args.output_dir + f"_warmratio{args.warmup_ratio:.0e}"
-    logger.info(f"未检测到output_dir，故采用自动生成的{args.output_dir}")
+        args.output_dir = args.output_dir + f"_warm{args.warmup_ratio:.0e}"
+    if args.learning_rate != 2e-5:  # 只有在非默认学习率时才添加
+        args.output_dir = args.output_dir + f"_lr{args.learning_rate:.0e}"
+
+    logger.info(f"Output directory: {args.output_dir}")
 
 
 def load_single_chunk(args):
@@ -142,9 +153,14 @@ def load_chunks_parallel(base_dir, name, num_processes=None):
     # 准备进程池参数
     args = [(base_dir, name, i) for i in range(metadata["num_chunks"])]
 
-    # 使用进程池并行加载
+    # 使用进程池并行加载，添加tqdm进度条
     with multiprocessing.Pool(processes=num_processes) as pool:
-        chunks = pool.map(load_single_chunk, args)
+        chunks = list(tqdm(
+            pool.imap(load_single_chunk, args),
+            total=metadata["num_chunks"],
+            desc=f"Loading {name}",
+            unit="chunk"
+        ))
 
     # 合并所有列表数据
     # 合并chunks

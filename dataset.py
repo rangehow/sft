@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 import torch
 from scipy.optimize import root_scalar, fsolve
 import faulthandler
+from ipdb import set_trace as bp
 
 # 在import之后直接添加以下启用代码即可
 faulthandler.enable()
@@ -116,10 +117,11 @@ def normalized_distribution(supervised, embedding_size, alpha=1e-10):
         indices = torch.tensor(list(counter.keys()), dtype=torch.long)
         values = torch.tensor(list(counter.values()), dtype=torch.float32)
         x[i].scatter_(0, indices, values)
-    
+
     smoothed = x + alpha
-    result = smoothed / torch.sum(smoothed,dim=-1,keepdim=True)
+    result = smoothed / torch.sum(smoothed, dim=-1, keepdim=True)
     return result
+
 
 # 6月28日下午的优化版本
 def directly_softmax(supervised, embedding_size, div=False, zero_prob=0):
@@ -157,7 +159,7 @@ from collections import Counter
 class SlideDataset(Dataset):
     def __init__(
         self,
-        synthesis_dict: list[tuple[tuple,list[Counter]]],
+        synthesis_dict: list[tuple[tuple, list[Counter]]],
         cnt_list: list[list[tuple]],  # 在单轮对话里每个list里应该只有一个tuple
         embedding_size,
         zero_prob,
@@ -168,7 +170,6 @@ class SlideDataset(Dataset):
         self.input_ids = [
             list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
         ]
-        
 
         self.supervised = [
             [synthesis_dict[i][1][j] for j in range(len(synthesis_dict[i][1]))]
@@ -182,7 +183,7 @@ class SlideDataset(Dataset):
         self.zero_prob = zero_prob
 
     def __getitem__(self, index):
-        
+
         return {
             "input_ids": self.input_ids[index],
             "supervised": self.supervised[index],
@@ -190,14 +191,11 @@ class SlideDataset(Dataset):
             "div_mode": self.div_mode,
             "valid_label_index_list": self.valid_label_index_list[index],
         }
-        
 
     def __len__(self):
         return len(self.input_ids)
 
-    
-        
-        
+
 class SpecialDataset(Dataset):
     def __init__(
         self,
@@ -214,17 +212,28 @@ class SpecialDataset(Dataset):
             list(synthesis_dict[i][0]) for i in range(len(synthesis_dict))
         ]
         if not pt:
-
-            self.supervised = [
-                [synthesis_dict[i][1][j][0] for j in range(len(synthesis_dict[i][1]))]
-                for i in range(len(synthesis_dict))
-            ]
+            if isinstance(synthesis_dict[0][1][0][0], int):
+                # 短期方案
+                self.supervised = [
+                    Counter([synthesis_dict[i][1][j][0]])
+                    for j in range(len(synthesis_dict[i][1]))
+                    for i in range(len(synthesis_dict))
+                ]
+            else:
+                self.supervised = [
+                    [
+                        synthesis_dict[i][1][j][0]
+                        for j in range(len(synthesis_dict[i][1]))
+                    ]
+                    for i in range(len(synthesis_dict))
+                ]
             # self.supervised = [synthesis_dict[i][1][j][0]  for i in range(len(synthesis_dict))  for j in range(len(synthesis_dict[i]))]
             # synthesis_dict[0][1][0]
             self.clm = [
                 [synthesis_dict[i][1][j][1] for j in range(len(synthesis_dict[i][1]))]
                 for i in range(len(synthesis_dict))
             ]
+            
 
         else:
             self.clm = [
@@ -263,16 +272,10 @@ class SpecialDataset(Dataset):
 
 
 class SlideDataCollator:
-    def __init__(
-        self,
-        tokenizer,
-        embedding_size
-    ) -> None:
+    def __init__(self, tokenizer, embedding_size) -> None:
         self.tokenizer = tokenizer
         self.embedding_size = embedding_size
-        
 
-    
     def __call__(self, batch) -> torch.Any:
 
         input_ids = [d["input_ids"] for d in batch]
@@ -302,37 +305,34 @@ class SlideDataCollator:
                 )
             valid_label_index_list.append(temp_index_list)
 
-        
-
         # TIME --------------------------------------------------------------
         # e-4 不算耗时
 
         # 相较于input_ids，我们解开了对每个元素的list包围，使得一个batch的target从bsz，seqlen坍缩成了bsz x seqlen
         supervised = [item for d in batch for item in d["supervised"]]
-        
+
         # if not all(len(counter) == 1 for counter in supervised):
         #     import pdb
         #     pdb.set_trace()
         # else:
         #     return {}
-        
+
         # ----------------------------------------------------------------
-        sum_diff = sum(t[1] - t[0] for sublist in valid_label_index_list for t in sublist)
-        
+        sum_diff = sum(
+            t[1] - t[0] for sublist in valid_label_index_list for t in sublist
+        )
 
         all_prob_supervised = normalized_distribution(
-            supervised, self.embedding_size,
+            supervised,
+            self.embedding_size,
         )
-               
 
-        
         # supervised_cnt = torch.tensor(
         #     [frequency(sum(xx.values()), xmax=10) for xx in supervised]
         # )
         # from ipdb import set_trace
         # set_trace()
 
-        
         return {
             "input_ids": input_ids.input_ids,
             "attention_mask": input_ids.attention_mask,
@@ -340,8 +340,7 @@ class SlideDataCollator:
             "valid_label_index_list": valid_label_index_list,
             # "supervised_cnt": supervised_cnt,
         }
-        
-    
+
 
 class SpecialDataCollator:
     def __init__(
@@ -353,7 +352,6 @@ class SpecialDataCollator:
         mix,
         mix_ratio,
         pt,
-
     ) -> None:
         self.tokenizer = tokenizer
         self.zero_prob = zero_prob
@@ -362,7 +360,6 @@ class SpecialDataCollator:
         self.mix = mix
         self.mix_ratio = mix_ratio
         self.pt = pt
-        
 
     def __call__(self, batch) -> torch.Any:
 
@@ -394,8 +391,6 @@ class SpecialDataCollator:
                     )
                 )
             valid_label_index_list.append(temp_index_list)
-
-        
 
         # TIME --------------------------------------------------------------
         # e-4 不算耗时
