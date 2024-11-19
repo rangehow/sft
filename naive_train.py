@@ -194,6 +194,8 @@ def main():
 
     # 训练配置
     training_args = TrainingArguments(
+        seed=42,
+        data_seed=42,
         output_dir=args.output_dir,
         overwrite_output_dir=True,
         per_device_train_batch_size=real_bsz,
