@@ -26,6 +26,7 @@ from tqdm import tqdm
 from .shm_utils import get_shm_info
 from niuload import balanced_load
 
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--model")
@@ -63,7 +64,7 @@ def parse_args():
         type=ast.literal_eval,
         help="pt mode or not?",
     )
-    
+
     parser.add_argument(
         "--mono",
         default=False,
@@ -119,10 +120,11 @@ if args.output_dir is None:
 
     current_time = datetime.now()
     date_str = f"{current_time.month:02d}{current_time.day:02d}"
-    
+
     # 构建更简洁的输出路径
-    args.output_dir = os.path.join(output_base, 
-        f"{args.model}_{dataset_name}_{date_str}_bsz{args.total_bsz}")
+    args.output_dir = os.path.join(
+        output_base, f"{args.model}_{dataset_name}_{date_str}_bsz{args.total_bsz}"
+    )
 
     # 添加关键训练参数
     if args.mix:
@@ -155,12 +157,14 @@ def load_chunks_parallel(base_dir, name, num_processes=None):
 
     # 使用进程池并行加载，添加tqdm进度条
     with multiprocessing.Pool(processes=num_processes) as pool:
-        chunks = list(tqdm(
-            pool.imap(load_single_chunk, args),
-            total=metadata["num_chunks"],
-            desc=f"Loading {name}",
-            unit="chunk"
-        ))
+        chunks = list(
+            tqdm(
+                pool.imap(load_single_chunk, args),
+                total=metadata["num_chunks"],
+                desc=f"Loading {name}",
+                unit="chunk",
+            )
+        )
 
     # 合并所有列表数据
     # 合并chunks
@@ -180,15 +184,12 @@ def load_chunks_parallel(base_dir, name, num_processes=None):
     return combined_data
 
 
-
 @logger.catch
 def load_dataset():
-    
 
     synthesis = load_chunks_parallel(args.dataset, name="synthesis")
     index = load_chunks_parallel(args.dataset, name="index")
 
-    
     train_dataset = SpecialDataset(
         synthesis,
         index,
@@ -212,7 +213,9 @@ tokenizer.padding_side = "left"
 if is_torchrun:
     model = AutoModelForCausalLM.from_pretrained(model_dir)
 else:
-    model = balanced_load(model_dir, ratio=[0.5] + [1] * (torch.cuda.device_count()-1))
+    model = balanced_load(
+        model_dir, ratio=[0.5] + [1] * (torch.cuda.device_count() - 1)
+    )
 # model = AutoModelForCausalLM.from_pretrained(
 #     model_dir,
 #     torch_dtype="auto",
@@ -237,7 +240,6 @@ collator = SpecialDataCollator(
     mix=args.mix,
     mix_ratio=args.mix_ratio,
     pt=args.pt,
-
 )
 
 
@@ -299,6 +301,8 @@ trainer = KLTrainer(
     train_dataset=train_dataset,
     tokenizer=tokenizer,
     args=TrainingArguments(
+        seed=42,
+        data_seed=42,
         overwrite_output_dir=True,
         output_dir=args.output_dir,
         logging_steps=1,
@@ -306,6 +310,7 @@ trainer = KLTrainer(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="epoch",
         dataloader_pin_memory=True,
+        dataloader_prefetch_factor=2,
         dataloader_num_workers=get_shm_info() // 30,
         num_train_epochs=args.num_train_epochs,
         per_device_train_batch_size=real_bsz,
