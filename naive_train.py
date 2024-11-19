@@ -199,6 +199,7 @@ def main():
         output_dir=args.output_dir,
         overwrite_output_dir=True,
         per_device_train_batch_size=real_bsz,
+        dataloader_prefetch_factor=2,
         num_train_epochs=args.num_train_epochs,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         learning_rate=args.learning_rate,
