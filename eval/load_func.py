@@ -93,8 +93,8 @@ def math(local_dir, **kwargs):
         a = datasets.load_dataset(local_dir, "default")["train"]
         b = datasets.load_dataset(local_dir, "default")["test"]
     else:
-        a = datasets.load_dataset("lighteval/MATH", "all")["train"]  # 7.5k
-        b = datasets.load_dataset("lighteval/MATH", "all")["test"]  # 5k
+        a = datasets.load_dataset("lighteval/MATH", "default")["train"]  # 7.5k
+        b = datasets.load_dataset("lighteval/MATH", "default")["test"]  # 5k
     return datasets.concatenate_datasets([a, b])
 
 
