@@ -1,54 +1,63 @@
-This is the official code of [NDP: Next Distribution Prediction as a More Broad Target](https://arxiv.org/abs/2408.17377)
+~~~markdown
+This is the official code repository for [NDP: Next Distribution Prediction as a More Broad Target](https://arxiv.org/abs/2408.17377).
 
-# Brief introduction of repositry structure
+# Brief Introduction to the Repository Structure
 
+> Components not provided in the repository (need to be created/downloaded manually):
 
-> 未在仓库内提供，需要自行处理/下载的部分：
-
-- sft/config.py，这个文件主要用于保存模型名/数据集名到绝对路径的映射。
+- **sft/config.py**: This file is used to map model and dataset names to their absolute paths.
 
 ```python
-model_dir={
-    'gemma_2b':'/data/ruanjh/best_training_method/gemma-2b'
-    'llama3_8b':'/某个路径/Meta-Llama-3-8B'
+model_dir = {
+    'gemma_2b': '/path_to_gemma-2b',
+    'llama3_8b': '/some/path/Meta-Llama-3-8B'
 }
-dataset_dir={
-    'alpaca_gpt4':'某个路径/alpaca-gpt4/data'
+dataset_dir = {
+    'alpaca_gpt4': '/some/path/alpaca-gpt4/data'
 }
-```
+~~~
 
-- 模型和数据集
+- **Models and Datasets**
 
-  - 采用huggingface-cli下载在本地，切镜像，更新一下下载工具
+  - Download the models and datasets locally using `huggingface-cli`. Update to the latest tool and switch to a mirror if needed.
 
-  - ```bash
-    export HF_ENDPOINT=https://hf-mirror.com # 先换国内镜像
-    pip install -U huggingface_hub
-    ```
+  ```bash
+  export HF_ENDPOINT=https://hf-mirror.com  # Switch to a local mirror
+  pip install -U huggingface_hub
+  ```
 
-  - 下载llama3-8B
+  - **Download llama3-8B**:
 
-  - ```bash
-    huggingface-cli download --resume-download meta-llama/Meta-Llama-3-8B  --local-dir Meta-Llama-3-8B  --local-dir-use-symlinks False --exclude "original/*"
-    ```
+  ```bash
+  huggingface-cli download --resume-download meta-llama/Meta-Llama-3-8B \
+    --local-dir Meta-Llama-3-8B \
+    --local-dir-use-symlinks False --exclude "original/*"
+  ```
 
-  - 下载alpaca_gpt4  
+  - **Download alpaca_gpt4**:
 
-  - ```bash
-    huggingface-cli download --repo-type dataset --resume-download vicgalle/alpaca-gpt4 --local-dir alpaca-gpt4 --local-dir-use-symlinks False
-    ```
+  ```bash
+  huggingface-cli download --repo-type dataset \
+    --resume-download vicgalle/alpaca-gpt4 \
+    --local-dir alpaca-gpt4 \
+    --local-dir-use-symlinks False
+  ```
 
-> 在本仓库中提供的部分
+------
 
-1. 数据生成阶段
+> Components provided in the repository:
+
+1. **Data Preprocessing**
 
    ```bash
    python preprocess.py --model llama3_8b --dataset alpaca-gpt4
    ```
 
-2. 训练
+2. **Training**
 
-   先设定一个accelerate config，最好使用4张卡以上，**卡数一定要是偶数**。下面可以修改的地方有num_processes，实际几张卡就写几.zero_stage,如果卡数足够多，可以尝试降低zero_stage（from 3->2->1），可以加快训练。**mixed_precision**不建议使用，deepspeed的混合精度会把所有输入数据都转成特定的dtype，导致报错，这个行为还需要再核验。
+   First, set up an `accelerate` configuration. It is recommended to use at least 4 GPUs, and the number of GPUs **must be even**. The configurable fields include `num_processes` (number of GPUs) and `zero_stage`. If you have more GPUs, you can try lowering the `zero_stage` (from 3 → 2 → 1) to speed up training. **Avoid using mixed precision**, as DeepSpeed's mixed precision implementation can cause errors when converting all input data to a specific dtype. This issue needs further verification.
+
+   Example `accelerate` configuration (`my.yaml`):
 
    ```yaml
    compute_environment: LOCAL_MACHINE
@@ -76,51 +85,66 @@ dataset_dir={
    use_cpu: false
    ```
 
-   然后执行训练命令，为了挂起后台，可以用tmux。
+   Run the training command using `tmux` to keep it running in the background:
 
    ```bash
-   CUDA_VISIBLE_DEVICES=可见的GPU_id accelerate launch --config_file my.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4  --weighted --zero_prob 0 &
+   CUDA_VISIBLE_DEVICES=<GPU_IDS> accelerate launch --config_file my.yaml \
+     special_train.py --model llama3_8b --dataset alpaca_gpt4 --weighted --zero_prob 0 &
    ```
 
-   如果显卡空置充足，可以再跑下面两组：
+   If you have additional GPUs, you can run the following additional commands:
 
    ```bash
-   CUDA_VISIBLE_DEVICES=可见的GPU_id accelerate launch --config_file my.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4 --zero_prob 0 &
+   CUDA_VISIBLE_DEVICES=<GPU_IDS> accelerate launch --config_file my.yaml \
+     special_train.py --model llama3_8b --dataset alpaca_gpt4 --zero_prob 0 &
    ```
 
    ```bash
-   CUDA_VISIBLE_DEVICES=可见的GPU_id accelerate launch --config_file my.yaml  special_train.py --model llama3_8b --dataset alpaca_gpt4 ---weighted zero_prob 0.1 &
+   CUDA_VISIBLE_DEVICES=<GPU_IDS> accelerate launch --config_file my.yaml \
+     special_train.py --model llama3_8b --dataset alpaca_gpt4 --weighted --zero_prob 0.1 &
    ```
 
-## eval
-### 常规的测试，我们采用lm-eval
+------
 
-安装lm-eval最新版本
+## Evaluation
+
+### General Testing with `lm-eval`
+
+Install the latest version of `lm-eval`:
+
 ```bash
 pip install git+https://github.com/bigcode-project/bigcode-evaluation-harness.git
 ```
 
-lm_eval 里的task list
-gsm8k_cot mmlu  truthfulqa_mc2	bbh_cot_fewshot	arc_challenge drop	TriviaQA  agieval														
+Task list in `lm-eval` includes:
 
-启动的命令大概像下面这样
+- `gsm8k_cot`
+- `mmlu`
+- `truthfulqa_mc2`
+- `bbh_cot_fewshot`
+- `arc_challenge`
+- `drop`
+- `TriviaQA`
+- `agieval`
+
+Example command to launch evaluation:
+
 ```bash
-CUDA_VISIBLE_DEVICES=2 lm_eval --model hf   --tasks bbh_cot_fewshot     --device cuda:0  --batch_size auto --model_args pretrained=/niutrans/NEUNLP/rjh/models/gemma-2b
+CUDA_VISIBLE_DEVICES=2 lm_eval --model hf --tasks bbh_cot_fewshot \
+  --device cuda:0 --batch_size auto --model_args pretrained=/path/to/gemma-2b
 ```
 
+------
 
-### 代码类的测试
-依赖于 bigcode-evaluation-harness,  主要测humaneval
+### Code Testing
+
+For testing code, rely on the `bigcode-evaluation-harness`, mainly focusing on the `humaneval` benchmark.
+
+Clone the repository and following the instruction in it:
+
 ```bash
 https://github.com/bigcode-project/bigcode-evaluation-harness.git
 ```
 
 
-### MT-bench
-这个需要GPT4的key
-https://github.com/lm-sys/FastChat/blob/main/fastchat/llm_judge/README.md#mt-bench
 
-
-## 额外的tips
-
-LLAMA3-8B and llama3-8b-it have total different tokenizer config， i.e. different eos token， which will influence preprocess procedure. So you have to mannually replace them.
